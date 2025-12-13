@@ -1,0 +1,215 @@
+<!-- HEADER -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-3" href="#">
+      <!-- Icon box -->
+      <div class="brand-icon">
+        <i class="bi bi-building fs-3 text-white"></i>
+      </div>
+      <!-- Text -->
+      <div class="brand-text">
+        <div class="fw-bold fs-4">GBA Trade License</div>
+        <div class="text-muted small">Greater Bengaluru Authority</div>
+      </div>
+    </a>  
+
+
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto gap-3">
+        <li class="nav-item"><a class="nav-link" routerLink="/track">Track Application</a></li>
+        <li class="nav-item"><a class="nav-link" routerLink="/help">Help & Support</a></li>
+        <li class="nav-item">
+          <a class="btn btn-outline-primary" routerLink="/login">Sign In</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero text-white text-center">
+  <div class="container py-5">
+    <!-- <div class="d-flex justify-content-center mb-4">
+      <div class="official-badge d-flex align-items-center gap-2">
+        <i class="bi {{ officialBadge.icon }}"></i>
+        <span>{{ officialBadge.text }}</span>
+      </div>
+    </div> -->
+    <div class="d-flex justify-content-center mb-4 fade-up">
+      <div class="official-badge d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ officialBadge.text }}</span>
+      </div>
+    </div>
+    <h1 class="display-4 fw-bold text-white fade-up fade-up-delay-1">Trade License Management Portal</h1>
+    <p class="lead text-white-50 fade-up fade-up-delay-2">
+      Streamlined licensing for businesses across Bengaluru. Apply, renew, and manage your trade licenses online with complete transparency.
+    </p>
+    <div class="mt-4">
+      <a routerLink="#" class="btn btn-outline-yellow btn-lg me-3">
+        Apply for New License →
+      </a>
+      <a routerLink="#" class="btn btn-outline-light btn-lg">
+        Track Your Application
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="py-4 border-bottom">
+  <div class="container">
+    <div class="row text-center">
+      <div class="col-6 col-md-3" *ngFor="let s of stats">
+        <h3 class="fw-bold text-primary">{{ s.value }}</h3>
+        <p class="text-muted">{{ s.label }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-4">Simplified License Management</h2>
+    <h5 class="text-center">Everything you need to manage your business licensing requirements in one place</h5>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3" *ngFor="let f of features">
+        <div class="card h-100 shadow-sm text-center p-3">
+          <i class="bi {{f.icon}} fs-1 text-primary mb-3"></i>
+          <h5>{{ f.title }}</h5>
+          <p class="text-muted">{{ f.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section class="bg-light py-5">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-4">Select Your Portal</h2>
+    <h5 class="text-center">Access the portal based on your role in the trade licensing process</h5>
+    <div class="row g-4">
+      <div class="col-md-4" *ngFor="let r of roles">
+        <a [routerLink]="r.link" class="text-decoration-none">
+          <div class="card h-100 shadow-sm p-4">
+            <div class="icon-box {{r.color}} text-white mb-3">
+              <i class="bi {{r.icon}} fs-3"></i>
+            </div>
+            <h5>{{ r.title }}</h5>
+            <p class="text-muted">{{ r.description }}</p>
+            <span class="text-primary fw-semibold">Access Portal →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container">
+    <div class="card shadow-sm border-0 rounded-4 text-center p-5">
+
+      <h2 class="fw-bold mb-3">Need Help Getting Started?</h2>
+      <p class="text-muted mb-4">
+        Our support team is available to assist you with your trade license applications
+      </p>
+
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+
+        <a routerLink="/help" class="btn btn-primary btn-lg">
+          View User Guide
+        </a>
+
+        <button class="btn btn-outline-primary btn-lg d-flex align-items-center gap-2">
+          <i class="bi bi-telephone"></i>
+          Contact Support
+        </button>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- FOOTER -->
+<footer class="border-top py-5 mt-5">
+  <div class="container">
+
+    <div class="row g-4">
+
+      <!-- BRAND -->
+      <div class="col-md-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="footer-icon">
+            <i class="bi {{ footer.brand.icon }} text-white"></i>
+          </div>
+          <div>
+            <div class="fw-bold">{{ footer.brand.title }}</div>
+            <div class="text-muted small">
+              {{ footer.brand.subtitle }}
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted small">
+          {{ footer.brand.description }}
+        </p>
+      </div>
+
+      <!-- QUICK LINKS -->
+      <div class="col-md-3">
+        <h6 class="fw-bold mb-3">Quick Links</h6>
+        <ul class="list-unstyled small">
+          <li *ngFor="let link of footer.quickLinks">
+            <a
+              [routerLink]="link.link"
+              class="text-decoration-none text-muted"
+            >
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- RESOURCES -->
+      <div class="col-md-3">
+        <h6 class="fw-bold mb-3">Resources</h6>
+        <ul class="list-unstyled small">
+          <li *ngFor="let res of footer.resources">
+            <a
+              [routerLink]="res.link"
+              class="text-decoration-none text-muted"
+            >
+              {{ res.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="col-md-3">
+        <h6 class="fw-bold mb-3">Contact</h6>
+        <p class="small text-muted mb-1">
+          Helpline: {{ footer.contact.helpline }}
+        </p>
+        <p class="small text-muted mb-1">
+          Email: {{ footer.contact.email }}
+        </p>
+        <p class="small text-muted">
+          {{ footer.contact.timing }}
+        </p>
+      </div>
+
+    </div>
+
+    <!-- COPYRIGHT -->
+    <div class="text-center text-muted small border-top pt-3 mt-4">
+      {{ footer.copyright }}
+    </div>
+
+  </div>
+</footer>
+
+
