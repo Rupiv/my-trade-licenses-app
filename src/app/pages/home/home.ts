@@ -52,14 +52,14 @@ export class Home {
       title: 'Approving Officer',
       description: 'Review applications and approve licenses',
       icon: 'bi-people',
-      link: '/approver/login',
+      link: '/login', //login also should be created
       color: 'bg-success'
     },
     {
       title: 'Portal Administrator',
       description: 'Manage users and monitor system',
       icon: 'bi-shield-lock',
-      link: '/admin/login',
+      link: '/login', //login also should be created
       color: 'bg-dark'
     }
   ];
@@ -74,14 +74,14 @@ export class Home {
     },
 
     quickLinks: [
-      { label: 'Apply for License', link: '/trader/apply' },
-      { label: 'Track Application', link: '/track' },
+      { label: 'Apply for License', link: '/new-licenses' },
+      { label: 'Track Application', link: '/track-application' },
       { label: 'Renew License', link: '/trader/renew' },
       { label: 'Fee Structure', link: '/fees' }
     ],
 
     resources: [
-      { label: 'User Guide', link: '/help' },
+      { label: 'User Guide', link: '/support' },
       { label: 'FAQs', link: '/faq' },
       { label: 'Required Documents', link: '/documents' },
       { label: 'Contact Us', link: '/contact' }

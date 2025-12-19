@@ -1,0 +1,69 @@
+<div class="page">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <a routerLink="/" class="back-link">← Back to Home</a>
+
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="bi bi-building fs-3 text-white"></i>
+      </div>
+      <div>
+        <b><h1>GBA Trade License</h1></b>
+        <b>Greater Bengaluru Authority</b>
+      </div>
+    </div>
+
+    <h2>Welcome to the Trader Portal</h2>
+    <p class="desc">
+      Apply for new licenses, renew existing ones, track applications,
+      and manage your business documentation all in one place.
+    </p>
+
+    <ul class="features">
+      <li>① Submit applications online 24/7</li>
+      <li>② Track status in real-time</li>
+      <li>③ Download certificates instantly</li>
+    </ul>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="card">
+      <h2>Sign In</h2>
+      <p class="subtitle">Enter your credentials to access your account</p>
+
+      <form (ngSubmit)="onSubmit()">
+        <label>Email Address</label>
+        <input type="email" [(ngModel)]="email" name="email" required />
+
+        <label>Password</label>
+        <div class="password-field">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="password"
+            name="password"
+            required
+          />
+          <button type="button" (click)="togglePassword()">👁️</button>
+        </div>
+
+        <a class="forgot" routerLink="/forgot-password">Forgot Password?</a>
+
+        <button class="btn-primary" type="submit">
+          Sign In →
+        </button>
+
+        <p class="switch">
+          Don’t have an account?
+          <span (click)="toggleMode()">Create Account</span>
+        </p>
+      </form>
+
+      <p class="terms">
+        By continuing, you agree to GBA's Terms of Service and Privacy Policy
+      </p>
+    </div>
+  </div>
+
+</div>
