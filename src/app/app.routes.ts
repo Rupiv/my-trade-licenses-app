@@ -46,5 +46,16 @@ export const routes: Routes = [
       loadComponent: () => import('./pages/trader-licenses/trader-licenses')
         .then(m => m.TraderLicenses)
     },
+    {
+      path: 'dashboard',
+      loadComponent: () => import('./pages/dashboard/dashboard')
+        .then(m => m.Dashboard)
+    },
+    {
+      path: 'dashboard-layout',
+      loadComponent: () => import('./layout/dashboard-layout/dashboard-layout')
+        .then(m => m.DashboardLayout)
+    },
+    
     { path: '**', redirectTo: '' }
 ];

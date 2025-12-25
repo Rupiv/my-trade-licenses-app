@@ -1,0 +1,195 @@
+<div class="dashboard-wrapper">
+
+  <!-- ================= TOP BAR ================= -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-box">
+        <i class="bi bi-building"></i>
+      </div>
+      <div>
+        <div class="title">GBA Trade License</div>
+        <small class="subtitle">Trader Portal</small>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button class="icon-btn position-relative">
+        <i class="bi bi-bell"></i>
+        <span class="badge bg-danger notification-count">2</span>
+      </button>
+
+      <div class="user-info">
+        <div class="name">Rajesh Sharma</div> 
+        <small class="email">rajesh@email.com</small>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= BODY ================= -->
+  <div class="dashboard-body">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <nav class="menu">
+            <a
+                class="menu-item"
+                routerLink="/dashboard"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+            >
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/new-licenses"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-plus-circle"></i>
+                New Application
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/licenses"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-check-circle"></i>
+                My Licenses
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/applications"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-clock-history"></i>
+                Applications
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/payments"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-credit-card"></i>
+                Payments
+            </a>
+        </nav>
+
+
+      <div class="sidebar-footer">
+        <button class="signout-btn" (click)="logout()">
+          <i class="bi bi-box-arrow-right"></i>
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="content">
+
+      <!-- Welcome -->
+      <h2 class="welcome-title">Welcome back, Rajesh!</h2>
+      <p class="welcome-subtitle">
+        Here's an overview of your trade licenses and applications
+      </p>
+
+      <!-- Alerts -->
+      <div class="alert-box warning">
+        <i class="bi bi-exclamation-circle"></i>
+        License renewal due in 30 days for Sharma Food Corner
+      </div>
+
+      <div class="alert-box info">
+        <i class="bi bi-info-circle"></i>
+        Inspection scheduled for Sharma Textiles on 15 Dec 2024
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-card">
+          <div class="quick-icon warning">
+            <i class="bi bi-plus"></i>
+          </div>
+          <h6>Apply for New License</h6>
+          <p>Start a new trade license application</p>
+        </div>
+
+        <div class="quick-card">
+          <div class="quick-icon success">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+          <h6>Renew License</h6>
+          <p>Renew an existing trade license</p>
+        </div>
+
+        <div class="quick-card">
+          <div class="quick-icon primary">
+            <i class="bi bi-geo-alt"></i>
+          </div>
+          <h6>Track Application</h6>
+          <p>Check application status</p>
+        </div>
+      </div>
+
+      <!-- My Licenses -->
+      <h5 class="section-title">My Licenses</h5>
+
+      <div class="license-card">
+        <div class="license-left">
+          <h6>
+            Sharma Electronics
+            <span class="status active">Active</span>
+          </h6>
+          <p class="muted">Retail - Electronics</p>
+          <p class="muted">
+            <i class="bi bi-geo-alt"></i>
+            123, MG Road, Bengaluru - 560001
+          </p>
+        </div>
+
+        <div class="license-right">
+          <small class="muted">Valid Until</small>
+          <strong>31 Mar 2025</strong>
+
+          <button class="btn btn-outline-secondary btn-sm rounded-pill mt-2">
+            <i class="bi bi-download"></i>
+            Certificate
+          </button>
+        </div>
+      </div>
+
+      <!-- Pending Applications -->
+      <div class="section-header">
+        <h5>Pending Applications</h5>
+        <a class="view-all">View All</a>
+      </div>
+
+      <div class="license-card">
+        <div class="license-left">
+          <h6>
+            Sharma Textiles
+            <span class="status review">Under Review</span>
+          </h6>
+          <p class="muted">Retail - Clothing</p>
+          <p class="muted">
+            <i class="bi bi-calendar"></i> Submitted: 05 Dec 2024
+            &nbsp;&nbsp;
+            <i class="bi bi-clock"></i> Inspection Scheduled
+          </p>
+        </div>
+
+        <div class="license-right">
+          <small class="muted">Progress</small>
+          <div class="progress thin">
+            <div class="progress-bar" style="width:60%"></div>
+          </div>
+          <small>60%</small>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>

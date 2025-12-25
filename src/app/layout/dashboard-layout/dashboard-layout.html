@@ -1,0 +1,95 @@
+<div class="dashboard-wrapper">
+
+  <!-- ================= TOP BAR ================= -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-box">
+        <i class="bi bi-building"></i>
+      </div>
+      <div>
+        <div class="title">GBA Trade License</div>
+        <small class="subtitle">Trader Portal</small>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button class="icon-btn position-relative">
+        <i class="bi bi-bell"></i>
+        <span class="badge bg-danger notification-count">2</span>
+      </button>
+
+      <div class="user-info">
+        <div class="name">Rajesh Sharma</div> 
+        <small class="email">rajesh@email.com</small>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= BODY ================= -->
+  <div class="dashboard-body">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <nav class="menu">
+            <a
+                class="menu-item"
+                routerLink="/dashboard"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+            >
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/new-licenses"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-plus-circle"></i>
+                New Application
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/licenses"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-check-circle"></i>
+                My Licenses
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/applications"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-clock-history"></i>
+                Applications
+            </a>
+
+            <a
+                class="menu-item"
+                routerLink="/payments"
+                routerLinkActive="active"
+            >
+                <i class="bi bi-credit-card"></i>
+                Payments
+            </a>
+        </nav>
+
+
+      <div class="sidebar-footer">
+        <button class="signout-btn" (click)="logout()">
+          <i class="bi bi-box-arrow-right"></i>
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="content">
+        <app-business-owner></app-business-owner>
+    </main>
+  </div>
+</div>
