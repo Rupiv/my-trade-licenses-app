@@ -31,7 +31,7 @@
     <!-- ================= SIDEBAR ================= -->
     <aside class="sidebar">
       <nav class="menu">
-            <a
+            <!-- <a
                 class="menu-item"
                 routerLink="/dashboard"
                 routerLinkActive="active"
@@ -75,10 +75,88 @@
             >
                 <i class="bi bi-credit-card"></i>
                 Payments
+            </a> -->
+            <a
+              class="menu-item"
+              routerLink="/admin/dashboard"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-speedometer2"></i>
+              Dashboard
             </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/users"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-people"></i>
+              Users & Roles
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/settings"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-gear"></i>
+              System Settings
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/workflows"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-diagram-3"></i>
+              Approval Workflows
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/master-data"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-database"></i>
+              Master Data
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/compliance"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-shield-check"></i>
+              Compliance Rules
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/monitoring"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-activity"></i>
+              System Monitoring
+            </a>
+
+            <a
+              class="menu-item"
+              routerLink="/admin/reports"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-file-earmark-text"></i>
+              Reports
+            </a>
+
+            <!-- <a
+              class="menu-item"
+              routerLink="/admin/migration"
+              routerLinkActive="active"
+            >
+              <i class="bi bi-cloud-arrow-up"></i>
+              Data Migration
+            </a> -->
         </nav>
-
-
       <div class="sidebar-footer">
         <button class="signout-btn" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i>
@@ -89,7 +167,8 @@
 
     <!-- ================= MAIN CONTENT ================= -->
     <main class="content">
-        <app-business-owner></app-business-owner>
+        <!-- <app-business-owner></app-business-owner> -->
+         <app-portal-admin></app-portal-admin>
     </main>
   </div>
 </div>

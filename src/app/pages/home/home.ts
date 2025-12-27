@@ -4,10 +4,10 @@ import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-home',
-  standalone: true,              // ✅ MISSING LINE (VERY IMPORTANT)
+  standalone: true,              
   imports: [CommonModule, RouterModule],
   templateUrl: './home.html',
-  styleUrls: ['./home.css'],     // ✅ FIXED (see problem 2)
+  styleUrls: ['./home.css'],     
 })
 export class Home {
   features = [
@@ -45,7 +45,7 @@ export class Home {
       title: 'Trader / Business Owner',
       description: 'Apply, renew, and manage your trade licenses online',
       icon: 'bi-building',
-      link: '/trader/login',
+      link: '/login',
       color: 'bg-primary'
     },
     {

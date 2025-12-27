@@ -7,7 +7,7 @@ import { BusinessOwner } from '../../pages/business-owner/business-owner';
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [BusinessOwner, CommonModule, FormsModule, RouterModule],  //PortalAdmin
+  imports: [PortalAdmin, CommonModule, FormsModule, RouterModule],  //PortalAdmin, BusinessOwner,
   templateUrl: './dashboard-layout.html',
   styleUrl: './dashboard-layout.css',
 })

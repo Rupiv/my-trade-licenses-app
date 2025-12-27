@@ -28,10 +28,11 @@ isLogin = true;
     this.showPassword = !this.showPassword;
   }
 
+  //We need to check the Authorization in backend and redirect the user accordingly 
   onSubmit() {
     if (this.isLogin) {
       alert('Login Successful\nWelcome to GBA Trade License Portal');
-      this.router.navigate(['/trader/dashboard']);
+      this.router.navigate(['/dashboard-layout']);
     } else {
       alert('Registration Successful\nPlease check your email to verify your account');
     }
