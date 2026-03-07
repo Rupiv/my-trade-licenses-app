@@ -10,6 +10,7 @@ import { TokenService } from '../../core/services/token.service';
 import { NotificationService } from '../../shared/components/notification/notification.service';
 import { LicenceProcessTimelineItem } from '../inspection/inspection.service';
 import { LicensesApplicationDocument } from '../inspection/inspection.model';
+import { stampPdfWithUploadDetails } from '../../shared/utils/pdf-stamp.util';
 
 interface AdminApplicationDetails {
   licenceApplicationID: number;
@@ -172,21 +173,40 @@ export class AdminLicenceApplicationDetails {
     });
   }
 
-  openOrDownloadDocument(applicationDocumentId: number): void {
+  openOrDownloadDocument(doc: LicensesApplicationDocument): void {
+    const applicationDocumentId = doc?.ApplicationDocumentID;
     if (!applicationDocumentId) {
       return;
     }
 
     this.inspectionService.getDocumentDetailsById(applicationDocumentId).subscribe({
-      next: (res: Blob) => {
-        const blob = new Blob([res], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
+      next: async (res: Blob) => {
+        const sourceBlob = res instanceof Blob ? res : new Blob([res]);
+        try {
+          const stampedBlob = await stampPdfWithUploadDetails(sourceBlob, {
+            fileName: doc.documentName,
+            uploadedOn: doc.EntryDate
+          });
+          this.openBlobInNewTab(stampedBlob);
+        } catch (e) {
+          console.error('Failed to stamp PDF', e);
+          this.openBlobInNewTab(sourceBlob);
+          this.notificationService.show('Opened original file (timestamp stamp supports PDF only)', 'warning');
+        }
       },
       error: () => {
-        this.notificationService.show('Unable to open document', 'error');
+        this.notificationService.show('Unable to download document', 'error');
       }
     });
+  }
+
+  private openBlobInNewTab(blob: Blob): void {
+    const url = window.URL.createObjectURL(blob);
+    const popup = window.open(url, '_blank');
+    if (!popup) {
+      this.notificationService.show('Please allow popups to view document', 'warning');
+    }
+    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
   }
 
   submitAdminAction(licenceProcessID: number, successMessage: string): void {

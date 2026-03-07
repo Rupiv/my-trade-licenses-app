@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { TokenService } from '../../core/services/token.service';
 import { TradeLicensesService } from './trader-licenses.service';
@@ -11,7 +10,7 @@ import { AppliedLicensesResponse, LicenceApplicationDetails } from '../../core/m
 
 @Component({
   selector: 'app-trader-licenses',
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './trader-licenses.html',
   styleUrl: './trader-licenses.css',
 })
@@ -19,7 +18,6 @@ export class TraderLicenses {
 
   userName = '';
   showInspectionDisclaimer = true;
-  inspectionDeclarationAccepted = false;
   private readonly inspectionDisclaimerStorageKey = 'trader_inspection_disclaimer_seen';
 
   constructor(private router: Router,
@@ -36,7 +34,6 @@ export class TraderLicenses {
       ? `${this.inspectionDisclaimerStorageKey}_${loginId}`
       : this.inspectionDisclaimerStorageKey;
     this.showInspectionDisclaimer = sessionStorage.getItem(key) !== '1';
-    this.inspectionDeclarationAccepted = false;
   }
 
   //load all applied applications by loginID
@@ -153,14 +150,6 @@ export class TraderLicenses {
   }
 
   dismissInspectionDisclaimer(): void {
-    if (!this.inspectionDeclarationAccepted) {
-      this.notificationservice.show(
-        'Please accept the declaration before proceeding.',
-        'warning'
-      );
-      return;
-    }
-
     this.showInspectionDisclaimer = false;
     const loginId = this.tokenservice.getUserId();
     const key = loginId

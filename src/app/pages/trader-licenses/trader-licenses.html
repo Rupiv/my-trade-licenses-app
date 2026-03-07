@@ -16,7 +16,7 @@
         <div class="inspection-modal-icon">
           <i class="bi bi-shield-exclamation"></i>
         </div>
-        <h5 id="inspectionDisclaimerTitle">Trade Licence Compliance Disclaimer</h5>
+        <h5 id="inspectionDisclaimerTitle">MANDATORY NOTICE</h5>
         <p class="modal-intro">
           By submitting an application for a Trade Licence through this portal, the applicant hereby acknowledges and agrees to the following:
         </p>
@@ -27,11 +27,11 @@
           </li>
           <li>
             <strong>Verification of Information:</strong>
-            All information, declarations, and documents submitted by the applicant are subject to verification. The applicant shall be solely responsible for the accuracy, authenticity, and completeness of the details provided.
+            All information and documents submitted by the applicant are subject to verification. The applicant shall be solely responsible for the accuracy, authenticity, and completeness of the details provided.
           </li>
           <li>
             <strong>Violation and Misrepresentation:</strong>
-            If any false declaration, misrepresentation, suppression of facts, submission of forged documents, or violation of applicable laws, rules, or licence conditions is detected at any time, the Trade Licence shall be liable for immediate suspension or cancellation without prior notice.
+            If any false information, misrepresentation, suppression of facts, submission of forged documents, or violation of applicable laws, rules, or licence conditions is detected at any time, the Trade Licence shall be liable for immediate suspension or cancellation without prior notice.
           </li>
           <li>
             <strong>Legal Action:</strong>
@@ -42,23 +42,12 @@
             Submission of the application shall be deemed as the applicant's unconditional acceptance of all statutory provisions, inspection procedures, and regulatory requirements governing the Trade Licence.
           </li>
         </ol>
-        <label class="declaration-check">
-          <input
-            type="checkbox"
-            [(ngModel)]="inspectionDeclarationAccepted"
-            name="inspectionDeclarationAccepted"
-          />
-          <span>
-            I hereby declare that the information provided is true and correct to the best of my knowledge and agree to comply with all applicable laws, inspection procedures, and licence conditions.
-          </span>
-        </label>
         <button
           type="button"
           class="btn btn-warning btn-sm px-3"
           (click)="dismissInspectionDisclaimer()"
-          [disabled]="!inspectionDeclarationAccepted"
         >
-          Accept and Continue
+          I Understood
         </button>
       </div>
 

@@ -26,6 +26,22 @@
   </div>
 </nav>
 
+<section class="disclaimer-marquee-wrap" aria-label="Important notice">
+  <div class="disclaimer-marquee-track">
+    <span>{{ disclaimerMarqueeText }}</span>
+    <span>{{ disclaimerMarqueeText }}</span>
+  </div>
+</section>
+
+<div class="disclaimer-popup-backdrop" *ngIf="showDisclaimerPopup"></div>
+<div class="disclaimer-popup" *ngIf="showDisclaimerPopup" role="dialog" aria-modal="true" aria-labelledby="landingDisclaimerTitle">
+  <h5 id="landingDisclaimerTitle">{{ disclaimerTitle }}</h5>
+  <p *ngFor="let para of disclaimerParagraphs">{{ para }}</p>
+  <div class="text-end mt-3">
+    <button type="button" class="btn btn-primary btn-sm" (click)="closeDisclaimerPopup()">I Understand</button>
+  </div>
+</div>
+
 <!-- HERO -->
 <section class="hero text-white text-center">
   <div class="container py-5">

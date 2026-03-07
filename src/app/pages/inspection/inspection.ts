@@ -13,6 +13,7 @@ import { TokenService } from '../../core/services/token.service';
 import { GoogleMapsModule } from '@angular/google-maps';
 import { LocationDetails, LicensesApplicationDocument } from './inspection.model';
 import { LicenceProcessTimelineItem } from './inspection.service';
+import { stampPdfWithUploadDetails } from '../../shared/utils/pdf-stamp.util';
 
 interface InspectionPhoto {
   file: File;
@@ -172,17 +173,42 @@ export class Inspection {
     });
   }
   //To Download document
-  downloadDocument(documentId: number) {
+  downloadDocument(doc: LicensesApplicationDocument) {
+    const documentId = doc?.ApplicationDocumentID;
+    if (!documentId) {
+      this.notificationservice.show('Invalid document', 'warning');
+      return;
+    }
+
     this.inspectionservice.getDocumentDetailsById(documentId).subscribe({
-      next: (res: Blob) => {
-        const blob = new Blob([res], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        window.open(url);
+      next: async (res: Blob) => {
+        const sourceBlob = res instanceof Blob ? res : new Blob([res]);
+        try {
+          const stampedBlob = await stampPdfWithUploadDetails(sourceBlob, {
+            fileName: doc.documentName,
+            uploadedOn: doc.EntryDate
+          });
+          this.openBlobInNewTab(stampedBlob);
+        } catch (e) {
+          console.error('Failed to stamp PDF', e);
+          this.openBlobInNewTab(sourceBlob);
+          this.notificationservice.show('Opened original file (timestamp stamp supports PDF only)', 'warning');
+        }
       },
       error: (err) => {
         console.error(err);
+        this.notificationservice.show('Unable to download document', 'error');
       }
     });
+  }
+
+  private openBlobInNewTab(blob: Blob): void {
+    const url = window.URL.createObjectURL(blob);
+    const popup = window.open(url, '_blank');
+    if (!popup) {
+      this.notificationservice.show('Please allow popups to view document', 'warning');
+    }
+    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
   }
 
 

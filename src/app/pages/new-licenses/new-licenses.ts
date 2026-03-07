@@ -438,7 +438,7 @@ autoDetectCurrentLocation() {
   if (this.roadWidthConfirmed === false) {
     if (!this.manualRoadWidth || this.manualRoadWidth <= 0) {
       this.notificationservice.show(
-        'Please enter valid Road Width manually',
+        'Please enter valid Road Width manually in meters',
         'warning'
       );
       return;
@@ -807,6 +807,22 @@ autoDetectCurrentLocation() {
     return +(meters * 3.28084).toFixed(2);
   }
 
+  private extractRoadWidthItems(response: any): RoadWidthDetails[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (response?.data && typeof response.data === 'object') {
+      return [response.data as RoadWidthDetails];
+    }
+
+    return [];
+  }
+
   get effectiveRoadWidthMeters(): number {
     if (this.roadWidthConfirmed === false && this.manualRoadWidth && this.manualRoadWidth > 0) {
       return Number(this.manualRoadWidth);
@@ -816,6 +832,19 @@ autoDetectCurrentLocation() {
 
   get effectiveRoadWidthFeet(): number {
     return this.metersToFeet(this.effectiveRoadWidthMeters);
+  }
+
+  get detectedRoadWidthMeters(): number {
+    return Number(this.roadWidthDetails?.road_Width_mtrs ?? 0);
+  }
+
+  get detectedRoadWidthFeet(): number {
+    return this.metersToFeet(this.detectedRoadWidthMeters);
+  }
+
+  get manualRoadWidthFeet(): number {
+    const manualMeters = Number(this.manualRoadWidth ?? 0);
+    return manualMeters > 0 ? this.metersToFeet(manualMeters) : 0;
   }
 
   onManualRoadWidthChange(): void {
@@ -1005,8 +1034,9 @@ fetchRoadWidthByBox(
   };
 
   this.newLicensesService.getRoadWidth(payload).subscribe({
-    next: (res: RoadWidthDetails[]) => {
-      this.roadWidthDetails = res?.[0] ?? null;
+    next: (res: any) => {
+      const roadItems = this.extractRoadWidthItems(res);
+      this.roadWidthDetails = roadItems[0] ?? null;
       this.roadWidth_feet = this.metersToFeet(Number(this.roadWidthDetails?.road_Width_mtrs || 0));
     },
     error: () => {
@@ -1042,15 +1072,14 @@ fetchRoadWidth(lng: number, lat: number) {
 
   this.newLicensesService.getRoadWidth(payload).subscribe({
     next: (res: any) => {
-
-      if (res?.code === 'SUCCESS' && Array.isArray(res.data) && res.data.length > 0) {
-
-        this.roadWidthDetails = res.data[0];
+      const roadItems = this.extractRoadWidthItems(res);
+      if (roadItems.length > 0) {
+        this.roadWidthDetails = roadItems[0];
         this.roadWidth_feet = this.metersToFeet(Number(this.roadWidthDetails?.road_Width_mtrs || 0));
         this.roadWidthStatus = 'Road width detected automatically';
 
         this.notificationservice.show(
-          res.message ?? 'Road width detected',
+          res?.message ?? 'Road width detected',
           'success'
         );
 
@@ -1709,7 +1738,7 @@ fetchRoadWidth(lng: number, lat: number) {
 
       if (!this.canProceedRoadWidth()) {
         this.notificationservice.show(
-          'Please confirm road width or enter a valid manual road width.',
+          'Please confirm road width or enter a valid manual road width in meters.',
           'warning'
         );
         reject('Road width confirmation missing');

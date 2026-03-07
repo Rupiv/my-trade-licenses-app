@@ -10,6 +10,23 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./home.css'],     
 })
 export class Home {
+  showDisclaimerPopup = true;
+
+  disclaimerTitle = 'IMPORTANT NOTICE';
+  disclaimerParagraphs = [
+    'It is mandatory for every establishment to obtain a valid Trade License prior to commencing or carrying on any business within the jurisdiction of the Greater Bengaluru Authority.',
+    'Any establishment owner found operating a business without obtaining a duly issued Trade License from the Authority shall be liable for strict legal action in accordance with the applicable laws and regulations.',
+    'All business owners are hereby directed to ensure full compliance with the prescribed guidelines to avoid penalties, prosecution, or other enforcement measures.'
+  ];
+
+  get disclaimerMarqueeText(): string {
+    return `${this.disclaimerTitle}: ${this.disclaimerParagraphs.join(' ')}`;
+  }
+
+  closeDisclaimerPopup(): void {
+    this.showDisclaimerPopup = false;
+  }
+
   features = [
     {
       icon: 'bi-file-earmark-text',

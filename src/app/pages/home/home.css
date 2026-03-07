@@ -6,6 +6,76 @@ html {
 }
 
 /* =====================================
+   LANDING DISCLAIMER
+===================================== */
+.disclaimer-marquee-wrap {
+  background: #fff7ed;
+  border-top: 1px solid #fed7aa;
+  border-bottom: 1px solid #fed7aa;
+  overflow: hidden;
+  white-space: nowrap;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+}
+
+.disclaimer-marquee-track {
+  display: inline-flex;
+  min-width: 200%;
+  animation: disclaimerScroll 32s linear infinite;
+}
+
+.disclaimer-marquee-track span {
+  padding: 14px 36px;
+  color: #9a3412;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+@keyframes disclaimerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.disclaimer-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1040;
+}
+
+.disclaimer-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(94vw, 980px);
+  max-height: 88vh;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-top: 4px solid #ea580c;
+  border-radius: 12px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+  padding: 26px 28px;
+  z-index: 1050;
+}
+
+.disclaimer-popup h5 {
+  color: #9a3412;
+  font-weight: 700;
+  font-size: 30px;
+  margin: 0 0 14px;
+}
+
+.disclaimer-popup p {
+  color: #374151;
+  font-size: 20px;
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+
+/* =====================================
    HERO SECTION
 ===================================== */
 .hero {

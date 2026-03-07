@@ -474,14 +474,14 @@
                 <div class="mb-2">
                   <label class="fw-semibold text-secondary">Road Width (meters)</label>
                   <input class="form-control form-control-sm"
-                        [value]="effectiveRoadWidthMeters"
+                        [value]="detectedRoadWidthMeters"
                         readonly>
                 </div>
 
                 <div class="mb-2">
                   <label class="fw-semibold text-secondary">Road Width (feet)</label>
                   <input class="form-control form-control-sm"
-                        [value]="effectiveRoadWidthFeet"
+                        [value]="detectedRoadWidthFeet"
                         readonly>
                 </div>
 
@@ -537,16 +537,30 @@
               </div>
               <!-- MANUAL ROAD WIDTH INPUT -->
                 <div *ngIf="roadWidthConfirmed === false" class="mt-3">
-                  <label class="required fw-semibold">
-                    Enter Correct Road Width (meters)
-                  </label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    min="1"
-                    placeholder="Enter road width manually"
-                    [(ngModel)]="manualRoadWidth"
-                    (ngModelChange)="onManualRoadWidthChange()">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                      <label class="required fw-semibold">
+                        Enter Correct Road Width (meters)
+                      </label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        min="1"
+                        placeholder="Enter road width in meters"
+                        [(ngModel)]="manualRoadWidth"
+                        (ngModelChange)="onManualRoadWidthChange()">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="fw-semibold">
+                        Converted Road Width (feet)
+                      </label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        [value]="manualRoadWidthFeet"
+                        readonly>
+                    </div>
+                  </div>
                 </div>
             </div>  
           </div>

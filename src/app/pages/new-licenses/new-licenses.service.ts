@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AssemblyConstituency, LicenseDocuments, MLCConstituency, RoadWidthDetails, TradeLicenseApplicationDetails, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
 import { platform } from 'os';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -13,16 +13,22 @@ export class NewLicensesService {
 
   constructor(private http: HttpClient) {}
 
+  private buildUrl(url: string): string {
+    const normalizedBase = this.baseUrl.replace(/\/+$/, '');
+    const normalizedPath = url.replace(/^\/+/, '');
+    return `${normalizedBase}/${normalizedPath}`;
+  }
+
   get<T>(url: string) {
-    return this.http.get<T>(`${this.baseUrl}${url}`);
+    return this.http.get<T>(this.buildUrl(url));
   }
 
   post<T>(url: string, body: any) {
-    return this.http.post<T>(`${this.baseUrl}${url}`, body);
+    return this.http.post<T>(this.buildUrl(url), body);
   }
 
   put<T>(url: string, body: any) {
-    return this.http.put<T>(`${this.baseUrl}${url}`, body);
+    return this.http.put<T>(this.buildUrl(url), body);
   }
 
   getTradeMajors() {
@@ -69,28 +75,40 @@ getDraftByLogin(loginId: number) {
   }
 
   sendOtp(phone: string) {
-    return this.http.post<any>(
-      `${this.baseUrl}/sms/otp/send`,
-      {
-        mobileNo: phone
-      },
-      {
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    // return this.http.post<any>(
+    //   `${this.baseUrl}/sms/otp/send`,
+    //   {
+    //     mobileNo: phone
+    //   },
+    //   {
+    //     headers: { 'Content-Type': 'application/json' }
+    //   }
+    // );
+    return of({
+      isMock: true,
+      mobileNo: phone,
+      Message: 'OTP sent successfully (sample OTP: 123456)'
+    });
   }
 
   verifyOtp(phone: string, otp: string) {
-    return this.http.post<any>(
-      `${this.baseUrl}/sms/otp/verify`,
-      {
-        mobileNo: phone,
-        otp: otp
-      },
-      {
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    // return this.http.post<any>(
+    //   `${this.baseUrl}/sms/otp/verify`,
+    //   {
+    //     mobileNo: phone,
+    //     otp: otp
+    //   },
+    //   {
+    //     headers: { 'Content-Type': 'application/json' }
+    //   }
+    // );
+    const isValid = otp === '123456';
+    return of({
+      isMock: true,
+      mobileNo: phone,
+      isValid,
+      Message: isValid ? 'OTP verified' : 'Invalid OTP'
+    });
   }
 
   saveDraftLicence(payload: any) {
@@ -102,7 +120,7 @@ getDraftByLogin(loginId: number) {
   }
 
   getRoadWidth(payload: any) {
-    return this.http.post<RoadWidthDetails[]>(`${this.baseUrl}/geolocation/fetch-road`, payload);
+    return this.http.post<any>(this.buildUrl('/geolocation/fetch-road'), payload);
   }
 
   getLicensesFee(tradeSubId: number) {
