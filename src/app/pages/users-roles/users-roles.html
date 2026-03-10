@@ -1,153 +1,334 @@
-<!-- ================= PAGE HEADER ================= -->
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST NOTIFICATIONS
+════════════════════════════════════════════════════════════ -->
+<div class="toast-container" aria-live="polite">
+  <div
+    *ngFor="let toast of toasts; trackBy: trackByToast"
+    class="toast"
+    [ngClass]="'toast--' + toast.type"
+  >
+    <span class="toast__icon">
+      <i
+        class="bi"
+        [ngClass]="{
+          'bi-check-circle-fill' : toast.type === 'success',
+          'bi-x-circle-fill'     : toast.type === 'error',
+          'bi-exclamation-circle-fill': toast.type === 'warning'
+        }"
+      ></i>
+    </span>
+    <span class="toast__msg">{{ toast.message }}</span>
+    <button class="toast__close" (click)="dismissToast(toast.id)" aria-label="Dismiss">✕</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     DELETE CONFIRMATION MODAL
+════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showDeleteModal" (click)="cancelDelete()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" (click)="$event.stopPropagation()">
+    <div class="modal__icon">
+      <i class="bi bi-trash3"></i>
+    </div>
+    <h3 class="modal__title" id="modal-title">Delete User</h3>
+    <p class="modal__body">
+      Are you sure you want to delete this user?
+      <br />This action <strong>cannot be undone</strong>.
+    </p>
+    <div class="modal__actions">
+      <button class="btn-secondary" (click)="cancelDelete()" [disabled]="isDeleting">
+        Cancel
+      </button>
+      <button class="btn-danger" (click)="confirmDelete()" [disabled]="isDeleting">
+        <span *ngIf="isDeleting" class="btn-spinner"></span>
+        {{ isDeleting ? 'Deleting…' : 'Yes, Delete' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════════════════════ -->
 <div class="page-header">
   <div class="title-block">
-    <h2>Manage Users & Roles</h2>
+    <h2>Manage Users &amp; Roles</h2>
     <p>Configure user access, roles, and office mapping</p>
   </div>
 
-  <button class="btn-primary" (click)="addNewUser()">
+  <button class="btn-primary" (click)="addNewUser()" [disabled]="isSaving">
     <i class="bi bi-plus-lg"></i>
     Add User
   </button>
 </div>
 
-<!-- ================= SEARCH ================= -->
-<!-- <div class="card search-card">
-  <i class="bi bi-search"></i>
-  <input
-    type="text"
-    placeholder="Search by Login / Mobile / Designation"
-    [(ngModel)]="searchText"
-    (input)="onSearchChange()" />
-  <button *ngIf="searchText" class="clear-btn" (click)="clearSearch()">✕</button>
-</div> -->
-
-<!-- ================= ADD / EDIT FORM ================= -->
-<div class="card form-card" *ngIf="selectedUser">
+<!-- ═══════════════════════════════════════════════════════════
+     ADD / EDIT FORM
+════════════════════════════════════════════════════════════ -->
+<div class="card form-card" *ngIf="selectedUser" role="region" aria-label="User Form">
   <div class="form-header">
-    <h3>{{ isEditMode ? 'Update User' : 'Add New User' }}</h3>
-    <span>User credentials and office assignment</span>
+    <div>
+      <h3>{{ isEditMode ? 'Update User' : 'Add New User' }}</h3>
+      <span>{{ isEditMode ? 'Modify the details below and click Update.' : 'Fill in the details below to create a new user.' }}</span>
+    </div>
+    <button class="icon-btn" (click)="cancelForm()" aria-label="Close form">
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
 
   <div class="form-grid">
+
+    <!-- User Name -->
     <div class="form-group">
-      <label>User Name</label>
-      <input type="text" [(ngModel)]="selectedUser.login" [disabled]="isEditMode" />
+      <label for="f-login">User Name <span class="required">*</span></label>
+      <input
+        id="f-login"
+        type="text"
+        [(ngModel)]="selectedUser.login"
+        [disabled]="isEditMode"
+        [class.field--locked]="isEditMode"
+        placeholder="Enter username"
+        autocomplete="username"
+      />
+      <small *ngIf="isEditMode" class="field-hint">Username cannot be changed.</small>
     </div>
 
+    <!-- Password -->
     <div class="form-group">
-      <label>Password</label>
-      <input type="password" [(ngModel)]="selectedUser.password" [disabled]="isEditMode" />
+      <label for="f-password">
+        Password
+        <span class="required" *ngIf="!isEditMode">*</span>
+        <span class="badge-optional" *ngIf="isEditMode">Leave blank to keep current</span>
+      </label>
+      <input
+        id="f-password"
+        type="password"
+        [(ngModel)]="selectedUser.password"
+        placeholder="{{ isEditMode ? '••••••••' : 'Enter password' }}"
+        autocomplete="new-password"
+      />
     </div>
 
+    <!-- Mobile Number -->
     <div class="form-group">
-      <label>Mobile Number</label>
-      <input type="text" [(ngModel)]="selectedUser.MobileNo" />
+      <label for="f-mobile">Mobile Number <span class="required">*</span></label>
+      <input
+        id="f-mobile"
+        type="tel"
+        [(ngModel)]="selectedUser.MobileNo"
+        placeholder="10-digit mobile number"
+        maxlength="10"
+      />
     </div>
 
+    <!-- Zone -->
     <div class="form-group">
-      <label>Zone</label>
-      <select [(ngModel)]="selectedUser.zoneID">
-        <option value="0">Select Zone</option>
-        <option *ngFor="let z of zones" [value]="z.zoneID">
-          {{ z.zoneName }}
-        </option>
+      <label for="f-zone">Zone <span class="required">*</span></label>
+      <select id="f-zone"
+        [ngModel]="selectedUser.zoneID"
+        (ngModelChange)="selectedUser.zoneID = +$event">
+        <option value="0" disabled>Select Zone</option>
+        <option *ngFor="let z of zones" [value]="z.zoneID">{{ z.zoneName }}</option>
       </select>
     </div>
 
+    <!-- Office -->
     <div class="form-group">
-      <label>Office</label>
-      <select [(ngModel)]="selectedUser.officeDetailsID">
-        <option value="0">Select Office</option>
-        <option *ngFor="let o of officeList" [value]="o.officeID">
-          {{ o.officeName }}
-        </option>
+      <label for="f-office">Office <span class="required">*</span></label>
+      <select id="f-office"
+        [ngModel]="selectedUser.officeDetailsID"
+        (ngModelChange)="selectedUser.officeDetailsID = +$event">
+        <option value="0" disabled>Select Office</option>
+        <option *ngFor="let o of officeList" [value]="o.officeID">{{ o.officeName }}</option>
       </select>
     </div>
 
+    <!-- Designation -->
     <div class="form-group">
-      <label>Designation</label>
-      <select [(ngModel)]="selectedUser.userDesignationID">
-        <option value="0">Select Designation</option>
+      <label for="f-designation">Designation <span class="required">*</span></label>
+      <select id="f-designation"
+        [ngModel]="selectedUser.userDesignationID"
+        (ngModelChange)="selectedUser.userDesignationID = +$event">
+        <option value="0" disabled>Select Designation</option>
         <option *ngFor="let d of designationList" [value]="d.userDesignationId">
           {{ d.userDesignationName }}
         </option>
       </select>
     </div>
 
+    <!-- Sakala DO Code -->
     <div class="form-group">
-      <label>Sakala DO Code</label>
-      <input type="text" [(ngModel)]="selectedUser.sakalaDO_Code" />
+      <label for="f-sakala">Sakala DO Code</label>
+      <input
+        id="f-sakala"
+        type="text"
+        [(ngModel)]="selectedUser.sakalaDO_Code"
+        placeholder="Optional"
+      />
     </div>
+
   </div>
 
   <div class="form-actions">
-    <button class="btn-primary" (click)="saveUser()">
-      {{ isEditMode ? 'Update User' : 'Save User' }}
+    <button class="btn-primary" (click)="saveUser()" [disabled]="isSaving">
+      <span *ngIf="isSaving" class="btn-spinner"></span>
+      {{ isSaving ? 'Saving…' : isEditMode ? 'Update User' : 'Save User' }}
     </button>
-    <button class="btn-secondary" (click)="selectedUser = null">
+    <button class="btn-secondary" (click)="cancelForm()" [disabled]="isSaving">
       Cancel
     </button>
   </div>
 </div>
 
-<!-- ================= USERS TABLE ================= -->
+<!-- ═══════════════════════════════════════════════════════════
+     USERS TABLE
+════════════════════════════════════════════════════════════ -->
 <div class="card table-card">
-   <!-- TABLE HEADER WITH SEARCH -->
-    <div class="table-header">
-      <h3>User List</h3>
 
-      <div class="table-search">
-        <i class="bi bi-search"></i>
-        <input
-          type="text"
-          placeholder="Search users..."
-          [(ngModel)]="searchText"
-          (input)="onSearchChange()" />
-        <button *ngIf="searchText" class="clear-btn" (click)="clearSearch()">✕</button>
-      </div>
+  <!-- Table Header & Search -->
+  <div class="table-header">
+    <h3>
+      User List
+      <span class="record-count" *ngIf="!isLoading">{{ totalRecords }} records</span>
+    </h3>
+
+    <div class="table-search">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Search by login, mobile, designation…"
+        [(ngModel)]="searchText"
+        (ngModelChange)="onSearchChange()"
+        aria-label="Search users"
+      />
+      <button *ngIf="searchText" class="clear-btn" (click)="clearSearch()" aria-label="Clear search">
+        <i class="bi bi-x"></i>
+      </button>
     </div>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>Login</th>
-        <th>Mobile</th>
-        <th>Office</th>
-        <th>Designation</th>
-        <th class="center">Actions</th>
-      </tr>
-    </thead>
+  </div>
 
-    <tbody>
-      <tr *ngFor="let u of users">
-        <td>{{ u.login }}</td>
-        <td>{{ u.MobileNo }}</td>
-        <td>{{ getOfficeName(u.officeDetailsID) }}</td>
-        <td>{{ getDesignationName(u.userDesignationID) }}</td>
-        <td class="center">
-          <button class="icon-btn edit" (click)="editUser(u)">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="icon-btn delete" (click)="deleteUser(u.loginID)">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      </tr>
+  <div class="table-wrapper">
+    <table class="data-table" aria-label="Users list">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Login</th>
+          <th>Mobile</th>
+          <th>Office</th>
+          <th>Designation</th>
+          <th class="center">Actions</th>
+        </tr>
+      </thead>
 
-      <tr *ngIf="users.length === 0">
-        <td colspan="5" class="no-data">No users found</td>
-      </tr>
-    </tbody>
-  </table>
+      <tbody>
+
+        <!-- LOADING SKELETON -->
+        <ng-container *ngIf="isLoading">
+          <tr *ngFor="let i of [1,2,3,4,5]" class="skeleton-row">
+            <td><div class="skeleton"></div></td>
+            <td><div class="skeleton"></div></td>
+            <td><div class="skeleton"></div></td>
+            <td><div class="skeleton"></div></td>
+            <td><div class="skeleton"></div></td>
+            <td><div class="skeleton skeleton--btn"></div></td>
+          </tr>
+        </ng-container>
+
+        <!-- DATA ROWS -->
+        <ng-container *ngIf="!isLoading && users.length > 0">
+          <tr *ngFor="let u of users; let i = index; trackBy: trackByUser">
+            <td class="row-index">{{ (pageNumber - 1) * pageSize + i + 1 }}</td>
+            <td>
+              <div class="user-cell">
+                <span class="user-avatar">{{ u.login.charAt(0).toUpperCase() }}</span>
+                {{ u.login }}
+              </div>
+            </td>
+            <td>{{ u.MobileNo || '—' }}</td>
+            <td>{{ getOfficeName(u.officeDetailsID) }}</td>
+            <td>
+              <span class="badge">{{ getDesignationName(u.userDesignationID) }}</span>
+            </td>
+            <td class="center actions-cell">
+              <button
+                class="icon-btn icon-btn--edit"
+                (click)="editUser(u)"
+                title="Edit user"
+                aria-label="Edit {{ u.login }}"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button
+                class="icon-btn icon-btn--delete"
+                (click)="requestDeleteUser(u.loginID)"
+                title="Delete user"
+                aria-label="Delete {{ u.login }}"
+              >
+                <i class="bi bi-trash3"></i>
+              </button>
+            </td>
+          </tr>
+        </ng-container>
+
+        <!-- NO DATA -->
+        <tr *ngIf="!isLoading && users.length === 0">
+          <td colspan="6" class="no-data">
+            <i class="bi bi-inbox"></i>
+            <span>{{ searchText ? 'No users match your search.' : 'No users found.' }}</span>
+            <button *ngIf="searchText" class="btn-link" (click)="clearSearch()">Clear search</button>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- ================= PAGINATION ================= -->
-<div class="pagination" *ngIf="totalRecords > pageSize">
-  <button class="btn-secondary" (click)="prevPage()" [disabled]="pageNumber === 1">
-    Previous
+<!-- ═══════════════════════════════════════════════════════════
+     PAGINATION
+════════════════════════════════════════════════════════════ -->
+<div class="pagination" *ngIf="totalPages > 1" role="navigation" aria-label="Pagination">
+
+  <button
+    class="btn-secondary"
+    (click)="prevPage()"
+    [disabled]="pageNumber === 1 || isLoading"
+    aria-label="Previous page"
+  >
+    <i class="bi bi-chevron-left"></i> Prev
   </button>
-  <span>Page {{ pageNumber }} of {{ totalPages }}</span>
-  <button class="btn-secondary" (click)="nextPage()" [disabled]="pageNumber >= totalPages">
-    Next
+
+  <!-- First page shortcut -->
+  <ng-container *ngIf="visiblePages[0] > 1">
+    <button class="page-btn" (click)="goToPage(1)">1</button>
+    <span *ngIf="visiblePages[0] > 2" class="page-ellipsis">…</span>
+  </ng-container>
+
+  <!-- Windowed pages -->
+  <button
+    *ngFor="let p of visiblePages"
+    class="page-btn"
+    [class.page-btn--active]="p === pageNumber"
+    (click)="goToPage(p)"
+    [attr.aria-current]="p === pageNumber ? 'page' : null"
+  >
+    {{ p }}
   </button>
+
+  <!-- Last page shortcut -->
+  <ng-container *ngIf="visiblePages[visiblePages.length - 1] < totalPages">
+    <span *ngIf="visiblePages[visiblePages.length - 1] < totalPages - 1" class="page-ellipsis">…</span>
+    <button class="page-btn" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+  </ng-container>
+
+  <button
+    class="btn-secondary"
+    (click)="nextPage()"
+    [disabled]="pageNumber >= totalPages || isLoading"
+    aria-label="Next page"
+  >
+    Next <i class="bi bi-chevron-right"></i>
+  </button>
+
+  <span class="page-info">Page {{ pageNumber }} of {{ totalPages }}</span>
 </div>

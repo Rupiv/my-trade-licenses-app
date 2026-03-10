@@ -129,5 +129,9 @@ export class InspectionService {
     );
   }
 
+  saveDocument(payload: FormData) {
+    return this.http.post(`${this.baseUrl}licence-documents/save-update`, payload);
+  }
+
 }
 

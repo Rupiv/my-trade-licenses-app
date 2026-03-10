@@ -14,8 +14,8 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn secondary">Export PDF</button>
-      <button class="btn primary">Export Excel</button>
+      <button class="btn secondary" (click)="exportPDF()">Export PDF</button>
+      <button class="btn primary" (click)="exportExcel()">Export Excel</button>
     </div>
   </div>
 
@@ -24,19 +24,21 @@
     <div class="filter-group">
       <label>Financial Year</label>
       <select>
-        <option>2024–2025</option>
-        <option>2023–2024</option>
+        <option>2025–2026</option>
       </select>
     </div>
 
     <div class="filter-group">
       <label>Zone</label>
-      <select>
-        <option>All Zones</option>
+      <select [(ngModel)]="selectedZone" (change)="applyFilter()">
+        <option value="All">All Zones</option>
+        <option *ngFor="let row of table" [value]="row.CorporationId">
+          {{row.CorporationId}}
+        </option>
       </select>
     </div>
 
-    <div class="filter-group">
+    <!-- <div class="filter-group">
       <label>Payment Mode</label>
       <select>
         <option>All</option>
@@ -44,11 +46,7 @@
         <option>Cash</option>
         <option>Cheque</option>
       </select>
-    </div>
-
-    <div class="filter-group">
-      <button class="btn primary">Apply</button>
-    </div>
+    </div> -->
   </div>
 
   <!-- SUMMARY CARDS -->
@@ -56,22 +54,22 @@
 
     <div class="summary-card total">
       <h4>Total Demand</h4>
-      <span class="amount">₹ 12,45,80,000</span>
+      <span class="amount">₹ {{summary.TotalDemand | number}}</span>
     </div>
 
     <div class="summary-card collected">
       <h4>Total Collected</h4>
-      <span class="amount">₹ 9,86,40,000</span>
+      <span class="amount">₹ {{summary.TotalCollected | number}}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending Amount</h4>
-      <span class="amount">₹ 2,59,40,000</span>
+      <span class="amount">₹ {{summary.PendingAmount | number}}</span>
     </div>
 
     <div class="summary-card transactions">
       <h4>Total Transactions</h4>
-      <span class="count">18,452</span>
+      <span class="count">{{summary.TotalTransactions | number}}</span>
     </div>
 
   </div>
@@ -91,43 +89,19 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>North Zone</td>
-          <td>3,25,40,000</td>
-          <td>2,78,10,000</td>
-          <td>47,30,000</td>
-          <td>85.45%</td>
-        </tr>
-
-        <tr>
-          <td>South Zone</td>
-          <td>4,10,20,000</td>
-          <td>3,42,80,000</td>
-          <td>67,40,000</td>
-          <td>83.58%</td>
-        </tr>
-
-        <tr>
-          <td>East Zone</td>
-          <td>2,60,00,000</td>
-          <td>2,01,30,000</td>
-          <td>58,70,000</td>
-          <td>77.43%</td>
-        </tr>
-
-        <tr>
-          <td>West Zone</td>
-          <td>2,50,20,000</td>
-          <td>1,64,20,000</td>
-          <td>86,00,000</td>
-          <td>65.65%</td>
-        </tr>
+        <tr *ngFor="let row of filteredTable">
+          <td>{{row.CorporationId}}</td>
+          <td>{{row.Demand | number}}</td>
+          <td>{{row.Collected | number}}</td>
+          <td>{{row.Pending | number}}</td>
+          <td>{{row.CollectionPercent}}%</td>
+          </tr>
       </tbody>
     </table>
   </div>
 
   <!-- PAYMENT MODE SUMMARY -->
-  <div class="table-card">
+  <!-- <div class="table-card">
     <h3 class="section-title">Payment Mode-wise Collection</h3>
 
     <table>
@@ -156,7 +130,7 @@
         </tr>
       </tbody>
     </table>
-  </div>
+  </div> -->
 
 </div>
 

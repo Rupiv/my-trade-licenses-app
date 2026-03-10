@@ -4,22 +4,20 @@ import { Observable } from 'rxjs';
 import { Zones } from '../../core/models/new-trade-licenses.model';
 
 /* ======================================================
-   MODELS (STRICT & BACKEND-ALIGNED)
+   MODELS
 ====================================================== */
 
-/** REQUEST BODY (POST / PUT) */
 export interface LoginMasterRequest {
   login: string;
   password: string;
-  zoneID: number;
-  officeDetailsID: number;
-  userDesignationID: number;
-  sakalaDO_Code: string;
-  mobileNo: string;
-  updatedBy: number;
+  officeDetailsID: number;       // ✅ confirmed in Swagger body
+  userDesignationID: number;     // ✅ confirmed in Swagger body
+  sakalaDO_Code: string;         // ✅ confirmed in Swagger body
+  mobileNo: string;              // ✅ lowercase 'mobileNo' as Swagger shows
+  updatedBy: number;             // ✅ confirmed in Swagger body
+  // ⚠️ zoneID intentionally omitted — not in Swagger PUT body
 }
 
-/** USER RECORD (GET / SEARCH RESPONSE ITEM) */
 export interface LoginMaster {
   loginID: number;
   login: string;
@@ -30,17 +28,13 @@ export interface LoginMaster {
   sakalaDO_Code: string;
   MobileNo: string;
   isActive: string;
-
   entryDate?: string;
   updatedDate?: string;
   updatedBy?: number;
-
-  // joined fields (from API)
   officeName?: string;
   userDesignationName?: string;
 }
 
-/** PAGINATED RESPONSE (GET & SEARCH) */
 export interface PagedResponse<T> {
   totalRecords: number;
   pageNumber: number;
@@ -48,13 +42,11 @@ export interface PagedResponse<T> {
   data: T[];
 }
 
-/** OFFICE DROPDOWN */
 export interface OfficeDetail {
   officeID: number;
   officeName: string;
 }
 
-/** DESIGNATION DROPDOWN */
 export interface UserDesignation {
   userDesignationId: number;
   userDesignationName: string;
@@ -65,143 +57,85 @@ export interface UserDesignation {
    SERVICE
 ====================================================== */
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class UsersRolesService {
 
-  /* ================= BASE URL ================= */
+  // ✅ Confirmed from Swagger: real base is /api/api
+  private readonly baseUrl = 'https://pickitover.com/api/api';
 
-  private readonly baseUrl = 'https://pickitover.com/api/api/';
-
-  /* ================= ENDPOINTS ================= */
-
+  // No leading slash — baseUrl already has no trailing slash
   private readonly loginMasterUrl = `${this.baseUrl}/login-master`;
-  private readonly searchUrl = `${this.loginMasterUrl}/search`;
-  private readonly officeUrl = `${this.baseUrl}/office-details/api/getall`;
-  private readonly designationUrl =
-    `${this.baseUrl}/office-details/api/get-all-user-designation`;
-  private readonly zonesUrl = `${this.baseUrl}/bbmp-zones`;
+  private readonly searchUrl      = `${this.loginMasterUrl}/search`;
+  private readonly officeUrl      = `${this.baseUrl}/office-details/api/getall`;
+  private readonly designationUrl = `${this.baseUrl}/office-details/api/get-all-user-designation`;
+  private readonly zonesUrl       = `${this.baseUrl}/bbmp-zones`;
 
+  constructor(private readonly http: HttpClient) {}
 
-  constructor(private http: HttpClient) {}
-
-  /* ======================================================
-     USERS – GET (PAGINATED)
+  /* ─── GET (paginated) ────────────────────────────────
      GET /api/login-master?pageNumber=1&pageSize=10
-  ====================================================== */
-
-  getUsers(
-    pageNumber: number,
-    pageSize: number
-  ): Observable<PagedResponse<LoginMaster>> {
-
+  ──────────────────────────────────────────────────── */
+  getUsers(pageNumber: number, pageSize: number): Observable<PagedResponse<LoginMaster>> {
     const params = new HttpParams()
-      .set('pageNumber', pageNumber.toString())
-      .set('pageSize', pageSize.toString());
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
 
-    return this.http.get<PagedResponse<LoginMaster>>(
-      this.loginMasterUrl,
-      { params }
-    );
+    return this.http.get<PagedResponse<LoginMaster>>(this.loginMasterUrl, { params });
   }
 
-  /* ======================================================
-     USERS – SEARCH (PAGINATED)
+  /* ─── SEARCH (paginated) ─────────────────────────────
      GET /api/login-master/search?q=abc&pageNumber=1&pageSize=10
-  ====================================================== */
-
-  searchUsers(
-    query: string,
-    pageNumber: number,
-    pageSize: number
-  ): Observable<PagedResponse<LoginMaster>> {
-
+  ──────────────────────────────────────────────────── */
+  searchUsers(query: string, pageNumber: number, pageSize: number): Observable<PagedResponse<LoginMaster>> {
     const params = new HttpParams()
       .set('q', query)
-      .set('pageNumber', pageNumber.toString())
-      .set('pageSize', pageSize.toString());
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
 
-    return this.http.get<PagedResponse<LoginMaster>>(
-      this.searchUrl,
-      { params }
-    );
+    return this.http.get<PagedResponse<LoginMaster>>(this.searchUrl, { params });
   }
 
-  /* ======================================================
-     USER – GET BY ID
+  /* ─── GET BY ID ──────────────────────────────────────
      GET /api/login-master/{id}
-  ====================================================== */
-
+  ──────────────────────────────────────────────────── */
   getUserById(id: number): Observable<LoginMaster> {
-    return this.http.get<LoginMaster>(
-      `${this.loginMasterUrl}/${id}`
-    );
+    return this.http.get<LoginMaster>(`${this.loginMasterUrl}/${id}`);
   }
 
-  /* ======================================================
-     USER – INSERT
+  /* ─── INSERT ─────────────────────────────────────────
      POST /api/login-master
-  ====================================================== */
-
+  ──────────────────────────────────────────────────── */
   addUser(payload: LoginMasterRequest): Observable<any> {
-    return this.http.post<any>(
-      this.loginMasterUrl,
-      payload
-    );
+    return this.http.post<any>(this.loginMasterUrl, payload);
   }
 
-  /* ======================================================
-     USER – UPDATE
+  /* ─── UPDATE ─────────────────────────────────────────
      PUT /api/login-master/{id}
-  ====================================================== */
-
-  updateUser(
-    id: number,
-    payload: LoginMasterRequest
-  ): Observable<any> {
-    return this.http.put<any>(
-      `${this.loginMasterUrl}/${id}`,
-      payload
-    );
+     ✅ FIXED URL: was hitting /api/api//login-master/{id}
+  ──────────────────────────────────────────────────── */
+  updateUser(id: number, payload: LoginMasterRequest): Observable<any> {
+    return this.http.put<any>(`${this.loginMasterUrl}/${id}`, payload);
   }
 
-  /* ======================================================
-     USER – DELETE
+  /* ─── DELETE ─────────────────────────────────────────
      DELETE /api/login-master/{id}?updatedBy=1
-  ====================================================== */
-
-  deleteUser(
-    id: number,
-    updatedBy: number
-  ): Observable<any> {
-
-    const params = new HttpParams()
-      .set('updatedBy', updatedBy.toString());
-
-    return this.http.delete<any>(
-      `${this.loginMasterUrl}/${id}`,
-      { params }
-    );
+     ✅ FIXED URL: was hitting /api/api//login-master/{id}
+  ──────────────────────────────────────────────────── */
+  deleteUser(id: number, updatedBy: number): Observable<any> {
+    const params = new HttpParams().set('updatedBy', updatedBy);
+    return this.http.delete<any>(`${this.loginMasterUrl}/${id}`, { params });
   }
 
-  /* ======================================================
-     DROPDOWNS
-  ====================================================== */
-
-  /** OFFICE DROPDOWN */
+  /* ─── DROPDOWNS ──────────────────────────────────────*/
   getOfficeDetails(): Observable<OfficeDetail[]> {
     return this.http.get<OfficeDetail[]>(this.officeUrl);
   }
 
-  /** USER DESIGNATION DROPDOWN */
   getUserDesignations(): Observable<UserDesignation[]> {
     return this.http.get<UserDesignation[]>(this.designationUrl);
   }
 
-  //Get Zone Health Details
-  getZones(){
+  getZones(): Observable<Zones[]> {
     return this.http.get<Zones[]>(this.zonesUrl);
   }
 }
-

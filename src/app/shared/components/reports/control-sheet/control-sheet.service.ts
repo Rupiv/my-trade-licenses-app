@@ -1,5 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ControlSheetResponse } from './control-sheet.model';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +22,13 @@ export class ControlSheetService {
 
   put<T>(url: string, body: any) {
     return this.http.put<T>(`${this.baseUrl}${url}`, body);
+  }
+
+  
+  getControlSheet(financialYearID: number): Observable<ControlSheetResponse> {
+    return this.http.get<ControlSheetResponse>(
+      `${this.baseUrl}reports/control-sheet?financialYearID=${financialYearID}`
+    );
   }
 }
 

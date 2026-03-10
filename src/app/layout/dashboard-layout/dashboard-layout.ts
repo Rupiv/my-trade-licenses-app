@@ -4,6 +4,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
+import { HostListener, ElementRef, ViewChild } from '@angular/core';
+
+interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  type: 'success' | 'warning' | 'danger' | 'info';
+  read: boolean;
+  route?: string;
+}
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -108,10 +119,10 @@ export class DashboardLayout {
   //   },
   // ];
 
-  notifications = [
-    { message: 'License renewal due in 30 days for Sharma Food Corner', type: 'warning' },
-    { message: 'Inspection scheduled for Sharma Textiles on 15 Dec 2024', type: 'info' },
-  ];
+  // notifications = [
+  //   { message: 'License renewal due in 30 days for Sharma Food Corner', type: 'warning' },
+  //   { message: 'Inspection scheduled for Sharma Textiles on 15 Dec 2024', type: 'info' },
+  // ];
   
     toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -138,5 +149,82 @@ export class DashboardLayout {
     this.router.navigate(['/login'], {
       replaceUrl: true
     });
+  }
+
+  // Inside your component class:
+
+  @ViewChild('notifWrapper') notifWrapper!: ElementRef;
+
+  showNotifications = false;
+
+  notifications: AppNotification[] = [
+    {
+      id: 1,
+      title: 'Application Approved',
+      message: 'Application #1141184 has been approved successfully.',
+      time: '5 min ago',
+      type: 'success',
+      read: false,
+      route: '/approver/approving-officer'
+    },
+    {
+      id: 2,
+      title: 'New Application Submitted',
+      message: 'A new trade license application has been submitted for review.',
+      time: '20 min ago',
+      type: 'info',
+      read: false,
+      route: '/approver/approving-officer'
+    },
+    {
+      id: 3,
+      title: 'Inspection Pending',
+      message: 'Application #248735 is pending inspection since 2 days.',
+      time: '2 hours ago',
+      type: 'warning',
+      read: true,
+      route: '/approver/inspection/248735'
+    },
+    {
+      id: 4,
+      title: 'Application Rejected',
+      message: 'Application #112233 was rejected due to incomplete documents.',
+      time: '1 day ago',
+      type: 'danger',
+      read: true
+    }
+  ];
+
+  get unreadCount(): number {
+    return this.notifications.filter(n => !n.read).length;
+  }
+
+  toggleNotifications() {
+    this.showNotifications = !this.showNotifications;
+  }
+
+  markAllAsRead() {
+    this.notifications = this.notifications.map(n => ({ ...n, read: true }));
+  }
+
+  onNotificationClick(n: AppNotification) {
+    n.read = true;
+    if (n.route) {
+      this.router.navigate([n.route]);
+    }
+    this.showNotifications = false;
+  }
+
+  clearAll() {
+    this.notifications = [];
+    this.showNotifications = false;
+  }
+
+  // Close dropdown when clicking outside
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.notifWrapper && !this.notifWrapper.nativeElement.contains(event.target)) {
+      this.showNotifications = false;
+    }
   }
 }
