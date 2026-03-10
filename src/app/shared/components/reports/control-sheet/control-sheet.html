@@ -1,11 +1,12 @@
 <div class="control-sheet-container">
-   <!-- BACK LINK -->
-    <div class="back-link">
-        <a routerLink="/admin/reports">
-            <i class="bi bi-arrow-left"></i>
-            <span>Back to Reports</span>
-        </a>
-    </div>
+
+  <!-- BACK LINK -->
+  <div class="back-link">
+    <a routerLink="/admin/reports">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back to Reports</span>
+    </a>
+  </div>
 
   <!-- HEADER -->
   <div class="page-header">
@@ -15,71 +16,73 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn secondary">Export PDF</button>
-      <button class="btn primary">Export Excel</button>
+      <button class="btn secondary" (click)="exportToPDF()">
+        Export PDF
+      </button>
+
+      <button class="btn primary" (click)="exportToExcel()">
+        Export Excel
+      </button>
+
     </div>
   </div>
 
-  <!-- FILTERS -->
+  <!-- FILTER -->
   <div class="filters-card">
-    <div class="filter-group">
-      <label>Financial Year</label>
-      <select>
-        <option>2024–2025</option>
-        <option>2023–2024</option>
-      </select>
-    </div>
+    <div class="filter-group"> 
+      <label>Financial Year</label> 
+        <select> <option>2025–2026</option> </select> 
+      </div> <div class="filter-group"> 
 
-    <div class="filter-group">
-      <label>Zone</label>
-      <select>
-        <option>All Zones</option>
-      </select>
-    </div>
-
+        <label>Zone</label> <select> 
+          <option>All Zones</option> 
+        </select> 
+      </div>
     <div class="filter-group">
       <label>Status</label>
-      <select>
-        <option>All</option>
-        <option>Approved</option>
-        <option>Pending</option>
-        <option>Rejected</option>
+      <select (change)="onStatusChange($event)">
+        <option value="All">All</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+        <option value="ENTERED">Entered</option>
+        <option value="APPLIED">Applied</option>
+        <option value="OBJECTION">Objection</option>
       </select>
     </div>
 
-    <div class="filter-group">
-      <button class="btn primary">Apply</button>
-    </div>
   </div>
 
   <!-- SUMMARY CARDS -->
+
   <div class="summary-grid">
 
     <div class="summary-card approved">
       <h4>Approved</h4>
-      <span class="count">1,245</span>
+      <span class="count">{{ totals.Approved | number }}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending</h4>
-      <span class="count">342</span>
+      <span class="count">{{ totals.Pending | number }}</span>
     </div>
 
     <div class="summary-card rejected">
       <h4>Rejected</h4>
-      <span class="count">58</span>
+      <span class="count">{{ totals.Rejected | number }}</span>
     </div>
 
     <div class="summary-card total">
       <h4>Total Applications</h4>
-      <span class="count">1,645</span>
+      <span class="count">{{ totals.TotalApplications | number }}</span>
     </div>
 
   </div>
 
   <!-- TABLE -->
+
   <div class="table-card">
     <table>
+
       <thead>
         <tr>
           <th>Status</th>
@@ -87,25 +90,18 @@
           <th>Percentage</th>
         </tr>
       </thead>
+
       <tbody>
-        <tr>
-          <td>Approved</td>
-          <td>1,245</td>
-          <td>75.7%</td>
+
+        <tr *ngFor="let item of filteredStatusSummary">
+          <td>{{ item.Status }}</td>
+          <td>{{ item.ApplicationCount | number }}</td>
+          <td>{{ item.Percentage }}%</td>
         </tr>
-        <tr>
-          <td>Pending</td>
-          <td>342</td>
-          <td>20.8%</td>
-        </tr>
-        <tr>
-          <td>Rejected</td>
-          <td>58</td>
-          <td>3.5%</td>
-        </tr>
+
       </tbody>
+
     </table>
   </div>
 
 </div>
-

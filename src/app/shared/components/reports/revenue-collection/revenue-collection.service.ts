@@ -1,5 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { RevenueCollectionResponse } from './revenue-collection.model';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +22,12 @@ export class RevenueCollectionService {
 
   put<T>(url: string, body: any) {
     return this.http.put<T>(`${this.baseUrl}${url}`, body);
+  }
+
+  getRevenueCollection(): Observable<RevenueCollectionResponse> {
+    return this.http.get<RevenueCollectionResponse>(
+      `${this.baseUrl}reports/revenue-collection`
+    );
   }
 }
 

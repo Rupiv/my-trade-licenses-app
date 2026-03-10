@@ -314,44 +314,381 @@ export class MasterDataCompliance {
   saveModal() {
     switch (this.activeModal) {
       case 'MLA':
-        const mlaConstituenciesformValue = this.mlaForm.value;
-        if(mlaConstituenciesformValue.mohID){
-          //Update logic here
-        }else{
-          //Save logic here
+        const mlaValue = this.mlaForm.value;
+        if (this.isEditMode && mlaValue.constituencyID) {
+          const payload = {
+            mohID: this.isEditMode ? mlaValue.constituencyID : 0,
+            mohCode: "",
+            mohCodeOld: "",
+            mohName: mlaValue.mohName,
+            mohNativeName: mlaValue.mohName,
+            mohShortName: mlaValue.mohName?.substring(0, 3),
+            zoneID: 1,
+            constituencyID: mlaValue.constituencyID ?? 1,
+            entryDate: new Date().toISOString(),
+            hoId: 1,
+            jcId: 1,
+            dhoId: 1,
+            adId: 1,
+            ddId: 1,
+            jdId: 1
+          };
+          this.masterDataComplianceService
+            .updateMLA(mlaValue.constituencyID, payload)
+            .subscribe({
+              next: () => {
+                console.log("MLA Updated Successfully");
+
+                this.loadMLAConstituencies();
+                this.mlaForm.reset();
+                this.activeModal = null;
+              },
+              error: (err) => console.error(err)
+            });
+
+        } else {
+          const payload = {
+            mohID: 0,
+            mohCode: "",
+            mohCodeOld: "",
+            mohName: mlaValue.mohName,
+            mohNativeName: mlaValue.mohName,
+            mohShortName: mlaValue.mohName?.substring(0, 3),
+            zoneID: 1,
+            constituencyID: mlaValue.constituencyID ?? 1,
+            entryDate: new Date().toISOString(),
+            hoId: 1,
+            jcId: 1,
+            dhoId: 1,
+            adId: 1,
+            ddId: 1,
+            jdId: 1
+          };
+          this.masterDataComplianceService
+            .createMLA(payload)
+            .subscribe({
+              next: () => {
+                console.log("MLA Created Successfully");
+
+                this.loadMLAConstituencies();
+                this.mlaForm.reset();
+                this.activeModal = null;
+              },
+              error: (err) => console.error(err)
+            });
         }
-        console.log(mlaConstituenciesformValue);
-        break;
+
+      break;
 
       case 'WARD':
-        console.log(this.wardForm.value);
-        break;
+        const wardValue = this.wardForm.value;
+
+        if (this.isEditMode && wardValue.wardID) {
+
+          const payload = {
+            wardID: wardValue.wardID,
+            wardCode: String(wardValue.wardID),
+            wardName: wardValue.wardName,
+            wardNativeName: wardValue.wardName,
+            zoneID: this.selectedZone?.zoneID ?? 1,
+            constituencyID: wardValue.mlaId
+          };
+
+          this.masterDataComplianceService
+            .updateWard(payload)
+            .subscribe(() => {
+              this.onMLAConstituencyChange();
+              this.wardForm.reset();
+              this.activeModal = null;
+            });
+
+        } 
+        else {
+
+          const payload = {
+            wardCode: "",
+            wardName: wardValue.wardName,
+            wardNativeName: wardValue.wardName,
+            zoneID: this.selectedZone?.zoneID ?? 1,
+            constituencyID: wardValue.mlaId
+          };
+
+          this.masterDataComplianceService
+            .createWard(payload)
+            .subscribe(() => {
+              this.onMLAConstituencyChange();
+              this.wardForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'MAJOR_TRADE':
-        console.log(this.majorTradeForm.value);
-        break;
+
+        const majorValue = this.majorTradeForm.value;
+
+        if (this.isEditMode && majorValue.tradeMajorID) {
+
+          const payload = {
+            tradeMajorID: majorValue.tradeMajorID,
+            tradeMajorName: majorValue.tradeMajorName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateMajorTrade(majorValue.tradeMajorID, payload)
+            .subscribe(() => {
+              this.loadTradeMajors();
+              this.majorTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        } else {
+
+          const payload = {
+            tradeMajorID: 0,
+            tradeMajorName: majorValue.tradeMajorName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createMajorTrade(payload)
+            .subscribe(() => {
+              this.loadTradeMajors();
+              this.majorTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'MINOR_TRADE':
-        console.log(this.minorTradeForm.value);
-        break;
+        const minorValue = this.minorTradeForm.value;
+
+        if (this.isEditMode && minorValue.tradeMinorID) {
+
+          const payload = {
+            tradeMinorID: minorValue.tradeMinorID,
+            tradeMinorName: minorValue.tradeMinorName,
+            tradeMajorID: minorValue.tradeMajorID,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateMinorTrade(minorValue.tradeMinorID, payload)
+            .subscribe(() => {
+              this.onMajorChange();
+              this.minorTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        } else {
+
+          const payload = {
+            tradeMinorID: 0,
+            tradeMinorName: minorValue.tradeMinorName,
+            tradeMajorID: minorValue.tradeMajorID,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createMinorTrade(payload)
+            .subscribe(() => {
+              this.onMajorChange();
+              this.minorTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'SUB_TRADE':
-        console.log(this.subTradeForm.value);
-        break;
+
+        const subValue = this.subTradeForm.value;
+
+        if (this.isEditMode && subValue.tradeSubID) {
+
+          const payload = {
+            tradeSubID: subValue.tradeSubID,
+            tradeSubName: subValue.tradeSubName,
+            tradeMinorID: subValue.tradeMinorID,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateSubTrade(subValue.tradeSubID, payload)
+            .subscribe(() => {
+              this.onMinorChange();
+              this.subTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        } else {
+
+          const payload = {
+            tradeSubID: 0,
+            tradeSubName: subValue.tradeSubName,
+            tradeMinorID: subValue.tradeMinorID,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createSubTrade(payload)
+            .subscribe(() => {
+              this.onMinorChange();
+              this.subTradeForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'ZONE':
-        console.log(this.zoneForm.value);
-        break;
+        const zoneValue = this.zoneForm.value;
+
+        if (this.isEditMode && zoneValue.zoneID) {
+
+          const payload = {
+            zoneID: zoneValue.zoneID,
+            zoneName: zoneValue.zoneName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateZone(zoneValue.zoneID, payload)
+            .subscribe(() => {
+              this.loadZones();
+              this.zoneForm.reset();
+              this.activeModal = null;
+            });
+
+        } else {
+
+          const payload = {
+            zoneID: 0,
+            zoneName: zoneValue.zoneName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createZone(payload)
+            .subscribe(() => {
+              this.loadZones();
+              this.zoneForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'ZONE_CLASSIFICATION':
-        console.log(this.zoneClassificationForm.value);
-        break;
+        const zoneClassValue = this.zoneClassificationForm.value;
+
+        if (this.isEditMode && zoneClassValue.zonalClassificationID) {
+
+          const payload = {
+            zonalClassificationID: zoneClassValue.zonalClassificationID,
+            zonalClassificationName: zoneClassValue.zonalClassificationName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateZoneClassification(zoneClassValue.zonalClassificationID, payload)
+            .subscribe(() => {
+              this.loadZoneClassification();
+              this.zoneClassificationForm.reset();
+              this.activeModal = null;
+            });
+
+        } else {
+
+          const payload = {
+            zonalClassificationID: 0,
+            zonalClassificationName: zoneClassValue.zonalClassificationName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createZoneClassification(payload)
+            .subscribe(() => {
+              this.loadZoneClassification();
+              this.zoneClassificationForm.reset();
+              this.activeModal = null;
+            });
+
+        }
+
+      break;
 
       case 'TRADE_CATEGORY':
-        console.log(this.tradeCategoryForm.value);
-        break;
-    }
+        const formValue = this.tradeCategoryForm.value;
 
+        if (this.isEditMode && formValue.tradeTypeID) {
+
+          const payload = {
+            tradeTypeID: formValue.tradeTypeID ?? 0,
+            tradeTypeCode: String(formValue.tradeTypeID),
+            tradeTypeName: formValue.tradeTypeName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .updateTradeType(formValue.tradeTypeID, payload)
+            .subscribe({
+              next: () => {
+                console.log("Trade Type Updated Successfully");
+
+                this.loadTradeTypes();          // refresh list
+                this.tradeCategoryForm.reset(); // clear form
+                this.activeModal = null;        // close modal
+              },
+              error: (err) => console.error(err)
+            });
+
+        } else {
+
+          const payload = {
+            tradeTypeID: 0,
+            tradeTypeCode: "0",
+            tradeTypeName: formValue.tradeTypeName,
+            isActive: "Y",
+            entryDate: new Date().toISOString()
+          };
+
+          this.masterDataComplianceService
+            .createTradeType(payload)
+            .subscribe({
+              next: () => {
+                console.log("Trade Type Created Successfully");
+
+                this.loadTradeTypes();          // refresh list
+                this.tradeCategoryForm.reset(); // clear form
+                this.activeModal = null;        // close modal
+              },
+              error: (err) => console.error(err)
+            });
+
+        }
+
+      break;
+    }
     this.activeModal = null;
   }
 

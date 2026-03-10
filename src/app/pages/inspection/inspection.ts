@@ -68,6 +68,7 @@ export class Inspection {
     this.applicationNo = this.activeroute.snapshot.paramMap.get('applicationNo')!;
     this.role = this.tokenservice.getRole();
     this.loadAppliedApproverApplicatiosn();
+    this.loadSavedInspectionPhotos();
   }
 
   //#region To load Map 
@@ -306,9 +307,7 @@ export class Inspection {
   }
 
   submitProcessAction(licenceProcessID: number, currentStatusID?: number) {
-    if (this.isSubmitting) {
-      return;
-    }
+    if (this.isSubmitting) return;
 
     const loginId = this.tokenservice.getUserId();
     if (!loginId) {
@@ -324,8 +323,7 @@ export class Inspection {
     }
 
     const resolvedCurrentStatusID =
-      currentStatusID ||
-      this.licenceApplicationDetails?.licenceApplicationStatusID;
+      currentStatusID ?? this.licenceApplicationDetails?.licenceApplicationStatusID;
     if (!resolvedCurrentStatusID) {
       this.notificationservice.show('Current status is not loaded. Please refresh and try again.', 'warning');
       return;
@@ -339,32 +337,38 @@ export class Inspection {
 
     this.setSubmitting(true);
 
-    const payload = {
-      licenceApplicationID,
-      loginID: loginId,
-      licenceProcessID,
-      currentStatus: String(resolvedCurrentStatusID),
-      remarks,
-      actionReasonIds: ''
-    };
+    // 👇 Upload photos first, then submit the process action
+    this.uploadPhotos()
+      .then(() => {
+        const payload = {
+          licenceApplicationID,
+          loginID: loginId,
+          licenceProcessID,
+          currentStatus: String(resolvedCurrentStatusID),
+          remarks,
+          actionReasonIds: ''
+        };
 
-    console.log('[Inspection] submitProcessAction payload:', payload);
+        console.log('[Inspection] submitProcessAction payload:', payload);
 
-    this.inspectionservice
-      .submitLicenceProcessAction(payload)
-      .subscribe({
-        next: () => {
-          this.setSubmitting(false);
-          this.notificationservice.show('Status updated successfully', 'success');
-          this.router.navigate([this.getBackRoute()]);
-        },
-        error: (error) => {
-          this.setSubmitting(false);
-          console.error('[Inspection] submitProcessAction API error:', error);
-          console.error('[Inspection] failed payload:', payload);
-          const message = this.extractApiErrorMessage(error);
-          this.notificationservice.show(message, 'error');
-        }
+        this.inspectionservice.submitLicenceProcessAction(payload).subscribe({
+          next: () => {
+            this.setSubmitting(false);
+            this.notificationservice.show('Status updated successfully', 'success');
+            this.router.navigate([this.getBackRoute()]);
+          },
+          error: (error) => {
+            this.setSubmitting(false);
+            console.error('[Inspection] submitProcessAction API error:', error);
+            const message = this.extractApiErrorMessage(error);
+            this.notificationservice.show(message, 'error');
+          }
+        });
+      })
+      .catch((err) => {
+        this.setSubmitting(false);
+        console.error('[Inspection] Photo upload failed:', err);
+        this.notificationservice.show('Failed to upload inspection photos', 'error');
       });
   }
 
@@ -405,33 +409,76 @@ export class Inspection {
     for (let i = 0; i < input.files.length; i++) {
       const file = input.files[i];
 
-      // Size validation (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Each photo must be less than 5MB');
+        this.notificationservice.show('Each photo must be less than 5MB', 'warning');
         continue;
       }
 
       const reader = new FileReader();
-
       reader.onload = () => {
         this.inspectionPhotos = [
           ...this.inspectionPhotos,
-          {
-            file: file,
-            preview: reader.result as string
-          }
+          { file, preview: reader.result as string }
         ];
+        this.cdr.detectChanges();
       };
-
       reader.readAsDataURL(file);
     }
 
-    // Reset input
     input.value = '';
+  }
+
+  private uploadPhotos(): Promise<void> {
+    if (this.inspectionPhotos.length === 0) return Promise.resolve();
+
+    const licenceApplicationID =
+      this.licenceApplicationDetails?.licenceApplicationID ?? Number(this.applicationNo);
+
+    const uploads = this.inspectionPhotos.map(photo => {
+      const formData = new FormData();
+      formData.append('LicenceApplicationID', String(licenceApplicationID));
+      formData.append('DocumentID', '10'); // Inspection photo document type
+      formData.append('file', photo.file, photo.file.name);
+      return this.inspectionservice.saveDocument(formData).toPromise();
+    });
+
+    return Promise.all(uploads).then(() => {});
   }
 
   removePhoto(index: number) {
     this.inspectionPhotos.splice(index, 1);
   }
 
+  //To Load Existing photos for inspection (if any) - This can be used when approver wants to edit the inspection details after saving as draft. Currently not implemented in backend, so commented out.
+  savedInspectionPhotoUrls: { doc: LicensesApplicationDocument; blobUrl: string }[] = [];
+  loadSavedInspectionPhotos() {
+    const appId = this.licenceApplicationDetails?.licenceApplicationID ?? Number(this.applicationNo);
+    this.inspectionservice.getDocumentDetails(appId).subscribe({
+      next: (docs) => {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        const photoDocs = docs.filter(
+          d => d.DocumentID === 10 && imageExtensions.includes(d.FileExtension.toLowerCase())
+        );
+
+        // Load each image as a blob so it actually displays
+        this.savedInspectionPhotoUrls = [];
+        photoDocs.forEach(doc => {
+          this.inspectionservice.getDocumentDetailsById(doc.ApplicationDocumentID).subscribe({
+            next: (blob: Blob) => {
+              const url = URL.createObjectURL(blob);
+              this.savedInspectionPhotoUrls = [
+                ...this.savedInspectionPhotoUrls,
+                { doc, blobUrl: url }
+              ];
+              this.cdr.detectChanges();
+            },
+            error: (err) => console.error('Failed to load photo blob:', err)
+          });
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading inspection photos:', err)
+    });
+  }
 }

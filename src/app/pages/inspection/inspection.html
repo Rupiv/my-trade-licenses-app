@@ -200,58 +200,89 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <span>On-Site Inspection Photos</span>
 
-      <!-- Hidden Camera / File Input -->
       <input
         type="file"
         #cameraInput
         accept="image/*"
-        capture="environment"
         multiple
         hidden
         (change)="onPhotosSelected($event)"
       />
 
-      <!-- Plus Button -->
-      <button
-        class="btn btn-outline-primary btn-sm"
-        (click)="cameraInput.click()"
-      >
+      <button class="btn btn-outline-primary btn-sm" (click)="cameraInput.click()">
         <i class="bi bi-plus-lg"></i> Add Photo
       </button>
     </div>
 
     <div class="card-body">
-      <div class="row g-3" *ngIf="inspectionPhotos.length > 0; else noPhotos">
 
+      <!-- Show when no photos at all -->
+      <p
+        class="text-muted mb-3"
+        *ngIf="savedInspectionPhotoUrls.length === 0 && inspectionPhotos.length === 0"
+      >
+        No inspection photos yet. Tap <strong>+ Add Photo</strong> to upload.
+      </p>
+
+      <div class="row g-3">
+
+        <!-- Saved photos from API (loaded as blob) -->
+        <div
+          class="col-md-3 col-sm-4 col-6"
+          *ngFor="let item of savedInspectionPhotoUrls"
+        >
+          <div class="photo-card position-relative">
+            <img
+              [src]="item.blobUrl"
+              class="img-fluid rounded photo-preview"
+              [alt]="item.doc.FileName"
+              style="width:100%; height:160px; object-fit:cover;"
+            />
+            <div class="text-center mt-1">
+              <small class="text-muted" style="font-size:11px; word-break:break-all;">
+                {{ item.doc.FileName }}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Newly added photos (not yet uploaded) -->
         <div
           class="col-md-3 col-sm-4 col-6"
           *ngFor="let photo of inspectionPhotos; let i = index"
         >
-          <div class="photo-card">
+          <div class="photo-card position-relative">
             <img
               [src]="photo.preview"
               class="img-fluid rounded photo-preview"
-              alt="Inspection Photo"
+              alt="New Inspection Photo"
+              style="width:100%; height:160px; object-fit:cover;"
             />
-
-
+            <!-- New badge -->
+            <span
+              class="badge bg-success position-absolute"
+              style="top:6px; left:6px; font-size:10px;"
+            >
+              New
+            </span>
+            <!-- Remove button -->
             <button
-              class="btn btn-sm btn-danger remove-photo"
+              class="btn btn-sm btn-danger position-absolute"
+              style="top:4px; right:4px; padding: 2px 6px;"
               (click)="removePhoto(i)"
               title="Remove"
             >
               <i class="bi bi-x-lg"></i>
             </button>
+            <div class="text-center mt-1">
+              <small class="text-muted" style="font-size:11px; word-break:break-all;">
+                {{ photo.file.name }}
+              </small>
+            </div>
           </div>
         </div>
 
       </div>
-
-      <ng-template #noPhotos>
-        <p class="text-muted mb-0">
-          Tap <strong>+ Add Photo</strong> to capture inspection photos.
-        </p>
-      </ng-template>
     </div>
   </div>
 
