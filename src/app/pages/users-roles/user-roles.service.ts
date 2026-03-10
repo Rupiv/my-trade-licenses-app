@@ -8,6 +8,7 @@ import { Zones } from '../../core/models/new-trade-licenses.model';
 ====================================================== */
 
 export interface LoginMasterRequest {
+  id?: number;
   login: string;
   password: string;
   officeDetailsID: number;       // ✅ confirmed in Swagger body
@@ -19,6 +20,8 @@ export interface LoginMasterRequest {
 }
 
 export interface LoginMaster {
+  id?: number;
+  loginId?: number;
   loginID: number;
   login: string;
   password: string;

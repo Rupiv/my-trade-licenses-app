@@ -5,9 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:deploy": "ng build --configuration deploy",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:my-trade-licenses-app": "node dist/my-trade-licenses-app/server/server.mjs"
+    "serve:ssr:my-trade-licenses-app": "node dist/my-trade-licenses-app/server/server.mjs",
+    "serve:deploy": "node dist/my-trade-licenses-app/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,

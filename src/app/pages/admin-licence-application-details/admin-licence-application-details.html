@@ -118,6 +118,33 @@
       </div>
     </div>
 
+    <div class="card section-card">
+      <div class="card-header">On-Site Inspection Photos</div>
+      <div class="card-body">
+        <div *ngIf="inspectionPhotosLoading" class="text-muted">Loading inspection photos...</div>
+        <div *ngIf="!inspectionPhotosLoading && savedInspectionPhotoUrls.length === 0" class="text-muted">
+          No inspection photos available.
+        </div>
+        <div class="row g-3" *ngIf="!inspectionPhotosLoading && savedInspectionPhotoUrls.length > 0">
+          <div class="col-md-3 col-sm-4 col-6" *ngFor="let item of savedInspectionPhotoUrls">
+            <div class="photo-card position-relative">
+              <img
+                [src]="item.blobUrl"
+                class="img-fluid rounded photo-preview"
+                [alt]="item.doc.FileName"
+                style="width:100%; height:160px; object-fit:cover;"
+              />
+              <div class="text-center mt-1">
+                <small class="text-muted" style="font-size:11px; word-break:break-all;">
+                  {{ item.doc.FileName }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Remarks -->
     <div class="card section-card">
       <div class="card-header">Inspection Remarks</div>

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { MLCConstituency, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
+import { MLCConstituency, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
 
 @Injectable({
   providedIn: 'root'
@@ -50,6 +50,18 @@ export class MasterDataComplianceService {
   }
   updateSubTrade(id: number, payload: any) {
     return this.http.put(`${this.baseUrl}master/trade-sub/${id}`, payload);
+  }
+
+  createTradeLicenceFee(payload: TradeLicensesFee) {
+    return this.http.post(`${this.baseUrl}trade-licence-fees`, payload);
+  }
+
+  updateTradeLicenceFee(id: number, payload: TradeLicensesFee) {
+    return this.http.put(`${this.baseUrl}trade-licence-fees/${id}`, payload);
+  }
+
+  getTradeLicenceFeeBySubTrade(tradeSubId: number) {
+    return this.get<TradeLicensesFee>(`/trade-licence-fees/by-trade-sub/${tradeSubId}`);
   }
 
   getTradeTypes(){

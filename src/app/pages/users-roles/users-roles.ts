@@ -19,6 +19,7 @@ import {
 } from './user-roles.service';
 import { Zones } from '../../core/models/new-trade-licenses.model';
 import { LoaderService } from '../../shared/components/loader/loader.service';
+import { TokenService } from '../../core/services/token.service';
 
 /* ─────────────────────────────────────────────
    Toast notification model
@@ -34,6 +35,8 @@ interface Toast {
 ───────────────────────────────────────────── */
 function emptyUser(): LoginMaster {
   return {
+    id: 0,
+    loginId: 0,
     loginID: 0,
     login: '',
     password: '',
@@ -101,6 +104,7 @@ export class UsersRoles implements OnInit, OnDestroy {
     private readonly usersRolesService: UsersRolesService,
     private readonly loaderService: LoaderService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly tokenService: TokenService,
   ) {}
 
   /* ══════════════════════════════════════════
@@ -267,13 +271,45 @@ export class UsersRoles implements OnInit, OnDestroy {
   ══════════════════════════════════════════ */
 
   editUser(user: LoginMaster): void {
-    /* Deep-clone so live table row is never mutated before save */
+    this.isEditMode = true;
+    const resolvedId = this.resolveUserId(user);
+
+    // Show the form immediately, then hydrate it with the full API record.
     this.selectedUser = {
       ...user,
-      password: '', // never bind existing hash to the field
+      id: resolvedId,
+      loginId: resolvedId,
+      loginID: resolvedId,
+      password: '',
     };
-    this.isEditMode = true;
     this.scrollToForm();
+    this.isLoading = true;
+    this.cdr.markForCheck();
+
+    this.usersRolesService
+      .getUserById(resolvedId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (fullUser) => {
+          const fullUserId = this.resolveUserId(fullUser);
+          this.selectedUser = {
+            ...fullUser,
+            id: fullUserId,
+            loginId: fullUserId,
+            loginID: fullUserId,
+            MobileNo: fullUser.MobileNo ?? user.MobileNo ?? '',
+            password: '',
+          };
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Load user details failed:', err);
+          this.isLoading = false;
+          this.showToast('error', 'Failed to load user details.');
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   /* ══════════════════════════════════════════
@@ -302,24 +338,39 @@ export class UsersRoles implements OnInit, OnDestroy {
 
     this.isSaving = true;
 
+    const login = String(this.selectedUser.login ?? '').trim();
+    const password = String(this.selectedUser.password ?? '').trim();
+    const sakalaDOCode = String(this.selectedUser.sakalaDO_Code ?? '').trim();
+    const mobileNo = String(this.selectedUser.MobileNo ?? '').trim();
+    const userId = this.resolveUserId(this.selectedUser);
+
     const payload: LoginMasterRequest = {
-      login:             this.selectedUser.login.trim(),
-      password:          this.selectedUser.password?.trim() ?? '',
+      id: userId,
+      login,
+      password,
       officeDetailsID:   Number(this.selectedUser.officeDetailsID),
       userDesignationID: Number(this.selectedUser.userDesignationID),
-      sakalaDO_Code:     this.selectedUser.sakalaDO_Code?.trim() ?? '',
-      mobileNo:          this.selectedUser.MobileNo?.trim() ?? '',
+      sakalaDO_Code:     sakalaDOCode,
+      mobileNo,
       updatedBy:         this.getLoggedInUserId(),
     };
 
-    if (this.isEditMode && this.selectedUser.loginID) {
-      this.updateUser(this.selectedUser.loginID, payload);
+    console.log('[UsersRoles] saveUser payload', {
+      mode: this.isEditMode ? 'update' : 'create',
+      loginID: userId,
+      payload,
+    });
+
+    if (this.isEditMode && userId) {
+      this.updateUser(userId, payload);
     } else {
       this.insertUser(payload);
     }
   }
 
   private insertUser(payload: LoginMasterRequest): void {
+    console.log('[UsersRoles] POST /login-master payload', payload);
+
     this.usersRolesService
       .addUser(payload)
       .pipe(takeUntil(this.destroy$))
@@ -334,13 +385,19 @@ export class UsersRoles implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Add user failed:', err);
           this.isSaving = false;
-          this.showToast('error', 'Failed to add user. Please try again.');
+          this.showToast('error', this.getApiErrorMessage(err, 'Failed to add user. Please try again.'));
           this.cdr.markForCheck();
         },
       });
   }
 
   private updateUser(loginID: number, payload: LoginMasterRequest): void {
+    console.log('[UsersRoles] PUT /login-master/{id}', {
+      url: `https://pickitover.com/api/api/login-master/${loginID}`,
+      loginID,
+      payload,
+    });
+
     this.usersRolesService
       .updateUser(loginID, payload)
       .pipe(takeUntil(this.destroy$))
@@ -354,7 +411,7 @@ export class UsersRoles implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Update user failed:', err);
           this.isSaving = false;
-          this.showToast('error', 'Failed to update user. Please try again.');
+          this.showToast('error', this.getApiErrorMessage(err, 'Failed to update user. Please try again.'));
           this.cdr.markForCheck();
         },
       });
@@ -381,9 +438,15 @@ export class UsersRoles implements OnInit, OnDestroy {
     if (this.userToDeleteId === null) return;
 
     this.isDeleting = true;
+    const updatedBy = this.getLoggedInUserId();
+
+    console.log('[UsersRoles] DELETE /login-master/{id}', {
+      loginID: this.userToDeleteId,
+      updatedBy,
+    });
 
     this.usersRolesService
-      .deleteUser(this.userToDeleteId, this.getLoggedInUserId())
+      .deleteUser(this.userToDeleteId, updatedBy)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -399,7 +462,7 @@ export class UsersRoles implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Delete user failed:', err);
           this.isDeleting = false;
-          this.showToast('error', 'Failed to delete user. Please try again.');
+          this.showToast('error', this.getApiErrorMessage(err, 'Failed to delete user. Please try again.'));
           this.cdr.markForCheck();
         },
       });
@@ -464,8 +527,58 @@ export class UsersRoles implements OnInit, OnDestroy {
   }
 
   private getLoggedInUserId(): number {
-    /* Replace with your actual auth service call */
-    return 1;
+    const decodedToken = this.tokenService.getDecodedToken?.();
+    const loginMasterId =
+      Number(decodedToken?.loginID ?? decodedToken?.loginId ?? this.tokenService.getTraderUserId() ?? 0) || null;
+    const systemUserId =
+      Number(decodedToken?.sub ?? this.tokenService.getUserId() ?? this.tokenService.getEffectiveUserId() ?? 0) || null;
+
+    // login-master APIs appear to expect the updater's loginID, not the auth subject id.
+    const resolvedId = loginMasterId ?? systemUserId ?? 1;
+
+    console.log('[UsersRoles] resolved updatedBy', {
+      resolvedId,
+      loginMasterId,
+      systemUserId,
+      decodedToken,
+    });
+
+    return resolvedId;
+  }
+
+  private getApiErrorMessage(err: unknown, fallback: string): string {
+    const error = err as {
+      error?: { message?: string; title?: string; errors?: Record<string, string[] | string> } | string;
+      message?: string;
+      status?: number;
+    };
+
+    if (typeof error?.error === 'string' && error.error.trim()) {
+      return error.error;
+    }
+
+    if (error?.error && typeof error.error === 'object') {
+      if (error.error.message?.trim()) return error.error.message;
+      if (error.error.title?.trim()) return error.error.title;
+
+      const firstFieldError = Object.values(error.error.errors ?? {})[0];
+      if (Array.isArray(firstFieldError) && firstFieldError[0]?.trim()) {
+        return firstFieldError[0];
+      }
+      if (typeof firstFieldError === 'string' && firstFieldError.trim()) {
+        return firstFieldError;
+      }
+    }
+
+    if (error?.message?.trim()) {
+      return error.message;
+    }
+
+    if (error?.status === 0) {
+      return 'Request failed. Please check API connectivity.';
+    }
+
+    return fallback;
   }
 
   private scrollToForm(): void {
@@ -510,4 +623,8 @@ export class UsersRoles implements OnInit, OnDestroy {
 
   trackByToast(_: number, t: Toast): number { return t.id; }
   trackByUser(_: number, u: LoginMaster): number { return u.loginID; }
+
+  private resolveUserId(user: Partial<LoginMaster> | null | undefined): number {
+    return Number(user?.loginID ?? user?.loginId ?? user?.id ?? 0);
+  }
 }

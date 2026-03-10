@@ -207,7 +207,7 @@
             </div>
           </div>
 
-          <select class="form-select" [(ngModel)]="selectedSub">
+          <select class="form-select" [(ngModel)]="selectedSub" (change)="onSubTradeChange()">
             <option [ngValue]="null">Select Sub Trade</option>
             <option *ngFor="let subTrade of tradeSubs" [ngValue]="subTrade">
               {{ subTrade.tradeSubName }}
@@ -224,8 +224,9 @@
                 class="icon-btn primary"
                 title="Save Price"
                 (click)="saveTradePrice()"
+                [disabled]="isSavingTradePrice"
               >
-                <i class="bi bi-check-lg"></i>
+                <i class="bi" [ngClass]="isSavingTradePrice ? 'bi-hourglass-split' : 'bi-check-lg'"></i>
               </button>
             </div>
           </div>
@@ -367,18 +368,26 @@
     <form *ngIf="activeModal === 'MAJOR_TRADE'" [formGroup]="majorTradeForm">
       <label>Major Trade Name</label>
       <input class="form-control" formControlName="tradeMajorName" />
+      <label>Major Trade Native Name</label>
+      <input class="form-control" formControlName="tradeMajorNativeName" />
     </form>
 
     <!-- Minor Trade -->
     <form *ngIf="activeModal === 'MINOR_TRADE'" [formGroup]="minorTradeForm">
       <label>Minor Trade Name</label>
       <input class="form-control" formControlName="tradeMinorName" />
+      <label>Minor Trade Native Name</label>
+      <input class="form-control" formControlName="tradeMinorNativeName" />
     </form>
 
     <!-- Sub Trade -->
     <form *ngIf="activeModal === 'SUB_TRADE'" [formGroup]="subTradeForm">
       <label>Sub Trade Name</label>
       <input class="form-control" formControlName="tradeSubName" />
+      <label>Sub Trade Native Name</label>
+      <input class="form-control" formControlName="tradeSubNativeName" />
+      <label>Block Period ID</label>
+      <input class="form-control" type="number" min="1" formControlName="blockPeriodID" />
     </form>
 
     <!-- Zone -->

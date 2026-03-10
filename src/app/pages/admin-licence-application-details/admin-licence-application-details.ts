@@ -34,6 +34,7 @@ interface AdminApplicationDetails {
 
 @Component({
   selector: 'app-admin-licence-application-details',
+  standalone: true,
   imports: [CommonModule, RouterModule, GoogleMapsModule, FormsModule],
   templateUrl: './admin-licence-application-details.html',
   styleUrl: './admin-licence-application-details.css',
@@ -49,6 +50,8 @@ export class AdminLicenceApplicationDetails {
   documents: LicensesApplicationDocument[] = [];
   documentsLoading = false;
   documentsError = '';
+  savedInspectionPhotoUrls: { doc: LicensesApplicationDocument; blobUrl: string }[] = [];
+  inspectionPhotosLoading = false;
 
   inspectionChecklist = [
     { label: 'Trade name board displayed', checked: false },
@@ -92,6 +95,8 @@ export class AdminLicenceApplicationDetails {
       this.errorMessage = 'Invalid application id.';
       return;
     }
+
+    this.loadSavedInspectionPhotos(id);
 
     this.portalAdminService
       .getAdminApplications({
@@ -196,6 +201,52 @@ export class AdminLicenceApplicationDetails {
       },
       error: () => {
         this.notificationService.show('Unable to download document', 'error');
+      }
+    });
+  }
+
+  private loadSavedInspectionPhotos(licenceApplicationID: number): void {
+    this.inspectionPhotosLoading = true;
+    this.savedInspectionPhotoUrls = [];
+
+    this.inspectionService.getDocumentDetails(licenceApplicationID).subscribe({
+      next: (docs) => {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        const photoDocs = (docs ?? []).filter(
+          (doc) => doc.DocumentID === 10 && imageExtensions.includes((doc.FileExtension || '').toLowerCase())
+        );
+
+        if (photoDocs.length === 0) {
+          this.inspectionPhotosLoading = false;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        let pending = photoDocs.length;
+        photoDocs.forEach((doc) => {
+          this.inspectionService.getDocumentDetailsById(doc.ApplicationDocumentID).subscribe({
+            next: (blob: Blob) => {
+              const url = URL.createObjectURL(blob);
+              this.savedInspectionPhotoUrls = [...this.savedInspectionPhotoUrls, { doc, blobUrl: url }];
+              pending--;
+              if (pending === 0) {
+                this.inspectionPhotosLoading = false;
+              }
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              pending--;
+              if (pending === 0) {
+                this.inspectionPhotosLoading = false;
+              }
+              this.cdr.detectChanges();
+            }
+          });
+        });
+      },
+      error: () => {
+        this.inspectionPhotosLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

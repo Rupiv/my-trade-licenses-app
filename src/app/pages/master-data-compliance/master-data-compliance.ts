@@ -1,9 +1,11 @@
 import { Component, OnInit  } from '@angular/core';
-import { MLCConstituency, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
+import { MLCConstituency, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
 import { MasterDataComplianceService } from './master-data-compliance.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NotificationService } from '../../shared/components/notification/notification.service';
+import { TokenService } from '../../core/services/token.service';
 
 type ModalType =
   | 'MLA'
@@ -28,7 +30,9 @@ export class MasterDataCompliance {
   activeModal: ModalType | null = null;
   constructor(
     private masterDataComplianceService: MasterDataComplianceService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private notificationService: NotificationService,
+    private tokenService: TokenService
   ){}
 
   ngOnInit() {
@@ -59,18 +63,25 @@ export class MasterDataCompliance {
 
     this.majorTradeForm = this.fb.group({
       tradeMajorID: [null],
-      tradeMajorName: ['', Validators.required]
+      tradeMajorCode: [''],
+      tradeMajorName: ['', Validators.required],
+      tradeMajorNativeName: ['', Validators.required]
     });
 
     this.minorTradeForm = this.fb.group({
       tradeMinorID: [null],
+      tradeMinorCode: [''],
       tradeMinorName: ['', Validators.required],
+      tradeMinorNativeName: [''],
       tradeMajorID: [null, Validators.required]
     });
 
     this.subTradeForm = this.fb.group({
       tradeSubID: [null],
+      tradeSubCode: [''],
       tradeSubName: ['', Validators.required],
+      tradeSubNativeName: [''],
+      blockPeriodID: [1, [Validators.required, Validators.min(1)]],
       tradeMinorID: [null, Validators.required]
     });
 
@@ -277,6 +288,8 @@ export class MasterDataCompliance {
   //When minor changes
   onMinorChange() {
     this.selectedSub = null;
+    this.tradePrice = null;
+    this.currentTradeFee = null;
 
     if (!this.selectedMinor) return;
 
@@ -287,6 +300,33 @@ export class MasterDataCompliance {
           this.tradeSubs = res;
         },
         error: (err) => console.error(err)
+      });
+  }
+
+  onSubTradeChange() {
+    this.tradePrice = null;
+    this.currentTradeFee = null;
+
+    if (!this.selectedSub?.tradeSubID) {
+      return;
+    }
+
+    this.masterDataComplianceService
+      .getTradeLicenceFeeBySubTrade(this.selectedSub.tradeSubID)
+      .subscribe({
+        next: (res) => {
+          if (res && Number(res.tradeFeeID) > 0) {
+            this.currentTradeFee = res;
+            this.tradePrice = Number(res.tradeLicenceFee ?? 0) || null;
+          } else {
+            this.currentTradeFee = null;
+            this.tradePrice = null;
+          }
+        },
+        error: () => {
+          this.currentTradeFee = null;
+          this.tradePrice = null;
+        }
       });
   }
 
@@ -433,9 +473,9 @@ export class MasterDataCompliance {
 
           const payload = {
             tradeMajorID: majorValue.tradeMajorID,
+            tradeMajorCode: String(majorValue.tradeMajorCode ?? majorValue.tradeMajorID),
             tradeMajorName: majorValue.tradeMajorName,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeMajorNativeName: majorValue.tradeMajorNativeName
           };
 
           this.masterDataComplianceService
@@ -449,10 +489,8 @@ export class MasterDataCompliance {
         } else {
 
           const payload = {
-            tradeMajorID: 0,
             tradeMajorName: majorValue.tradeMajorName,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeMajorNativeName: majorValue.tradeMajorNativeName
           };
 
           this.masterDataComplianceService
@@ -474,10 +512,10 @@ export class MasterDataCompliance {
 
           const payload = {
             tradeMinorID: minorValue.tradeMinorID,
-            tradeMinorName: minorValue.tradeMinorName,
             tradeMajorID: minorValue.tradeMajorID,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeMinorCode: String(minorValue.tradeMinorCode ?? minorValue.tradeMinorID),
+            tradeMinorName: minorValue.tradeMinorName,
+            tradeMinorNativeName: minorValue.tradeMinorNativeName ?? ''
           };
 
           this.masterDataComplianceService
@@ -491,11 +529,9 @@ export class MasterDataCompliance {
         } else {
 
           const payload = {
-            tradeMinorID: 0,
             tradeMinorName: minorValue.tradeMinorName,
-            tradeMajorID: minorValue.tradeMajorID,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeMinorNativeName: minorValue.tradeMinorNativeName,
+            tradeMajorID: minorValue.tradeMajorID
           };
 
           this.masterDataComplianceService
@@ -518,10 +554,11 @@ export class MasterDataCompliance {
 
           const payload = {
             tradeSubID: subValue.tradeSubID,
-            tradeSubName: subValue.tradeSubName,
             tradeMinorID: subValue.tradeMinorID,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeSubCode: String(subValue.tradeSubCode ?? subValue.tradeSubID),
+            tradeSubName: subValue.tradeSubName,
+            tradeSubNativeName: subValue.tradeSubNativeName ?? '',
+            blockPeriodID: Number(subValue.blockPeriodID)
           };
 
           this.masterDataComplianceService
@@ -535,11 +572,10 @@ export class MasterDataCompliance {
         } else {
 
           const payload = {
-            tradeSubID: 0,
             tradeSubName: subValue.tradeSubName,
             tradeMinorID: subValue.tradeMinorID,
-            isActive: "Y",
-            entryDate: new Date().toISOString()
+            tradeSubNativeName: subValue.tradeSubNativeName,
+            blockPeriodID: Number(subValue.blockPeriodID)
           };
 
           this.masterDataComplianceService
@@ -695,8 +731,72 @@ export class MasterDataCompliance {
 
   //To Save Trade Classification Details
   tradePrice: number | null = null;
+  currentTradeFee: TradeLicensesFee | null = null;
+  isSavingTradePrice = false;
   saveTradePrice(){
+    if (!this.selectedMajor) {
+      this.notificationService.show('Please select Major Trade', 'warning');
+      return;
+    }
 
+    if (!this.selectedMinor) {
+      this.notificationService.show('Please select Minor Trade', 'warning');
+      return;
+    }
+
+    if (!this.selectedSub) {
+      this.notificationService.show('Please select Sub Trade', 'warning');
+      return;
+    }
+
+    const tradeLicenceFee = Number(this.tradePrice);
+    if (!Number.isFinite(tradeLicenceFee) || tradeLicenceFee <= 0) {
+      this.notificationService.show('Please enter a valid price', 'warning');
+      return;
+    }
+
+    const approveAuth = String(
+      this.tokenService.getEffectiveUserId() ??
+      this.tokenService.getUserId() ??
+      this.tokenService.getTraderUserId() ??
+      ''
+    ).trim();
+
+    if (!approveAuth) {
+      this.notificationService.show('Unable to resolve approval authority', 'warning');
+      return;
+    }
+
+    const payload: TradeLicensesFee = {
+      tradeFeeID: this.currentTradeFee?.tradeFeeID ?? 0,
+      tradeSubID: this.selectedSub.tradeSubID,
+      tradeLicenceFee,
+      tradeApproveAuth: approveAuth,
+      isActive: this.currentTradeFee?.isActive ?? true,
+      blockPeriodID: Number(this.selectedSub.blockPeriodID ?? 1),
+      remarks: this.currentTradeFee?.remarks ?? null
+    };
+
+    this.isSavingTradePrice = true;
+    const request$ = payload.tradeFeeID > 0
+      ? this.masterDataComplianceService.updateTradeLicenceFee(payload.tradeFeeID, payload)
+      : this.masterDataComplianceService.createTradeLicenceFee(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.isSavingTradePrice = false;
+        this.currentTradeFee = payload;
+        this.notificationService.show(
+          payload.tradeFeeID > 0 ? 'Trade licence fee updated successfully' : 'Trade licence fee saved successfully',
+          'success'
+        );
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSavingTradePrice = false;
+        this.notificationService.show('Failed to save trade licence fee', 'error');
+      }
+    });
   }
 
   //To Save licenseFeePrescribed

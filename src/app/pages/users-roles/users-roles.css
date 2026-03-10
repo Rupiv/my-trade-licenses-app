@@ -73,12 +73,13 @@
   to   { opacity: 1; }
 }
 
-.modal {
+.delete-modal {
   background: #fff;
   border-radius: 16px;
   padding: 2rem 2.5rem;
   max-width: 400px;
   width: 90%;
+  display: block;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: popIn 0.25s ease;
@@ -89,7 +90,7 @@
   to   { transform: scale(1);   opacity: 1; }
 }
 
-.modal__icon {
+.delete-modal__icon {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -102,21 +103,21 @@
   color: #ef4444;
 }
 
-.modal__title {
+.delete-modal__title {
   font-size: 1.125rem;
   font-weight: 700;
   color: #111827;
   margin: 0 0 0.5rem;
 }
 
-.modal__body {
+.delete-modal__body {
   font-size: 0.9rem;
   color: #6b7280;
   line-height: 1.6;
   margin: 0 0 1.5rem;
 }
 
-.modal__actions {
+.delete-modal__actions {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
@@ -621,7 +622,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 @media (max-width: 640px) {
   .form-grid { grid-template-columns: 1fr; }
   .table-search { min-width: unset; width: 100%; }
-  .modal { padding: 1.5rem; }
-  .modal__actions { flex-direction: column; }
-  .modal__actions button { width: 100%; justify-content: center; }
+  .delete-modal { padding: 1.5rem; }
+  .delete-modal__actions { flex-direction: column; }
+  .delete-modal__actions button { width: 100%; justify-content: center; }
 }

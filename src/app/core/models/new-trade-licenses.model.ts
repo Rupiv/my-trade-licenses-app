@@ -150,7 +150,7 @@ export interface TradeLicensesFee{
   tradeApproveAuth: string;
   isActive: boolean;
   blockPeriodID: number;
-  remarks:string; 
+  remarks:string | null; 
 }
 
 export interface LicenseDocuments{

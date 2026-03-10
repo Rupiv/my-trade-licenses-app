@@ -5,76 +5,78 @@
   </div>
 </div>
 
-<!-- APPROVAL WORKFLOW -->
+<div class="settings-toolbar">
+  <div class="settings-status" [class.settings-status--dirty]="hasUnsavedChanges">
+    {{ saveMessage || (hasUnsavedChanges ? 'Unsaved changes' : 'Working form ready') }}
+  </div>
+  <button class="btn-ghost" type="button" (click)="restoreDefaults()">Restore Defaults</button>
+</div>
+
 <div class="card">
   <h3>Approval Workflow Configuration</h3>
 
   <div class="form-row">
     <label>Default Approval Flow</label>
-    <select>
-      <option>Approver → Senior Approver</option>
-      <option>Direct Senior Approver (High Risk Trades)</option>
+    <select [(ngModel)]="settings.approvalFlow">
+      <option value="approver-senior">Approver -> Senior Approver</option>
+      <option value="direct-senior">Direct Senior Approver (High Risk Trades)</option>
     </select>
   </div>
 
   <div class="form-row">
-    <label>High-Risk Trade Threshold (₹)</label>
-    <input type="number" placeholder="e.g. 500000" />
+    <label>High-Risk Trade Threshold (Rs)</label>
+    <input type="number" placeholder="e.g. 500000" [(ngModel)]="settings.highRiskThreshold" />
   </div>
 
   <div class="form-row">
     <label>Require Inspection Before Approval</label>
-    <select>
+    <select [(ngModel)]="settings.requireInspection">
       <option value="yes">Yes</option>
       <option value="no">No</option>
     </select>
   </div>
 </div>
 
-<!-- REMINDER SETTINGS -->
 <div class="card">
   <h3>Automated Reminder Settings</h3>
 
   <div class="form-grid">
     <div class="form-row">
-      <label>Renewal Reminder – First Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 30)" />
+      <label>Renewal Reminder - First Alert</label>
+      <input type="number" placeholder="Days before expiry (e.g. 30)" [(ngModel)]="settings.firstAlertDays" />
     </div>
 
     <div class="form-row">
-      <label>Renewal Reminder – Second Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 15)" />
+      <label>Renewal Reminder - Second Alert</label>
+      <input type="number" placeholder="Days before expiry (e.g. 15)" [(ngModel)]="settings.secondAlertDays" />
     </div>
 
     <div class="form-row">
-      <label>Renewal Reminder – Final Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 5)" />
+      <label>Renewal Reminder - Final Alert</label>
+      <input type="number" placeholder="Days before expiry (e.g. 5)" [(ngModel)]="settings.finalAlertDays" />
     </div>
   </div>
 </div>
 
-<!-- ESCALATION RULES -->
 <div class="card">
   <h3>Escalation Rules</h3>
 
   <div class="form-row">
     <label>Escalate to Senior Approver if Approver does not act within</label>
-    <input type="number" placeholder="Number of days (e.g. 7)" />
+    <input type="number" placeholder="Number of days (e.g. 7)" [(ngModel)]="settings.escalationDays" />
   </div>
 
   <div class="form-row">
     <label>Escalation Notification</label>
-    <select>
-      <option>Email + SMS</option>
-      <option>Email Only</option>
-      <option>SMS Only</option>
+    <select [(ngModel)]="settings.escalationNotification">
+      <option value="email-sms">Email + SMS</option>
+      <option value="email">Email Only</option>
+      <option value="sms">SMS Only</option>
     </select>
   </div>
 </div>
 
-<!-- ACTION BAR -->
 <div class="action-bar">
-  <button class="btn-secondary">Reset</button>
-  <button class="btn-primary">Save Settings</button>
+  <button class="btn-secondary" type="button" (click)="resetSettings()">Reset</button>
+  <button class="btn-primary" type="button" (click)="saveSettings()">Save Settings</button>
 </div>
-
