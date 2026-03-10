@@ -160,6 +160,10 @@
             <a (click)="openApplication(app.licenceApplicationID)">View</a>
             <span>|</span>
             <a (click)="makePayment(app.licenceApplicationID)">Pay Now</a>
+            <ng-container *ngIf="isApproved(app.applicationStatus)">
+              <span>|</span>
+              <a (click)="downloadCertificate(app)">Download Licence</a>
+            </ng-container>
           </div>
         </div>
 

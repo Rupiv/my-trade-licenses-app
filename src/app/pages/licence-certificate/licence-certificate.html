@@ -5,6 +5,14 @@
     </button>
     <button class="btn btn-secondary" (click)="printCertificate()">Print</button>
     <button class="btn btn-primary" (click)="downloadPdf()">Download</button>
+    <button
+      *ngIf="showSaveButton"
+      class="btn btn-success"
+      [disabled]="isSaving"
+      (click)="saveGeneratedCertificate()"
+    >
+      {{ isSaving ? 'Saving...' : 'Save Licence' }}
+    </button>
   </div>
 
   <div *ngIf="loading" class="loading-state">Loading certificate...</div>

@@ -30,5 +30,14 @@ export class TradeLicensesService {
       `/trade-licence/user/${loginId}/applications`
     );
   }
+
+  downloadGeneratedCertificate(licenceApplicationID: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/licence/certificate/generated/${licenceApplicationID}/download`,
+      {
+        responseType: 'blob'
+      }
+    );
+  }
 }
 

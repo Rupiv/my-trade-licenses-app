@@ -101,6 +101,41 @@ export class TraderLicenses {
     this.router.navigate(['/trade-license/payment', licenseId]);
   }
 
+  isApproved(status: string): boolean {
+    return (status || '').trim().toUpperCase() === 'APPROVED';
+  }
+
+  downloadCertificate(application: LicenceApplicationDetails): void {
+    if (!application?.licenceApplicationID) {
+      this.notificationservice.show('Invalid application selected.', 'warning');
+      return;
+    }
+
+    this.loaderservice.show();
+    this.tradelicensesservice
+      .downloadGeneratedCertificate(application.licenceApplicationID)
+      .subscribe({
+        next: (blob) => {
+          this.loaderservice.hide();
+          const appNo = (application.applicationNumber || application.licenceApplicationID.toString())
+            .replace(/[^a-z0-9-_]/gi, '_');
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Licence_${appNo}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          this.loaderservice.hide();
+          console.error('Unable to download generated certificate', err);
+          this.notificationservice.show('Generated licence not found. Please contact admin.', 'warning');
+        }
+      });
+  }
+
   licenses = [
     {
       id: 'TL-2024-001234',

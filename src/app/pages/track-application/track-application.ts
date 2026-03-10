@@ -57,6 +57,7 @@ export class TrackApplication {
 
   applications: LicenceApplicationByLoginItem[] = [];
   filteredApplications: LicenceApplicationByLoginItem[] = [];
+  selectedApplication: LicenceApplicationByLoginItem | null = null;
 
   constructor(
     private tokenservice: TokenService,
@@ -85,6 +86,7 @@ export class TrackApplication {
   }
 
   onSelectApplication(app: LicenceApplicationByLoginItem): void {
+    this.selectedApplication = app;
     this.applicationData = this.mapApplicationData(app);
     this.searchResult = 'found';
     this.searchError = '';
@@ -112,6 +114,7 @@ export class TrackApplication {
     this.loading = false;
     this.searchError = '';
     this.loadError = '';
+    this.selectedApplication = null;
     this.filteredApplications = [...this.applications];
   }
 
@@ -131,6 +134,53 @@ export class TrackApplication {
       this.applicationData.timeline.find((step) => step.current) ??
       this.applicationData.timeline[this.applicationData.timeline.length - 1]
     );
+  }
+
+  get canDownloadCertificate(): boolean {
+    const status = (
+      this.selectedApplication?.licenceApplicationStatusName ||
+      this.selectedApplication?.currentStatusDescription ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+    return status === 'APPROVED';
+  }
+
+  downloadCertificateFromTrack(): void {
+    const app = this.selectedApplication;
+    if (!app?.licenceApplicationID) {
+      this.notificationService.show('Invalid application selected.', 'warning');
+      return;
+    }
+
+    if (!this.canDownloadCertificate) {
+      this.notificationService.show('Certificate can be downloaded only after approval.', 'warning');
+      return;
+    }
+
+    this.loading = true;
+    this.trackApplicationService
+      .downloadGeneratedCertificate(app.licenceApplicationID)
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+        next: (blob) => {
+          const appNo = (app.applicationNumber || app.licenceApplicationID.toString())
+            .replace(/[^a-z0-9-_]/gi, '_');
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Licence_${appNo}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        },
+        error: () => {
+          this.notificationService.show('Generated licence not found for this application.', 'warning');
+        }
+      });
   }
 
   private loadUserApplications(searchText?: string): void {

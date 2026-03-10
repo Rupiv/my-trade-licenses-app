@@ -83,6 +83,13 @@ export class TrackApplicationService {
         })
       );
   }
+
+  downloadGeneratedCertificate(licenceApplicationID: number): Observable<Blob> {
+    return this.http.get(
+      this.buildUrl(`/licence/certificate/generated/${licenceApplicationID}/download`),
+      { responseType: 'blob' }
+    ).pipe(timeout(15000));
+  }
 }
 
 
