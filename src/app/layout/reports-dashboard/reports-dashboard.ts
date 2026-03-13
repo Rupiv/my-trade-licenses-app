@@ -29,4 +29,8 @@ export class ReportsDashboard {
     this.router.navigate(['/admin/reports/revenue-collection']);
   }
 
+  onApplicationWiseLicensesClick(){
+    this.router.navigate(['/admin/reports/application-wise-licenses']);
+  }
+
 }

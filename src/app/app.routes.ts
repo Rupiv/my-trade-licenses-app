@@ -29,6 +29,7 @@ import { PaymentSuccess } from './shared/components/payment-success/payment-succ
 import { PaymentFailed } from './shared/components/payment-failed/payment-failed';
 import { ZoneApprovingOfficer } from './pages/zone-approving-officer/zone-approving-officer';
 import { ZoneapproverDashboard } from './layout/zoneapprover-dashboard/zoneapprover-dashboard';
+import { ApplicationWiseLicenses } from './shared/components/reports/application-wise-licenses/application-wise-licenses';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -74,6 +75,7 @@ export const routes: Routes = [
       { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
       { path: 'reports/revenue-collection', component: RevenueCollection },
       { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
 
     ]
   },
@@ -223,6 +225,11 @@ export const routes: Routes = [
       path: 'renewal-status',
       loadComponent: () => import('./pages/renewal-status/renewal-status')
         .then(m => m.RenewalStatus)
+    },
+    {
+      path: 'forgot-password',
+      loadComponent: () => import('./pages/forgot-password/forgot-password')
+        .then(m => m.ForgotPasswordComponent)
     },
     // {
     //   path: 'user-roles',

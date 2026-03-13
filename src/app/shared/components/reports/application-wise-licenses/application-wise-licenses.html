@@ -1,0 +1,253 @@
+<div class="mis-wrapper">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+
+    <div class="header-left">
+      <button class="btn-back" routerLink="/admin/reports">
+        ← Back to Reports
+      </button>
+
+      <div>
+        <h1 class="page-title">Licence Applications</h1>
+        <p class="page-subtitle">
+          Detailed report by corporation / ward / status
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+
+      <button class="btn secondary" (click)="exportToPDF()">
+        Export PDF
+      </button>
+
+      <button class="btn primary" (click)="exportToExcel()">
+        Export Excel
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- SUMMARY CARDS -->
+
+  <div class="summary-cards">
+
+    <div
+      class="summary-card"
+      *ngFor="let card of statusSummary"
+      [ngClass]="card.color"
+    >
+
+      <div class="card-icon">{{ card.icon }}</div>
+
+      <div>
+        <div class="card-count">
+          {{ card.count | number }}
+        </div>
+
+        <div class="card-label">
+          {{ card.label }}
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- FILTER SECTION -->
+
+  <div class="filter-panel">
+
+    <div class="filter-heading">
+      ⚙ Filters
+    </div>
+
+    <div class="filter-grid">
+
+      <!-- Corporation -->
+
+      <div class="filter-field">
+        <label>Corporation</label>
+
+        <select [(ngModel)]="filters.zoneId" (change)="onZoneChange()">
+        <option [ngValue]="null">All Corporations</option>
+        <option *ngFor="let z of zones" [ngValue]="z.id">
+          {{ z.name }}
+        </option>
+      </select>
+      </div>
+
+
+      <!-- Ward -->
+
+      <div class="filter-field">
+
+        <label>Ward</label>
+
+        <select
+          [(ngModel)]="filters.wardId"
+          (change)="onWardChange()"
+          [disabled]="!filters.zoneId"
+        >
+          <option [ngValue]="null">All Wards</option>
+
+          <option
+            *ngFor="let w of wards"
+            [ngValue]="w.name"
+          >
+            {{ w.name }}
+          </option>
+        </select>
+      </div>
+
+
+      <!-- Application Number -->
+
+      <div class="filter-field">
+
+        <label>Application Number</label>
+
+        <input
+          type="text"
+          [(ngModel)]="filters.applicationNumber"
+          (keyup.enter)="onApplicationNumberChange()"
+          placeholder="Enter Application Number"
+        />
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- LOADING -->
+
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    Loading data...
+  </div>
+
+
+  <!-- ERROR -->
+
+  <div class="error-banner" *ngIf="errorMessage && !loading">
+    ⚠ {{ errorMessage }}
+  </div>
+
+
+  <!-- TABLE -->
+
+  <div class="table-section" *ngIf="!loading">
+
+    <div class="table-info-bar">
+
+      Showing
+      <strong>{{ startRecord }} - {{ endRecord }}</strong>
+      of
+      <strong>{{ totalRecords }}</strong>
+
+    </div>
+
+    <div class="table-container">
+
+      <table class="data-table">
+
+        <thead>
+
+          <tr>
+            <th>#</th>
+            <th>Application No</th>
+            <th>Submit Date</th>
+            <th>Applicant</th>
+            <th>Trade</th>
+            <th>Mobile</th>
+            <th>Zone</th>
+            <th>Ward</th>
+            <th>Status</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let app of applications; let i = index">
+
+            <td>{{ startRecord + i }}</td>
+
+            <td>{{ app.applicationNumber }}</td>
+
+            <td>{{ formatDate(app.applicationSubmitDate) }}</td>
+
+            <td>{{ app.applicantName }}</td>
+
+            <td>{{ app.tradeName }}</td>
+
+            <td>{{ app.mobileNumber }}</td>
+
+            <td>{{ app.zoneName }}</td>
+
+            <td>{{ app.wardName }}</td>
+
+            <td>
+
+              <span
+                class="status-badge"
+                [ngClass]="getStatusClass(app.licenceApplicationStatusID)"
+              >
+                {{ app.licenceApplicationStatusName }}
+              </span>
+
+            </td>
+
+          </tr>
+
+          <tr *ngIf="applications.length === 0">
+            <td colspan="9" class="no-data">
+              No records found
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- PAGINATION -->
+
+    <div class="pagination-bar">
+
+      <button
+        class="pg-btn"
+        [disabled]="currentPage === 1"
+        (click)="goToPage(currentPage - 1)"
+      >
+        Prev
+      </button>
+
+      <button
+        class="pg-btn"
+        *ngFor="let p of getPageNumbers()"
+        [class.active]="p === currentPage"
+        (click)="goToPage(p)"
+      >
+        {{ p }}
+      </button>
+
+      <button
+        class="pg-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="goToPage(currentPage + 1)"
+      >
+        Next
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
