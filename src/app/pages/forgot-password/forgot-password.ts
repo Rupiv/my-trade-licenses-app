@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Component, OnDestroy, ViewChildren, QueryList, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { NgZone } from '@angular/core';
+import { LoaderService } from '../../shared/components/loader/loader.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -12,12 +14,20 @@ import { HttpClient } from '@angular/common/http';
 })
 export class ForgotPasswordComponent implements OnDestroy {
 
+  constructor(private router: Router, private http: HttpClient, private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
+    private loaderservice : LoaderService
+  ) {}
+
   // ─── Step Control ──────────────────────────────────────────────
   // Steps: 1 = Email, 2 = OTP, 3 = Reset Password, 4 = Success
   currentStep: number = 1;
 
   // ─── Step 1: Email ─────────────────────────────────────────────
-  email: string = '';
+  username: string = '';
+  maskedMobile: string = ''; 
+  mobileNo: string = '';
+  sendOtpError: string = '';   
 
   // ─── Step 2: OTP ───────────────────────────────────────────────
   otpDigits: string[] = ['', '', '', '', '', ''];
@@ -36,27 +46,29 @@ export class ForgotPasswordComponent implements OnDestroy {
 
   @ViewChildren('otpRef') otpRefs!: QueryList<ElementRef<HTMLInputElement>>;
 
-  constructor(private router: Router, private http: HttpClient) {}
 
   // ════════════════════════════════════════════════════════════════
   // STEP 1 — Send OTP
   // ════════════════════════════════════════════════════════════════
   sendOtp(): void {
-    if (!this.email || !this.isValidEmail(this.email)) return;
+    this.loaderservice.show();
+    this.sendOtpError = '';  // ← clear previous error
 
-    this.isLoading = true;
-
-    this.http.post('https://pickitover.com/api/api/Auth/forgot-password/send-otp', {
-      login: this.email
-    }).subscribe({
-      next: () => {
-        this.isLoading = false;
+    this.http.post<{ message: string; mobileNo: string }>(
+      'https://pickitover.com/api/api/Auth/forgot-password/send-otp',
+      { login: this.username, mobileNo: this.mobileNo }  // ← also send mobileNo
+    ).subscribe({
+      next: (res) => {
+        this.loaderservice.hide();
+        this.maskedMobile = res?.mobileNo || this.mobileNo;
         this.currentStep = 2;
         this.startResendCooldown();
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        this.isLoading = false;
-        this.otpError = err?.error?.message || 'Failed to send OTP. Please try again.';
+        this.loaderservice.hide();
+        this.sendOtpError = err?.error?.message || 'Failed to send OTP.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -84,35 +96,37 @@ export class ForgotPasswordComponent implements OnDestroy {
    * On keyup: move focus forward when a digit is typed,
    * or handle paste across all boxes.
    */
-  onOtpKeyUp(event: KeyboardEvent, index: number): void {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
+  trackByIndex(index: number): number {
+  return index;
+}
 
-    // Handle paste: spread digits across boxes
-    if (value.length > 1) {
-      const digits = value.replace(/\D/g, '').slice(0, 6).split('');
-      digits.forEach((d, i) => {
-        if (i < this.otpDigits.length) this.otpDigits[i] = d;
-      });
-      // Focus the last filled box
-      const lastIndex = Math.min(digits.length - 1, this.otpDigits.length - 1);
-      this.focusOtpBox(lastIndex);
-      return;
-    }
+onOtpInput(event: Event, index: number): void {
+  const input = event.target as HTMLInputElement;
+  const value = input.value.replace(/\D/g, '');
 
-    // Only allow single digit
-    if (!/^\d$/.test(value)) {
-      this.otpDigits[index] = '';
-      return;
-    }
-
-    this.otpDigits[index] = value;
-
-    // Move to next box
-    if (index < this.otpDigits.length - 1) {
-      this.focusOtpBox(index + 1);
-    }
+  // Handle paste
+  if (value.length > 1) {
+    const digits = value.slice(0, 6).split('');
+    // Create a new array reference to trigger change detection
+    const newDigits = [...this.otpDigits];
+    digits.forEach((d, i) => {
+      if (i < newDigits.length) newDigits[i] = d;
+    });
+    this.otpDigits = newDigits;
+    this.focusOtpBox(Math.min(digits.length - 1, 5));
+    return;
   }
+
+  // Single digit
+  const newDigits = [...this.otpDigits];
+  newDigits[index] = value.slice(-1); // take last char only
+  this.otpDigits = newDigits;
+  input.value = newDigits[index]; // sync DOM
+
+  if (value && index < 5) {
+    this.focusOtpBox(index + 1);
+  }
+}
 
   /**
    * On keydown: move focus backward on Backspace when box is empty.
@@ -133,26 +147,52 @@ export class ForgotPasswordComponent implements OnDestroy {
   /** Verify the entered OTP */
   verifyOtp(): void {
     if (!this.isOtpComplete()) return;
-
-    this.isLoading = true;
+    this.loaderservice.show();
     this.otpError = '';
 
     this.http.post('https://pickitover.com/api/api/Auth/forgot-password/verify-otp', {
-      mobileNo: this.email,
+      mobileNo: this.mobileNo,   // ← changed from login: this.username
       otp: this.otpValue
     }).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.currentStep = 3;
+        this.ngZone.run(() => {
+          this.loaderservice.hide();
+          this.currentStep = 3;
+        });
       },
       error: (err) => {
-        this.isLoading = false;
-        this.otpError = err?.error?.message || 'Invalid OTP. Please try again.';
-        this.otpDigits = ['', '', '', '', '', ''];
-        this.focusOtpBox(0);
+        this.ngZone.run(() => {
+          this.loaderservice.hide();
+          this.otpError = err?.error?.message || 'Invalid OTP. Please try again.';
+          this.otpDigits = ['', '', '', '', '', ''];
+          this.focusOtpBox(0);
+        });
       }
     });
   }
+
+resetPassword(): void {
+  if (!this.newPassword || this.newPassword.length < 8 || this.newPassword !== this.confirmPassword) return;
+  this.loaderservice.show();
+
+  this.http.post('https://pickitover.com/api/api/Auth/forgot-password/reset-password', {
+    login: this.username,
+    newPassword: this.newPassword
+  }).subscribe({
+    next: () => {
+      this.ngZone.run(() => {
+        this.loaderservice.hide();
+        this.currentStep = 4;
+      });
+    },
+    error: (err) => {
+      this.ngZone.run(() => {
+        this.loaderservice.hide();
+        this.otpError = err?.error?.message || 'Failed to reset password. Please try again.';
+      });
+    }
+  });
+}
 
   /** Resend OTP and restart cooldown */
   resendOtp(): void {
@@ -162,7 +202,7 @@ export class ForgotPasswordComponent implements OnDestroy {
     this.otpError = '';
 
     this.http.post('https://pickitover.com/api/api/Auth/forgot-password/send-otp', {
-      login: this.email
+      login: this.username
     }).subscribe({
       next: () => {
         this.startResendCooldown();
@@ -194,33 +234,6 @@ export class ForgotPasswordComponent implements OnDestroy {
   // ════════════════════════════════════════════════════════════════
   // STEP 3 — Reset Password
   // ════════════════════════════════════════════════════════════════
-
-  /** Submit the new password */
-  resetPassword(): void {
-    if (
-      !this.newPassword ||
-      this.newPassword.length < 8 ||
-      this.newPassword !== this.confirmPassword
-    ) return;
-
-    this.isLoading = true;
-
-    this.http.post('https://pickitover.com/api/api/Auth/forgot-password/reset-password', {
-      login: this.email,
-      newPassword: this.newPassword
-    }).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.currentStep = 4;
-      },
-      error: (err) => {
-        this.isLoading = false;
-        // Show error near confirm password or a general message
-        this.otpError = err?.error?.message || 'Failed to reset password. Please try again.';
-      }
-    });
-  }
-
   // ────────────────────────────────────────────────────────────────
   // Password Strength
   // ────────────────────────────────────────────────────────────────
