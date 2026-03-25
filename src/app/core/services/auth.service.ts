@@ -46,15 +46,38 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
     sessionStorage.clear();
   }
 
   isLoggedIn(): boolean {
-    return !!this.tokenService.getToken();
+    const token = this.tokenService.getToken();
+
+    if (!token) return false;
+
+    return !this.isTokenExpired(token);
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return this.tokenService.getToken(); // FIXED
   }
+
+  isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+
+    if (!payload.exp) {
+      return true;
+    }
+
+    const expiryTime = payload.exp * 1000; // seconds → ms
+    const currentTime = Date.now();
+
+    return currentTime > expiryTime;
+
+  } catch (error) {
+    console.error('Invalid token', error);
+    return true;
+  }
+}
 }

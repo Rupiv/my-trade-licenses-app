@@ -1,24 +1,32 @@
 import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
+import { jwtDecode } from 'jwt-decode';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
   
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
-
+  constructor(@Inject(PLATFORM_ID) private platformId: Object,
+  private router: Router) {}
+  private tokenTimer: any;
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
   private TOKEN_KEY = 'access_token';
 
   setToken(token: string) {
-    localStorage.setItem(this.TOKEN_KEY, token);
+    if (this.isBrowser()) {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    }
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    if (this.isBrowser()) {
+      return localStorage.getItem(this.TOKEN_KEY);
+    }
+    return null;
   }
 
   clear() {
@@ -30,8 +38,11 @@ export class TokenService {
     const token = this.getToken();
     if (!token) return null;
 
-    const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
+    try {
+      return jwtDecode(token);
+    } catch {
+      return null;
+    }
   }
 
   // 🔥 Get UserId as NUMBER
@@ -115,5 +126,36 @@ export class TokenService {
     }
 
     return null;
+  }
+
+  getTokenExpiry(): number | null {
+    const token = this.getToken();
+    if (!token) return null;
+
+    const decoded: any = jwtDecode(token);
+    return decoded.exp * 1000; // convert to ms
+  }
+  startTokenTimer() {
+    if (this.tokenTimer) {
+      clearTimeout(this.tokenTimer); 
+    }
+    const expiry = this.getTokenExpiry();
+    if (!expiry) return;
+    const timeout = expiry - Date.now();
+    if (timeout > 0) {
+      this.tokenTimer = setTimeout(() => {
+        this.logout();
+      }, timeout);
+    } else {
+      this.logout();
+    }
+  }
+
+  clearToken() {
+    localStorage.removeItem(this.TOKEN_KEY);
+  }
+  logout() {
+    localStorage.clear();
+    this.router.navigate(['/login']);
   }
 }

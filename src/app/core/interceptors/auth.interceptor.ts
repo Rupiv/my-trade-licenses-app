@@ -5,8 +5,9 @@ import {
   HttpInterceptor,
   HttpRequest
 } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, throwError } from 'rxjs';
 import { TokenService } from '../services/token.service';
+
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -23,8 +24,10 @@ export class AuthInterceptor implements HttpInterceptor {
     }
   }
 
-  intercept(req: HttpRequest<any>, next: HttpHandler) {
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+
     const normalizedUrl = this.normalizeUrl(req.url);
+
     if (normalizedUrl !== req.url) {
       req = req.clone({ url: normalizedUrl });
     }
@@ -39,7 +42,18 @@ export class AuthInterceptor implements HttpInterceptor {
       });
     }
 
-    return next.handle(req);
+    return next.handle(req).pipe(
+      catchError((error: any) => {
+
+        if (error.status === 401) {
+          // 🔥 AUTO LOGOUT WHEN TOKEN EXPIRES
+          this.tokenService.logout();
+        }
+
+        return throwError(() => error);
+      })
+    );
   }
+
 }
 

@@ -30,12 +30,16 @@ import { PaymentFailed } from './shared/components/payment-failed/payment-failed
 import { ZoneApprovingOfficer } from './pages/zone-approving-officer/zone-approving-officer';
 import { ZoneapproverDashboard } from './layout/zoneapprover-dashboard/zoneapprover-dashboard';
 import { ApplicationWiseLicenses } from './shared/components/reports/application-wise-licenses/application-wise-licenses';
+import { AuthGuard } from './core/guards/auth.guard';
+import { RoleGuard } from './core/guards/auth.roleguard';
 
 export const routes: Routes = [
   { path: '', component: Home },
   {
     path: 'admin',
     component: DashboardLayout,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['admin'] },
     children: [
 
       {
@@ -83,6 +87,8 @@ export const routes: Routes = [
   {
     path: 'trader',
     component: DashboardLayout,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['trader'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -104,6 +110,8 @@ export const routes: Routes = [
   {
     path: 'senior-approver',
     component: DashboardLayout,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['seniorapprovingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -118,6 +126,8 @@ export const routes: Routes = [
   {
     path: 'approver',
     component: DashboardLayout,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['approvingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -132,6 +142,8 @@ export const routes: Routes = [
   {
     path: 'zone-approver',
     component: DashboardLayout,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['zonalapprover'] },
     children: [
       { path: '', component: ZoneapproverDashboard },
       { path: 'zone-approving-officer', component: ZoneApprovingOfficer },
@@ -140,17 +152,6 @@ export const routes: Routes = [
   },
 
   // HOME PAGE
-  
-
-    //Example to implement the AuthGuard
-    // {
-    //   path: 'dashboard',
-    //   canActivate: [AuthGuard],
-    //   loadComponent: () =>
-    //     import('./pages/dashboard/dashboard.component')
-    //       .then(m => m.DashboardComponent)
-    // }
-
     {
       path: 'login',
       loadComponent: () => import('./pages/login/login')
