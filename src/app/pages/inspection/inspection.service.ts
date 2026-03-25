@@ -63,25 +63,47 @@ export class InspectionService {
     //return this.http.put<any>(`${this.baseUrl}/trade-type/${tradeTypeId}`);
   }
 
-  getAppliedApproverApplications(
-    loginId: number,
-    licenceApplicationId: number,
-    pageNumber: number,
-    pageSize: number
-  ) {
-    return this.http.get<ApprovedApplications>(
-      `${this.baseUrl}/trade-licence/approver/applications?loginId=${loginId}&licenceApplicationId=${licenceApplicationId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+  // getAppliedApproverApplications(
+  //   loginId: number,
+  //   licenceApplicationId: number,
+  //   pageNumber: number,
+  //   pageSize: number
+  // ) {
+  //   return this.http.get<ApprovedApplications>(
+  //     `${this.baseUrl}/trade-licence/approver/applications?loginId=${loginId}&licenceApplicationId=${licenceApplicationId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+  //   );
+  // }
+  getAppliedApproverApplications(request: {
+    loginId: number;
+    licenceApplicationId: number;
+    pageNumber: number;
+    pageSize: number;
+  }) {
+    return this.http.post<ApprovedApplications>(
+      `${this.baseUrl}/trade-licence/approver/applications/search`,
+      request
     );
   }
 
-  getSeniorApproverApplications(
-    loginId: number,
-    licenceApplicationId: number,
-    pageNumber: number,
-    pageSize: number
-  ) {
-    return this.http.get<ApprovedApplications>(
-      `${this.baseUrl}/trade-licence/senior-approver/applications?loginId=${loginId}&licenceApplicationId=${licenceApplicationId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+  // getSeniorApproverApplications(
+  //   loginId: number,
+  //   licenceApplicationId: number,
+  //   pageNumber: number,
+  //   pageSize: number
+  // ) {
+  //   return this.http.get<ApprovedApplications>(
+  //     `${this.baseUrl}/trade-licence/senior-approver/applications?loginId=${loginId}&licenceApplicationId=${licenceApplicationId}&pageNumber=${pageNumber}&pageSize=${pageSize}`
+  //   );
+  // }
+  getSeniorApproverApplications(request: {
+    loginId: number;
+    licenceApplicationId: number;
+    pageNumber: number;
+    pageSize: number;
+  }) {
+    return this.http.post<ApprovedApplications>(
+      `${this.baseUrl}/trade-licence/senior-approver/applications/search`,
+      request
     );
   }
   //Documents for inspection

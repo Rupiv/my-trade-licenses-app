@@ -83,44 +83,56 @@ export class Inspection {
   totalRecords = 0;
   totalPages = 0;
 
-  loadAppliedApproverApplicatiosn(): void{
-    this.loaderservice.show();
-    const loginId = this.tokenservice.getUserId();
-    if(!loginId){
-      this.notificationservice.show('Invalid login id', 'warning');
-      this.loaderservice.hide();
-      return;
-    }
-    const appNo = Number(this.applicationNo);
-    if (isNaN(appNo)) {
-      console.error('Invalid application number');
-      this.loaderservice.hide();
-      return;
-    }
-    const source$ = this.isSeniorApprover
-      ? this.inspectionservice.getSeniorApproverApplications(loginId, appNo, this.pageNumber, this.pageSize)
-      : this.inspectionservice.getAppliedApproverApplications(loginId, appNo, this.pageNumber, this.pageSize);
+  loadAppliedApproverApplicatiosn(): void {
+  this.loaderservice.show();
 
-    source$.subscribe({
-      next: (res: ApprovedApplications) => {
-        if (res.data && res.data.length > 0) {
-          this.licenceApplicationDetails = res.data[0];
-          this.loadLocationDetailsDetails();
-          this.loadDocumentDetails();
-          this.loadTimeline();
-          console.log(this.licenceApplicationDetails);
-        }
-        this.totalRecords = res.totalRecords;
-        this.loaderservice.hide();
-        this.cdr.detectChanges();
-      },
-      error: () => { 
-        this.licenceApplicationDetails = null;
-        this.loaderservice.hide();
-        this.cdr.detectChanges();
-      }
-    });
+  const loginId = this.tokenservice.getUserId();
+  if (!loginId) {
+    this.notificationservice.show('Invalid login id', 'warning');
+    this.loaderservice.hide();
+    return;
   }
+
+  const appNo = Number(this.applicationNo);
+  if (isNaN(appNo)) {
+    console.error('Invalid application number');
+    this.loaderservice.hide();
+    return;
+  }
+
+  // ✅ Create request object instead of passing params
+  const request = {
+    loginId: loginId,
+    licenceApplicationId: appNo,
+    pageNumber: this.pageNumber,
+    pageSize: this.pageSize
+  };
+
+  const source$ = this.isSeniorApprover
+    ? this.inspectionservice.getSeniorApproverApplications(request)
+    : this.inspectionservice.getAppliedApproverApplications(request);
+
+  source$.subscribe({
+    next: (res: ApprovedApplications) => {
+      if (res.data && res.data.length > 0) {
+        this.licenceApplicationDetails = res.data[0];
+        this.loadLocationDetailsDetails();
+        this.loadDocumentDetails();
+        this.loadTimeline();
+        console.log(this.licenceApplicationDetails);
+      }
+
+      this.totalRecords = res.totalRecords;
+      this.loaderservice.hide();
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.licenceApplicationDetails = null;
+      this.loaderservice.hide();
+      this.cdr.detectChanges();
+    }
+  });
+}
 
   //For Map
   loadlocationDetails: LocationDetails | null = null;
