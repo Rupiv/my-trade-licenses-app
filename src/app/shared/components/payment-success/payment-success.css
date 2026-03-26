@@ -6,9 +6,19 @@
   border-radius: 10px;
 }
 
+.success {
+  background: #f0fff4;
+  border: 1px solid #38a169;
+}
+
 .failed {
   background: #fff5f5;
   border: 1px solid #e53e3e;
+}
+
+.loading {
+  background: #f7fafc;
+  border: 1px solid #cbd5e0;
 }
 
 .details-card {
@@ -16,4 +26,70 @@
   padding: 15px;
   background: #ffffff;
   border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.details-card p {
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+/* ─── Countdown ─── */
+.countdown-banner {
+  margin: 20px 0;
+  padding: 14px 20px;
+  background: #ebf8ff;
+  border-radius: 8px;
+  border: 1px solid #90cdf4;
+}
+
+.countdown-banner p {
+  margin: 0 0 10px 0;
+  font-size: 15px;
+  color: #2b6cb0;
+}
+
+.countdown-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+.countdown-bar-wrapper {
+  background: #bee3f8;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.countdown-bar {
+  height: 100%;
+  background: #3182ce;
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+/* ─── Buttons ─── */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ─── Spinner ─── */
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #e2e8f0;
+  border-top-color: #3182ce;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

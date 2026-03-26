@@ -7,47 +7,32 @@ import { Observable } from 'rxjs';
 })
 export class PaymentSuccessService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = 'https://pickitover.com/api/api/';
 
   constructor(private http: HttpClient) {}
 
-  get<T>(url: string) {
-    return this.http.get<T>(`${this.baseUrl}${url}`);
-  }
-
-  post<T>(url: string, body: any) {
-    return this.http.post<T>(`${this.baseUrl}${url}`, body);
-  }
-
-  put<T>(url: string, body: any) {
-    return this.http.put<T>(`${this.baseUrl}${url}`, body);
+  // ✅ NEW: Decrypt payment params via backend
+  decryptPayment(data: string, key: string, iv: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}payment/decrypt-payment`, {
+      params: { data, key, iv }
+    });
   }
 
   saveApplicationToTradeLicense(licensesApplicationNumber: number) {
     return this.http.post(
-        `${this.baseUrl}/trade-licence/${licensesApplicationNumber}/submit`,
-        {}
+      `${this.baseUrl}/trade-licence/${licensesApplicationNumber}/submit`, {}
     );
   }
 
-
   saveApplicationToLicensesApp(licensesApplicationNumber: number) {
     return this.http.post(
-        `${this.baseUrl}/licence-application/submit/${licensesApplicationNumber}`,
-        {}
+      `${this.baseUrl}/licence-application/submit/${licensesApplicationNumber}`, {}
     );
   }
 
   saveApplicationToTradeLicenseWithPayment(licensesApplicationNumber: number) {
     return this.http.post(
-        `${this.baseUrl}/licence-application/payment-success/${licensesApplicationNumber}`, {}
-    );
-  }
-
-  saveTradeDetailsFinalSubmit(licenceApplicationID: number) {
-    return this.http.post(
-      `${this.baseUrl}/licence-trade-details/final-submit/${licenceApplicationID}`,
-      {}
+      `${this.baseUrl}/licence-application/payment-success/${licensesApplicationNumber}`, {}
     );
   }
 
@@ -57,4 +42,3 @@ export class PaymentSuccessService {
     );
   }
 }
-

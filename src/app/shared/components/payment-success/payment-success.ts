@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { of } from 'rxjs';
@@ -14,16 +14,27 @@ import { TradeLicenceStateService } from '../../services/trade-licenses-service'
   templateUrl: './payment-success.html',
   styleUrl: './payment-success.css',
 })
-export class PaymentSuccess {
+export class PaymentSuccess implements OnInit, OnDestroy {
+
+  // Payment fields
   txnId = '';
   amount = '';
   licensesApplicationId = '';
-  paymentDate = '';
   email = '';
   phone = '';
   corporationId = 0;
+  status = '';
 
-  constructor(private route: ActivatedRoute, private router: Router,
+  // UI state
+  isLoading = true;
+  decryptError = false;
+  countdown = 10;
+
+  private countdownInterval: any;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
     private paymentSuccessService: PaymentSuccessService,
     private cdr: ChangeDetectorRef,
     private loaderservice: LoaderService,
@@ -32,37 +43,92 @@ export class PaymentSuccess {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      this.txnId = params['txnid'];
-      this.amount = params['amount'];
-      this.email = params['email'];
-      this.phone = params['phone'];
-      this.corporationId = +params['corporationId'];
-      this.licensesApplicationId = params['applicationNo'];
-      this.saveApplocation();
+      const data = params['data'];
+      const key = params['key'];
+      const iv = params['iv'];
+
+      if (!data || !key || !iv) {
+        this.decryptError = true;
+        this.isLoading = false;
+        return;
+      }
+
+      this.loaderservice.show();
+
+      // ✅ STEP 1: Decrypt via backend API
+      this.paymentSuccessService.decryptPayment(data, key, iv).subscribe({
+        next: (res: any) => {
+          // ✅ STEP 2: Assign decrypted values to fields
+          this.txnId = res.txnid ?? '';
+          this.amount = res.amount ?? '';
+          this.email = res.email ?? '';
+          this.phone = res.phone ?? '';
+          this.corporationId = res.corporationId ?? 0;
+          this.licensesApplicationId = String(res.applicationId ?? '');
+          this.status = res.status ?? '';
+
+          this.isLoading = false;
+          this.cdr.detectChanges();
+
+          // ✅ STEP 3: Run business logic
+          this.saveApplication();
+
+          // ✅ STEP 4: Start countdown to redirect
+          this.startCountdown();
+        },
+        error: () => {
+          this.decryptError = true;
+          this.isLoading = false;
+          this.loaderservice.hide();
+          this.cdr.detectChanges();
+        }
+      });
     });
   }
 
+  ngOnDestroy(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+  }
 
+  // ✅ Countdown then redirect to dashboard
+  private startCountdown(): void {
+    this.countdownInterval = setInterval(() => {
+      this.countdown--;
+      this.cdr.detectChanges();
+      if (this.countdown <= 0) {
+        clearInterval(this.countdownInterval);
+        this.goToDashboard();
+      }
+    }, 1000);
+  }
 
-  saveApplocation(){
+  public goToDashboard(): void {
+    this.router.navigate(['trader']);
+  }
+
+  goToApplication(): void {
+    this.router.navigate([
+      'trader/licenses-application',
+      this.licensesApplicationId
+    ]);
+  }
+
+  // ─── Business Logic (unchanged) ───────────────────────────────────────────
+
+  private saveApplication(): void {
     this.loaderservice.show();
     const licenceApplicationID = Number(this.licensesApplicationId);
+
     if (!licenceApplicationID || Number.isNaN(licenceApplicationID)) {
-      //console.error('Invalid licenceApplicationID in payment-success:', this.licensesApplicationId);
       this.loaderservice.hide();
       return;
     }
 
-    // 1) Mark payment success first
     this.paymentSuccessService.saveApplicationToTradeLicenseWithPayment(licenceApplicationID).subscribe({
-      next: (paymentRes) => {
-        //console.log('Application submitted to Trade License with payment:', paymentRes);
-        this.submitTradeLicenceFinal(licenceApplicationID);
-      },
-      error: (err) => {
-        //console.error('Error submitting application to Trade License with payment:', err);
-        this.loaderservice.hide();
-      }
+      next: () => this.submitTradeLicenceFinal(licenceApplicationID),
+      error: () => this.loaderservice.hide()
     });
   }
 
@@ -70,26 +136,15 @@ export class PaymentSuccess {
     this.resolveTradeLicenceID(licenceApplicationID).subscribe({
       next: (tradeLicenceID) => {
         if (!tradeLicenceID) {
-          //console.warn('Trade Licence ID missing. Skipping trade-licence final submit.');
           this.loaderservice.hide();
           return;
         }
-
         this.paymentSuccessService.saveApplicationToTradeLicense(tradeLicenceID).subscribe({
-          next: (tradeRes) => {
-            //console.log('Trade licence final submit success:', tradeRes);
-            this.submitLicenceApplicationFinal(licenceApplicationID);
-          },
-          error: (err) => {
-            //console.error('Error saving application to Trade License:', err);
-            this.loaderservice.hide();
-          }
+          next: () => this.submitLicenceApplicationFinal(licenceApplicationID),
+          error: () => this.loaderservice.hide()
         });
       },
-      error: (err) => {
-        //console.error('Failed to resolve tradeLicenceID:', err);
-        this.loaderservice.hide();
-      }
+      error: () => this.loaderservice.hide()
     });
   }
 
@@ -108,10 +163,7 @@ export class PaymentSuccess {
         }
         return null;
       }),
-      catchError((err) => {
-        //console.error('Error fetching licence application details for tradeLicenceID:', err);
-        return of(null);
-      })
+      catchError(() => of(null))
     );
   }
 
@@ -119,24 +171,17 @@ export class PaymentSuccess {
     this.paymentSuccessService.saveApplicationToLicensesApp(licenceApplicationID).subscribe({
       next: (licenceRes: any) => {
         if (this.isAlreadyFinallySubmitted(licenceRes)) {
-          //console.warn('Licence application already finally submitted. Treating as success.', licenceRes);
-          //console.log('Final submit flow completed.');
           this.loaderservice.hide();
           return;
         }
-        //console.log('Licence application final submit success:', licenceRes);
-        //console.log('Final submit flow completed.');
         this.loaderservice.hide();
       },
       error: (err) => {
         const payload = err?.error ?? err;
         if (this.isAlreadyFinallySubmitted(payload)) {
-          //console.warn('Licence application already finally submitted (error payload). Treating as success.', payload);
-          //console.log('Final submit flow completed.');
           this.loaderservice.hide();
           return;
         }
-        //console.error('Error submitting application to Licence Application:', err);
         this.loaderservice.hide();
       }
     });
@@ -149,13 +194,5 @@ export class PaymentSuccess {
       message.includes('already finally submitted') ||
       (submitted === false && message.includes('already submitted'))
     );
-  }
-
-  goToApplication(){
-    //console.log('working');
-    this.router.navigate([
-      'trader/view-licenses-application',
-      this.licensesApplicationId
-    ]);
   }
 }

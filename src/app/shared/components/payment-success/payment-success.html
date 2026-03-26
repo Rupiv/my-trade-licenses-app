@@ -1,11 +1,28 @@
-<div class="payment-container success">
+<!-- ─── Loading State ─── -->
+<div *ngIf="isLoading" class="payment-container loading">
+  <div class="spinner"></div>
+  <p>Verifying your payment, please wait...</p>
+</div>
+
+<!-- ─── Error State ─── -->
+<div *ngIf="!isLoading && decryptError" class="payment-container failed">
+  <div class="alert alert-danger fw-bold text-center">
+    ❌ Payment Verification Failed
+  </div>
+  <p class="text-center">We could not verify your payment details. Please contact support.</p>
+  <div class="text-center mt-3">
+    <button class="btn btn-outline-danger" (click)="goToDashboard()">
+      Go to Dashboard
+    </button>
+  </div>
+</div>
+
+<!-- ─── Success State ─── -->
+<div *ngIf="!isLoading && !decryptError" class="payment-container success">
 
   <div class="alert alert-success fw-bold text-center">
     ✔ APPLICATION SUBMITTED SUCCESSFULLY
   </div>
-
-  <!-- <h6>Temporary Application No:</h6>
-  <strong class="fs-5 text-primary">T4RE1821K</strong> -->
 
   <h2>✅ Payment Successful</h2>
 
@@ -19,10 +36,30 @@
     <p><strong>Amount Paid:</strong> ₹{{ amount }}</p>
     <p><strong>Email:</strong> {{ email }}</p>
     <p><strong>Phone:</strong> {{ phone }}</p>
-    <!-- <p><strong>Corporation ID:</strong> {{ corporationId }}</p> -->
   </div>
 
-  <!-- <button class="btn btn-primary" (click)="goToApplication()">
-    View Applications
-  </button> -->
+  <!-- ─── Countdown Banner ─── -->
+  <div class="countdown-banner">
+    <p>
+      Redirecting to dashboard in
+      <span class="countdown-number">{{ countdown }}</span>
+      second{{ countdown !== 1 ? 's' : '' }}...
+    </p>
+    <div class="countdown-bar-wrapper">
+      <div
+        class="countdown-bar"
+        [style.width.%]="(countdown / 10) * 100">
+      </div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn btn-primary" (click)="goToApplication()">
+      View Application
+    </button>
+    <button class="btn btn-outline-secondary" (click)="goToDashboard()">
+      Go to Dashboard Now
+    </button>
+  </div>
+
 </div>
