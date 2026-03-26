@@ -38,8 +38,8 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: DashboardLayout,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['admin'] },
+    // canActivate: [AuthGuard, RoleGuard],
+    // data: { roles: ['admin'] },
     children: [
 
       {
@@ -87,8 +87,8 @@ export const routes: Routes = [
   {
     path: 'trader',
     component: DashboardLayout,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['trader'] },
+    // canActivate: [AuthGuard, RoleGuard],
+    // data: { roles: ['trader'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -110,8 +110,8 @@ export const routes: Routes = [
   {
     path: 'senior-approver',
     component: DashboardLayout,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['seniorapprovingofficer'] },
+    // canActivate: [AuthGuard, RoleGuard],
+    // data: { roles: ['seniorapprovingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -126,8 +126,8 @@ export const routes: Routes = [
   {
     path: 'approver',
     component: DashboardLayout,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['approvingofficer'] },
+    // canActivate: [AuthGuard, RoleGuard],
+    // data: { roles: ['approvingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -142,8 +142,8 @@ export const routes: Routes = [
   {
     path: 'zone-approver',
     component: DashboardLayout,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['zonalapprover'] },
+    // canActivate: [AuthGuard, RoleGuard],
+    // data: { roles: ['zonalapprover'] },
     children: [
       { path: '', component: ZoneapproverDashboard },
       { path: 'zone-approving-officer', component: ZoneApprovingOfficer },
