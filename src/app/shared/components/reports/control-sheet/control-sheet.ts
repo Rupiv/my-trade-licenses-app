@@ -43,7 +43,7 @@ export class ControlSheet implements OnInit {
         this.loaderservice.hide();
       },
       error: (err) => {
-        console.error(err);
+        //console.error(err);
         this.loaderservice.hide();
       }
     });

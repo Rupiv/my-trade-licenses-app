@@ -220,9 +220,11 @@ export class MasterDataCompliance {
     this.masterDataComplianceService.getTradeTypes().subscribe({
       next: (res) => {
         this.tradeTypes = res;
-      console.log('Trade Types:', this.tradeTypes);
+        //console.log('Trade Types:', this.tradeTypes);
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 
@@ -232,7 +234,9 @@ export class MasterDataCompliance {
       next: (res) => {
         this.mlaConstituencies = res;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 
@@ -243,7 +247,9 @@ export class MasterDataCompliance {
       next: (res) => {
         this.wards = res;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 
@@ -252,7 +258,9 @@ export class MasterDataCompliance {
       next: (res) => {
         this.tradeMajors = res;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 
@@ -270,7 +278,9 @@ export class MasterDataCompliance {
         next: (res) => {
           this.tradeMinors = res;
         },
-        error: (err) => console.error(err)
+        error: (err) => {
+          //console.error(err)
+        }
       });
   }
 
@@ -286,7 +296,9 @@ export class MasterDataCompliance {
         next: (res) => {
           this.tradeSubs = res;
         },
-        error: (err) => console.error(err)
+        error: (err) => {
+          //console.error(err)
+        }
       });
   }
 
@@ -296,7 +308,9 @@ export class MasterDataCompliance {
       next: (res) => {
         this.zones = res;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 
@@ -306,7 +320,9 @@ export class MasterDataCompliance {
       next: (res) => {
         this.zoneClassifications = res;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
     
   }
@@ -337,13 +353,15 @@ export class MasterDataCompliance {
             .updateMLA(mlaValue.constituencyID, payload)
             .subscribe({
               next: () => {
-                console.log("MLA Updated Successfully");
+                //console.log("MLA Updated Successfully");
 
                 this.loadMLAConstituencies();
                 this.mlaForm.reset();
                 this.activeModal = null;
               },
-              error: (err) => console.error(err)
+              error: (err) => {
+                //console.error(err)
+              }
             });
 
         } else {
@@ -368,13 +386,15 @@ export class MasterDataCompliance {
             .createMLA(payload)
             .subscribe({
               next: () => {
-                console.log("MLA Created Successfully");
+                //console.log("MLA Created Successfully");
 
                 this.loadMLAConstituencies();
                 this.mlaForm.reset();
                 this.activeModal = null;
               },
-              error: (err) => console.error(err)
+              error: (err) => {
+                //console.error(err)
+              }
             });
         }
 
@@ -653,13 +673,15 @@ export class MasterDataCompliance {
             .updateTradeType(formValue.tradeTypeID, payload)
             .subscribe({
               next: () => {
-                console.log("Trade Type Updated Successfully");
+                //console.log("Trade Type Updated Successfully");
 
                 this.loadTradeTypes();          // refresh list
                 this.tradeCategoryForm.reset(); // clear form
                 this.activeModal = null;        // close modal
               },
-              error: (err) => console.error(err)
+              error: (err) => {
+                //console.error(err)
+              }
             });
 
         } else {
@@ -676,13 +698,15 @@ export class MasterDataCompliance {
             .createTradeType(payload)
             .subscribe({
               next: () => {
-                console.log("Trade Type Created Successfully");
+                //console.log("Trade Type Created Successfully");
 
                 this.loadTradeTypes();          // refresh list
                 this.tradeCategoryForm.reset(); // clear form
                 this.activeModal = null;        // close modal
               },
-              error: (err) => console.error(err)
+              error: (err) => {
+                //console.error(err)
+              }
             });
 
         }

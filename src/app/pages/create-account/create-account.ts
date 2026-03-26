@@ -88,7 +88,7 @@ export class CreateAccount {
           res?.Message || 'OTP sent successfully',
           'success'
         );
-        console.log('OTP response:', res);
+        // console.log('OTP response:', res);
       },
       error: () => {
         this.notificationService.show(

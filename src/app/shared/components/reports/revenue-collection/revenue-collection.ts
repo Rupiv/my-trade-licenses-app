@@ -40,7 +40,9 @@ export class RevenueCollection implements OnInit {
         this.table = res.corporationSummary;
         this.filteredTable = res.corporationSummary;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        //console.error(err)
+      }
     });
   }
 

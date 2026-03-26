@@ -48,7 +48,7 @@ export class PaymentSuccess {
     this.loaderservice.show();
     const licenceApplicationID = Number(this.licensesApplicationId);
     if (!licenceApplicationID || Number.isNaN(licenceApplicationID)) {
-      console.error('Invalid licenceApplicationID in payment-success:', this.licensesApplicationId);
+      //console.error('Invalid licenceApplicationID in payment-success:', this.licensesApplicationId);
       this.loaderservice.hide();
       return;
     }
@@ -56,11 +56,11 @@ export class PaymentSuccess {
     // 1) Mark payment success first
     this.paymentSuccessService.saveApplicationToTradeLicenseWithPayment(licenceApplicationID).subscribe({
       next: (paymentRes) => {
-        console.log('Application submitted to Trade License with payment:', paymentRes);
+        //console.log('Application submitted to Trade License with payment:', paymentRes);
         this.submitTradeLicenceFinal(licenceApplicationID);
       },
       error: (err) => {
-        console.error('Error submitting application to Trade License with payment:', err);
+        //console.error('Error submitting application to Trade License with payment:', err);
         this.loaderservice.hide();
       }
     });
@@ -70,24 +70,24 @@ export class PaymentSuccess {
     this.resolveTradeLicenceID(licenceApplicationID).subscribe({
       next: (tradeLicenceID) => {
         if (!tradeLicenceID) {
-          console.warn('Trade Licence ID missing. Skipping trade-licence final submit.');
+          //console.warn('Trade Licence ID missing. Skipping trade-licence final submit.');
           this.loaderservice.hide();
           return;
         }
 
         this.paymentSuccessService.saveApplicationToTradeLicense(tradeLicenceID).subscribe({
           next: (tradeRes) => {
-            console.log('Trade licence final submit success:', tradeRes);
+            //console.log('Trade licence final submit success:', tradeRes);
             this.submitLicenceApplicationFinal(licenceApplicationID);
           },
           error: (err) => {
-            console.error('Error saving application to Trade License:', err);
+            //console.error('Error saving application to Trade License:', err);
             this.loaderservice.hide();
           }
         });
       },
       error: (err) => {
-        console.error('Failed to resolve tradeLicenceID:', err);
+        //console.error('Failed to resolve tradeLicenceID:', err);
         this.loaderservice.hide();
       }
     });
@@ -109,7 +109,7 @@ export class PaymentSuccess {
         return null;
       }),
       catchError((err) => {
-        console.error('Error fetching licence application details for tradeLicenceID:', err);
+        //console.error('Error fetching licence application details for tradeLicenceID:', err);
         return of(null);
       })
     );
@@ -119,24 +119,24 @@ export class PaymentSuccess {
     this.paymentSuccessService.saveApplicationToLicensesApp(licenceApplicationID).subscribe({
       next: (licenceRes: any) => {
         if (this.isAlreadyFinallySubmitted(licenceRes)) {
-          console.warn('Licence application already finally submitted. Treating as success.', licenceRes);
-          console.log('Final submit flow completed.');
+          //console.warn('Licence application already finally submitted. Treating as success.', licenceRes);
+          //console.log('Final submit flow completed.');
           this.loaderservice.hide();
           return;
         }
-        console.log('Licence application final submit success:', licenceRes);
-        console.log('Final submit flow completed.');
+        //console.log('Licence application final submit success:', licenceRes);
+        //console.log('Final submit flow completed.');
         this.loaderservice.hide();
       },
       error: (err) => {
         const payload = err?.error ?? err;
         if (this.isAlreadyFinallySubmitted(payload)) {
-          console.warn('Licence application already finally submitted (error payload). Treating as success.', payload);
-          console.log('Final submit flow completed.');
+          //console.warn('Licence application already finally submitted (error payload). Treating as success.', payload);
+          //console.log('Final submit flow completed.');
           this.loaderservice.hide();
           return;
         }
-        console.error('Error submitting application to Licence Application:', err);
+        //console.error('Error submitting application to Licence Application:', err);
         this.loaderservice.hide();
       }
     });
@@ -152,7 +152,7 @@ export class PaymentSuccess {
   }
 
   goToApplication(){
-    console.log('working');
+    //console.log('working');
     this.router.navigate([
       'trader/view-licenses-application',
       this.licensesApplicationId

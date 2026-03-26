@@ -63,9 +63,9 @@ export class SeniorApprovingOfficer {
     }
     this.seniorapprovingofficerService.getSubmittedInspectionApplications(loginId, this.pageNumber, this.pageSize).subscribe({
       next: (response: SeniorApprovedApplications) => {
-        console.log('Response:', response);
+        //console.log('Response:', response);
         this.submittedInspectionApplications = response?.data ?? response?.Data ?? [];
-        console.log(this.submittedInspectionApplications);
+        //console.log(this.submittedInspectionApplications);
         this.totalRecords = Number(response?.totalRecords ?? response?.TotalRecords ?? 0);
         this.pageNumber = Number(response?.pageNumber ?? response?.PageNumber ?? this.pageNumber);
         this.pageSize = Number(response?.pageSize ?? response?.PageSize ?? this.pageSize);
@@ -76,7 +76,7 @@ export class SeniorApprovingOfficer {
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Error fetching submitted inspection applications:', error);
+        //console.error('Error fetching submitted inspection applications:', error);
         this.cdr.detectChanges();
       }
     });

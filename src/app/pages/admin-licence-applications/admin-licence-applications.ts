@@ -169,7 +169,7 @@ export class AdminLicenceApplications implements OnDestroy {
         if (currentRequest !== this.requestId) {
           return;
         }
-        console.error('Failed to load admin applications', error);
+        //console.error('Failed to load admin applications', error);
         this.applications = [];
         this.statusOptions = [];
         this.totalRecords = 0;
@@ -191,7 +191,7 @@ export class AdminLicenceApplications implements OnDestroy {
         this.filteredMohs = [...this.mohs];
       },
       error: (error) => {
-        console.error('Failed to load application filters', error);
+        //console.error('Failed to load application filters', error);
         this.zones = [];
         this.mohs = [];
         this.filteredMohs = [];
@@ -239,7 +239,7 @@ export class AdminLicenceApplications implements OnDestroy {
         );
       },
       error: (error) => {
-        console.error('Failed to load wards', error);
+        //console.error('Failed to load wards', error);
         this.wards = [];
       }
     });

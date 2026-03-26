@@ -319,7 +319,7 @@ export class ApplicationWiseLicenses implements OnInit {
 
         },
         error: (err) => {
-          console.error('Error loading zones', err);
+          //console.error('Error loading zones', err);
         }
       });
   }
@@ -342,7 +342,7 @@ export class ApplicationWiseLicenses implements OnInit {
       },
 
       error: (err) => {
-        console.error('Failed to load wards', err);
+        //console.error('Failed to load wards', err);
       }
 
     });
@@ -377,7 +377,7 @@ export class ApplicationWiseLicenses implements OnInit {
       },
 
       error: (err) => {
-        console.error('Export fetch failed', err);
+        //console.error('Export fetch failed', err);
       }
 
     });

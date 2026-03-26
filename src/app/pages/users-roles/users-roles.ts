@@ -169,7 +169,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          console.error('Search failed:', err);
+          //console.error('Search failed:', err);
           this.isLoading = false;
           this.showToast('error', 'Search failed. Please try again.');
           this.cdr.markForCheck();
@@ -195,7 +195,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          console.error('Load users failed:', err);
+          //console.error('Load users failed:', err);
           this.isLoading = false;
           this.showToast('error', 'Failed to load users.');
           this.cdr.markForCheck();
@@ -222,7 +222,9 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.zones = res;
           this.cdr.markForCheck();
         },
-        error: (err) => console.error('Zone load failed:', err),
+        error: (err) => {
+          //console.error('Zone load failed:', err),
+        }
       });
   }
 
@@ -235,7 +237,9 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.officeList = res;
           this.cdr.markForCheck();
         },
-        error: (err) => console.error('Office load failed:', err),
+        error: (err) => {
+          //console.error('Office load failed:', err),
+        }
       });
   }
 
@@ -248,7 +252,9 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.designationList = res.filter((d) => d.isActive === 'Y');
           this.cdr.markForCheck();
         },
-        error: (err) => console.error('Designation load failed:', err),
+        error: (err) => {
+          //console.error('Designation load failed:', err),
+        }
       });
   }
 
@@ -332,7 +338,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.refreshList();
         },
         error: (err) => {
-          console.error('Add user failed:', err);
+          //console.error('Add user failed:', err);
           this.isSaving = false;
           this.showToast('error', 'Failed to add user. Please try again.');
           this.cdr.markForCheck();
@@ -352,7 +358,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.refreshList();
         },
         error: (err) => {
-          console.error('Update user failed:', err);
+          //console.error('Update user failed:', err);
           this.isSaving = false;
           this.showToast('error', 'Failed to update user. Please try again.');
           this.cdr.markForCheck();
@@ -397,7 +403,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.refreshList();
         },
         error: (err) => {
-          console.error('Delete user failed:', err);
+          //console.error('Delete user failed:', err);
           this.isDeleting = false;
           this.showToast('error', 'Failed to delete user. Please try again.');
           this.cdr.markForCheck();

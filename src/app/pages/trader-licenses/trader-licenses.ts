@@ -64,7 +64,7 @@ export class TraderLicenses {
       .getAppliedLicensesApplications(loginId)
       .subscribe({
         next: (res: AppliedLicensesResponse) => {
-          console.log(res);
+          //console.log(res);
           this.allLicensesApplications = res.applications;
           this.loaderservice.hide();
         },
@@ -74,7 +74,7 @@ export class TraderLicenses {
             'Problem with loading application details',
             'warning'
           );
-          console.error(err);
+          //console.error(err);
         }
       });
   }
@@ -93,7 +93,7 @@ export class TraderLicenses {
   }
 
   openApplication(licenceApplicationID: number): void {
-    console.log('working');
+    //console.log('working');
     this.router.navigate([
       'trader/view-licenses-application',
       licenceApplicationID

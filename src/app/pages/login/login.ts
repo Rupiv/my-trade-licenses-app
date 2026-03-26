@@ -69,7 +69,7 @@ export class Login {
         }
       },
       error: (err) => {
-        console.log(err);
+        //console.log(err);
         this.notificationService.show('Invalid credentials', 'warning');
       }
     });
@@ -82,7 +82,7 @@ export class Login {
       this.auth.login(payload).subscribe({
         next: () => {
             const role = this.normalizeRole(this.tokenService.getUserRole());
-            console.log('Login role:', role);
+            //console.log('Login role:', role);
 
             if (role === 'admin') {
               this.router.navigate(['/admin']);

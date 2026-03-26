@@ -71,8 +71,8 @@ export class Inspection {
     this.loadSavedInspectionPhotos();
   }
 
-  //#region To load Map 
-  
+  //#region To load Map
+
   //#endregion
 
 //#region Pageload details when approver clicks on application ID
@@ -95,7 +95,7 @@ export class Inspection {
 
   const appNo = Number(this.applicationNo);
   if (isNaN(appNo)) {
-    console.error('Invalid application number');
+    //console.error('Invalid application number');
     this.loaderservice.hide();
     return;
   }
@@ -119,7 +119,7 @@ export class Inspection {
         this.loadLocationDetailsDetails();
         this.loadDocumentDetails();
         this.loadTimeline();
-        console.log(this.licenceApplicationDetails);
+        //console.log(this.licenceApplicationDetails);
       }
 
       this.totalRecords = res.totalRecords;
@@ -163,7 +163,7 @@ export class Inspection {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error fetching location details:', err);
+        //console.error('Error fetching location details:', err);
       }
     });
   }
@@ -174,13 +174,13 @@ export class Inspection {
     this.inspectionservice.getDocumentDetails(Number(this.applicationNo)).subscribe({
       next: (res) => {
         this.LicensesApplicationDocuments = res;
-        console.log('Document details loaded:', this.LicensesApplicationDocuments);
-        console.log('Document details loaded:', res);
-        console.log(this.applicationNo);
+        //console.log('Document details loaded:', this.LicensesApplicationDocuments);
+        //console.log('Document details loaded:', res);
+        //console.log(this.applicationNo);
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error fetching document details:', err);
+        //console.error('Error fetching document details:', err);
       }
     });
   }
@@ -193,7 +193,7 @@ export class Inspection {
         window.open(url);
       },
       error: (err) => {
-        console.error(err);
+        //console.error(err);
       }
     });
   }
@@ -255,19 +255,19 @@ export class Inspection {
   //#endregions
 
   saveDraft() {
-    console.log('Draft saved', {
-      applicationNo: this.applicationNo,
-      checklist: this.inspectionChecklist,
-      remarks: this.remarks
-    });
+    // console.log('Draft saved', {
+    //   applicationNo: this.applicationNo,
+    //   checklist: this.inspectionChecklist,
+    //   remarks: this.remarks
+    // });
   }
 
   submitInspection() {
-    console.log('Inspection submitted', {
-      applicationNo: this.applicationNo,
-      checklist: this.inspectionChecklist,
-      remarks: this.remarks
-    });
+    // console.log('Inspection submitted', {
+    //   applicationNo: this.applicationNo,
+    //   checklist: this.inspectionChecklist,
+    //   remarks: this.remarks
+    // });
 
     const playload = {
       licenceApplicationID: Number(this.applicationNo),
@@ -284,7 +284,7 @@ export class Inspection {
     this.router.navigate(['/approver/approving-officer']);
     // this.inspectionservice.submitInspection(playload).subscribe({
     //   next: (res) => {
-        
+
     //   },
     //   error: (err) => {
     //     this.notificationservice.show('Error submitting inspection', 'error');
@@ -361,7 +361,7 @@ export class Inspection {
           actionReasonIds: ''
         };
 
-        console.log('[Inspection] submitProcessAction payload:', payload);
+        //console.log('[Inspection] submitProcessAction payload:', payload);
 
         this.inspectionservice.submitLicenceProcessAction(payload).subscribe({
           next: () => {
@@ -371,7 +371,7 @@ export class Inspection {
           },
           error: (error) => {
             this.setSubmitting(false);
-            console.error('[Inspection] submitProcessAction API error:', error);
+            //console.error('[Inspection] submitProcessAction API error:', error);
             const message = this.extractApiErrorMessage(error);
             this.notificationservice.show(message, 'error');
           }
@@ -379,7 +379,7 @@ export class Inspection {
       })
       .catch((err) => {
         this.setSubmitting(false);
-        console.error('[Inspection] Photo upload failed:', err);
+        //console.error('[Inspection] Photo upload failed:', err);
         this.notificationservice.show('Failed to upload inspection photos', 'error');
       });
   }
@@ -484,13 +484,17 @@ export class Inspection {
               ];
               this.cdr.detectChanges();
             },
-            error: (err) => console.error('Failed to load photo blob:', err)
+            error: (err) => {
+              //console.error('Failed to load photo blob:', err)
+            }
           });
         });
 
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading inspection photos:', err)
+      error: (err) => {
+        //console.error('Error loading inspection photos:', err)
+      }
     });
   }
 }

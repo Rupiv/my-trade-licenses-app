@@ -81,7 +81,7 @@ export class PortalAdmin {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Failed to load admin dashboard', err);
+        //console.error('Failed to load admin dashboard', err);
         this.loadError = 'Dashboard service is unavailable. Please try again.';
         this.isLoading = false;
         this.cdr.detectChanges();

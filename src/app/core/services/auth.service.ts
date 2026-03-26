@@ -76,7 +76,7 @@ export class AuthService {
     return currentTime > expiryTime;
 
   } catch (error) {
-    console.error('Invalid token', error);
+    //console.error('Invalid token', error);
     return true;
   }
 }
