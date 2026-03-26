@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { NotificationService } from '../../shared/components/notification/notification.service';
 import { signal } from '@angular/core';
 import { LoginService } from './login.service';
+import { Console } from 'console';
 
 @Component({
   selector: 'app-login',
@@ -64,6 +65,7 @@ export class Login {
     next: () => {
         // Extract UserId from JWT
         const role = this.tokenService.getUserRole();
+        console.log(role);
         if(role == 'TRADE_OWNER'){
           this.router.navigate(['/trader']);
         }
@@ -80,10 +82,11 @@ export class Login {
       };
 
       this.auth.login(payload).subscribe({
-        next: () => {
+        next: (res) => {
             const role = this.normalizeRole(this.tokenService.getUserRole());
-            //console.log('Login role:', role);
-
+            console.log('Login role:', role);
+            const decoded = this.tokenService.getDecodedToken();
+            console.log('Full decoded token:', decoded);
             if (role === 'admin') {
               this.router.navigate(['/admin']);
             } else if (role === 'trader' || role === 'tradeowner') {

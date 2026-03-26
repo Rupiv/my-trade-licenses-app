@@ -16,7 +16,9 @@ export class AuthService {
   login(payload: any) {
     return this.api.post<any>('/Auth/login', payload).pipe(
       tap(res => {
-        this.tokenService.setToken(res.accessToken); // JWT token
+        if (res.success && res.accessToken) {
+          this.tokenService.setToken(res.accessToken);
+        }
       })
     );
   }
@@ -24,7 +26,9 @@ export class AuthService {
   userlogin(payload: any) {
     return this.api.post<any>('/Auth/login-USER', payload).pipe(
       tap(res => {
-        this.tokenService.setToken(res.accessToken); // JWT token
+        if (res.success && res.accessToken) {
+          this.tokenService.setToken(res.accessToken);
+        }
       })
     );
   }

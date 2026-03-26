@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { NotificationComponent } from './shared/components/notification/notification';
 import { LoaderComponent } from './shared/components/loader/loader';
 import { TokenService } from './core/services/token.service';
+import { GoogleMapsService } from './core/services/google-maps.service';
 
 @Component({
   selector: 'app-root',
@@ -14,8 +15,11 @@ import { TokenService } from './core/services/token.service';
 export class App {
   protected readonly title = signal('my-trade-licenses-app');
 
-  constructor(private tokenservice: TokenService){}
+  constructor(private tokenservice: TokenService,
+    private mapsService: GoogleMapsService
+  ){}
   ngOnInit(){
+    this.mapsService.loadGoogleMaps();
     const token = this.tokenservice.getToken();
     if (token) {
       this.tokenservice.startTokenTimer(); 

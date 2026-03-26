@@ -13,7 +13,7 @@ export class TokenService {
   private tokenTimer: any;
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
+  } 
   private TOKEN_KEY = 'access_token';
 
   setToken(token: string) {
