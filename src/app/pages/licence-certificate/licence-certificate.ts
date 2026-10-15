@@ -30,10 +30,18 @@ interface ApprovedLicenceCertificateItem {
   wardID?: number;
   wardName?: string;
   applicationStatus: string;
+  // GBA (only for licences whose corporation/ward was confirmed)
+  corporationName?: string | null;
+  gbaWardName?: string | null;
+  // Online applications only (legacy licences leave these empty)
+  validUpto?: string | null;
+  amountPaid?: number | null;
+  paymentMode?: string | null;
 }
 
 interface LicenceCertificateViewModel {
   wardName: string;
+  corporationName: string;
   licenceNo: string;
   applicationNo: string;
   financialYear: string;
@@ -82,6 +90,7 @@ export class LicenceCertificate {
 
   viewModel: LicenceCertificateViewModel = {
     wardName: '-',
+    corporationName: '',
     licenceNo: '-',
     applicationNo: '-',
     financialYear: '-',
@@ -383,7 +392,8 @@ export class LicenceCertificate {
     record: ApprovedLicenceCertificateItem
   ): LicenceCertificateViewModel {
     return {
-      wardName: record.wardName || (record.wardID ? `Ward ${record.wardID}` : '-'),
+      wardName: record.gbaWardName || record.wardName || (record.wardID ? `Ward ${record.wardID}` : '-'),
+      corporationName: record.corporationName || '',
       licenceNo: record.licenceNumber || '-',
       applicationNo: record.applicationNumber || '-',
       financialYear: record.financialYear || '-',
@@ -395,12 +405,14 @@ export class LicenceCertificate {
       majorTrade: record.tradeMajorName || '-',
       minorTrade: record.tradeMinorName || '-',
       subTrade: record.tradeSubName || '-',
-      validUpto: this.formatDate(record.licenceToDate),
-      feesPaid: record.tradeFee ? record.tradeFee.toString() : '-',
-      paymentMode: '-',
+      validUpto: this.formatDate(record.validUpto || record.licenceToDate),
+      feesPaid: record.amountPaid
+        ? record.amountPaid.toString()
+        : record.tradeFee ? record.tradeFee.toString() : '-',
+      paymentMode: record.paymentMode || '-',
       receiptNo: record.receiptNumber || '-',
       paymentDate: this.formatDate(record.receiptDate),
-      renewBefore: this.formatDate(record.licenceToDate),
+      renewBefore: this.formatDate(record.validUpto || record.licenceToDate),
       qrCodeOrCertificateHash: record.applicationNumber || '-',
     };
   }

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { AssemblyConstituency, LicenseDocuments, MLCConstituency, RoadWidthDetails, TradeLicenseApplicationDetails, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
+import { AssemblyConstituency, GbaCorporation, GbaWard, GbaZone, LicenseDocuments, MLCConstituency, RoadWidthDetails, TradeLicenseApplicationDetails, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
 import { platform } from 'os';
 import { Observable } from 'rxjs';
 
@@ -58,10 +58,54 @@ export class NewLicensesService {
   getZones(){
     return this.get<Zones[]>('/bbmp-zones');
   }
+
+  // ---- GBA: Corporation -> Zone -> Ward ----
+  getGbaCorporations() {
+    return this.get<GbaCorporation[]>('/gba/corporations');
+  }
+
+  getGbaZones(corporationId: number) {
+    return this.get<GbaZone[]>(`/gba/corporations/${corporationId}/zones`);
+  }
+
+  getGbaWards(zoneId: number) {
+    return this.get<GbaWard[]>(`/gba/wards?zoneId=${zoneId}`);
+  }
+
+  getGbaDraftLocation(tempTradeLicenceId: number) {
+    return this.get<{ gbaWardID: number; gbaZoneID: number; corporationID: number }>(
+      `/gba/draft-location/${tempTradeLicenceId}`
+    );
+  }
 getLicenceApplicationById(id: number) {
   return this.http.get<any>(
     `${this.baseUrl}/licence-application/${id}`
   );
+}
+
+// Everything saved for a draft: header + applicant, trades, documents, geo-location.
+// "draft/..." (not "temp/..."): the client data-centre firewall blocks URLs with a /temp/ path.
+getDraftFullDetails(licenceApplicationId: number) {
+  return this.http.get<any>(
+    `${this.baseUrl}/licence-trade-details/draft/full-details/${licenceApplicationId}`
+  );
+}
+
+// Licence_Master_Temp row of a draft (zone classification, telephone, PID... not in full-details)
+getTradeLicenceById(tradeLicenceId: number) {
+  return this.http.get<any[]>(`${this.baseUrl}/trade-licence/${tradeLicenceId}`);
+}
+
+updateTradeLicence(tradeLicenceId: number, payload: any) {
+  return this.http.put<any>(`${this.baseUrl}/trade-licence/${tradeLicenceId}`, payload);
+}
+
+updateLicenceApplicationDraft(licenceApplicationId: number, payload: any) {
+  return this.http.put<any>(`${this.baseUrl}/licence-application/draft/${licenceApplicationId}`, payload);
+}
+
+deleteTempTradeDetail(licenceTradeDetailsId: number) {
+  return this.http.delete<any>(`${this.baseUrl}/licence-trade-details/draft/${licenceTradeDetailsId}`);
 }
 
 getDraftByLogin(loginId: number) {
@@ -138,7 +182,7 @@ getDraftByLogin(loginId: number) {
     tradeSubID: number;
     tradeFee: number;
   }) {
-    return this.http.post<any>(`${this.baseUrl}/licence-trade-details/temp`, payload);
+    return this.http.post<any>(`${this.baseUrl}/licence-trade-details/draft`, payload);
   }
 }
 

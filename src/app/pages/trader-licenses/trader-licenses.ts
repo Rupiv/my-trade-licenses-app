@@ -77,12 +77,20 @@ export class TraderLicenses {
   }
 
   getProgress(status: string): number {
-    switch (status) {
+    switch ((status || '').trim().toUpperCase()) {
       case 'ENTERED':
-        return 25;
-      case 'VERIFIED':
-        return 50;
+        return 10;
+      case 'APPLIED':
+        return 30;
+      case 'OBJECTION':
+        return 45;
+      case 'INSPECTED':
+        return 60;
+      case 'FORWARD':
+      case 'FORWARD TO HIGHER AUTHORITY':
+        return 80;
       case 'APPROVED':
+      case 'REJECTED':
         return 100;
       default:
         return 10;
@@ -97,8 +105,48 @@ export class TraderLicenses {
     ]);
   }
 
+  /** Not yet submitted (status ENTERED): can be continued / paid. */
+  isDraft(status: string): boolean {
+    return (status || '').trim().toUpperCase() === 'ENTERED';
+  }
+
+  /** Re-open a half-filled application in the New Application form (it restores everything saved). */
+  continueApplication(licenceApplicationID: number): void {
+    localStorage.setItem('draftLicenceApplicationId', String(licenceApplicationID));
+    this.router.navigate(['/trader/new-licenses']);
+  }
+
   makePayment(licenseId: number) {
-    this.router.navigate(['/trade-license/payment', licenseId]);
+    // Payment happens from the application's Preview step
+    this.continueApplication(licenseId);
+  }
+
+  completingId: number | null = null;
+
+  /** Paid but never reached the officers (payment redirect failed): submit it now, no new payment. */
+  completeSubmission(app: LicenceApplicationDetails): void {
+    if (this.completingId) return;
+    this.completingId = app.licenceApplicationID;
+    this.loaderservice.show();
+    this.tradelicensesservice.completeSubmission(app.licenceApplicationID).subscribe({
+      next: (res) => {
+        this.completingId = null;
+        this.loaderservice.hide();
+        this.notificationservice.show(
+          `Application submitted${res?.applicationNumber ? ' (No. ' + res.applicationNumber + ')' : ''}. It is now with the inspecting officer.`,
+          'success'
+        );
+        this.loadAppliedLicensesApplicationByLoginId();
+      },
+      error: (err) => {
+        this.completingId = null;
+        this.loaderservice.hide();
+        this.notificationservice.show(
+          err?.error?.message || err?.error?.Message || 'Could not complete the submission. Please try again.',
+          'warning'
+        );
+      },
+    });
   }
 
   isApproved(status: string): boolean {

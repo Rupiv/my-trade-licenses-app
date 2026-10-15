@@ -126,6 +126,34 @@ export interface AssemblyConstituency {
   entryDate: Date;
 }
 
+// ---- GBA: Corporation -> Zone -> Ward (369 wards) ----
+export interface GbaCorporation {
+  corporationID: number;
+  corporationName: string;
+  corporationNativeName: string;
+}
+
+export interface GbaZone {
+  gbaZoneID: number;
+  corporationID: number;
+  zoneName: string;
+  zoneNativeName: string;
+}
+
+export interface GbaWard {
+  gbaWardID: number;
+  corporationID: number;
+  gbaZoneID: number;
+  wardNo: number;
+  wardName: string;
+  wardNativeName: string;
+  assemblyNo: number;
+  assemblyName: string;
+  legacyWardID: number | null;
+  mohID: number | null;
+  isAvailable: boolean;   // false until the ward is mapped to a legacy ward / MOH
+}
+
 export interface Zones{
   zoneID: number;
   zoneCode: string;

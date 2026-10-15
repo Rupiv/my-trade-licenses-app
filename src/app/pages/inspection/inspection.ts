@@ -14,6 +14,7 @@ import { GoogleMapsModule } from '@angular/google-maps';
 import { LocationDetails, LicensesApplicationDocument } from './inspection.model';
 import { LicenceProcessTimelineItem } from './inspection.service';
 import { stampPdfWithUploadDetails } from '../../shared/utils/pdf-stamp.util';
+import { ApplicationFullDetails } from '../../shared/components/application-full-details/application-full-details';
 
 interface InspectionPhoto {
   file: File;
@@ -22,7 +23,7 @@ interface InspectionPhoto {
 
 @Component({
   selector: 'app-inspection',
-  imports: [CommonModule, RouterModule, FormsModule, GoogleMapsModule],
+  imports: [CommonModule, RouterModule, FormsModule, GoogleMapsModule, ApplicationFullDetails],
   templateUrl: './inspection.html',
   styleUrl: './inspection.css',
 })
@@ -411,7 +412,12 @@ export class Inspection {
       .catch((err) => {
         this.setSubmitting(false);
         //console.error('[Inspection] Photo upload failed:', err);
-        this.notificationservice.show('Failed to upload inspection photos', 'error');
+        // API answers with a plain-text reason (e.g. "Only JPG, PNG or WEBP photos are allowed")
+        const reason = typeof err?.error === 'string' ? err.error : (err?.error?.message || err?.error?.Message);
+        this.notificationservice.show(
+          reason ? `Failed to upload inspection photos: ${reason}` : 'Failed to upload inspection photos',
+          'error'
+        );
       });
   }
 

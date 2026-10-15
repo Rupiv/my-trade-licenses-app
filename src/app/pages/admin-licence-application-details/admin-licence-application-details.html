@@ -28,6 +28,9 @@
       </div>
     </div>
 
+    <!-- Full details (read-only): applicant, address, GBA ward, trades, payments, progress -->
+    <app-application-full-details [licenceApplicationId]="details.licenceApplicationID"></app-application-full-details>
+
     <!-- Map Details -->
     <div class="card section-card">
       <div class="card-header">Map Details</div>
@@ -53,8 +56,12 @@
           <input type="text" class="form-control" [value]="loadlocationDetails?.roadCategory" disabled />
         </div>
 
-        <!-- Right: Map -->
+        <!-- Right: Map (only with a real location; old-system applications have none) -->
+        <div class="no-location" *ngIf="!(mapCenter?.lat && mapCenter?.lng)">
+          Location not captured for this application (applications from the old system have no map location).
+        </div>
         <google-map
+          *ngIf="mapCenter?.lat && mapCenter?.lng"
           height="350px"
           width="100%"
           [center]="mapCenter"

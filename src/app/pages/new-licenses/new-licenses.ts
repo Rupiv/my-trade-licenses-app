@@ -8,12 +8,14 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { GoogleMapsModule } from '@angular/google-maps';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { GoogleMap } from '@angular/google-maps';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NewLicensesService } from './new-licenses.service';
-import { TradeMajor, TradeMinor, TradeSub, TradeType, Ward, TradeLicenseApplication, TradeLicenseApplicationDetails, AssemblyConstituency, Zones, ZoneClassification, MLCConstituency, TradeLicensesFee, LicenseDocuments, RoadWidthDetails } from '../../core/models/new-trade-licenses.model';
+import { TradeMajor, TradeMinor, TradeSub, TradeType, Ward, TradeLicenseApplication, TradeLicenseApplicationDetails, AssemblyConstituency, Zones, ZoneClassification, MLCConstituency, TradeLicensesFee, LicenseDocuments, RoadWidthDetails, GbaCorporation, GbaZone, GbaWard } from '../../core/models/new-trade-licenses.model';
 import { initializeApplicationDetails, initializeTradeApplication } from '../../helpers/trade-license.factory';
 import { Router } from '@angular/router';
 import { TokenService } from '../../core/services/token.service';
@@ -76,6 +78,14 @@ selectedRectangle!: google.maps.Rectangle;
   mlaConstituencies : MLCConstituency[] = [];
   wards : Ward[] = [];
   zones : Zones[] = [];
+
+  // GBA location: Corporation -> Zone -> Ward
+  gbaCorporations: GbaCorporation[] = [];
+  gbaZones: GbaZone[] = [];
+  gbaWards: GbaWard[] = [];
+  selectedCorporation: GbaCorporation | null = null;
+  selectedGbaZone: GbaZone | null = null;
+  selectedGbaWard: GbaWard | null = null;
   zoneClassifications : ZoneClassification[] = [];
   tradeLicenseApplicationDetails : TradeLicenseApplicationDetails = {
     applicantName: '',
@@ -249,6 +259,190 @@ autoDetectCurrentLocation() {
     this.currentStep = 8;
   }
 
+  /* =========================
+     PREVIEW / APPLICATION FORM PDF
+  ========================= */
+  private formatDisplayDate(value: string | Date | null | undefined): string {
+    if (!value) return '-';
+    const d = new Date(value);
+    return isNaN(d.getTime())
+      ? '-'
+      : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  get previewAddress(): string {
+    const d = this.tradeLicenseApplicationDetails;
+    return [d.doorNumber, this.floorNumber && `Floor ${this.floorNumber}`, d.address1, d.address2, d.pincode]
+      .filter(v => !!v && String(v).trim())
+      .join(', ') || '-';
+  }
+
+  get previewRoadWidth(): string {
+    if (!this.effectiveRoadWidthMeters) return '-';
+    const source = this.roadWidthConfirmed === false ? ' (entered manually)' : '';
+    return `${this.effectiveRoadWidthMeters} m / ${this.effectiveRoadWidthFeet} ft${source}`;
+  }
+
+  /** Section -> rows, shared by the Preview step and the downloadable application form. */
+  get applicationSummary(): { title: string; rows: [string, string][] }[] {
+    const d = this.tradeLicenseApplicationDetails;
+    const a = this.tradeLicenseApplications;
+    const v = (x: any) => (x === null || x === undefined || String(x).trim() === '' ? '-' : String(x));
+    return [
+      {
+        title: 'Applicant & Trade Details',
+        rows: [
+          ['Applicant Representation', v(this.applicantRepresentationName)],
+          ['Applicant Name', v(d.applicantName)],
+          ['Trade Name', v(d.tradeName)],
+          ['Trade Type', v(this.selectedTradeType?.tradeTypeName)],
+          ['Mobile No.', v(d.mobileNumber)],
+          ['Email', v(d.emailID)],
+          ['Telephone No.', v(d.landLineNumber)],
+          ['BESCOM RR No.', v(a.bescomRRNumber)],
+          ['GST Number', v(a.gstNumber)],
+          ['PAN Number', v(a.panNumber)],
+        ],
+      },
+      {
+        title: 'Location (GBA)',
+        rows: [
+          ['Corporation', v(this.selectedCorporation?.corporationName)],
+          ['Zone', v(this.selectedGbaZone?.zoneName)],
+          ['Ward', this.selectedGbaWard ? this.gbaWardLabel(this.selectedGbaWard) : '-'],
+          ['Assembly Constituency', this.selectedGbaWard
+            ? `${this.selectedGbaWard.assemblyNo} - ${this.selectedGbaWard.assemblyName}` : '-'],
+          ['Trade Address', this.previewAddress],
+        ],
+      },
+      {
+        title: 'Application Details',
+        rows: [
+          ['Application No.', v(a.newApplicationNumber)],
+          ['Date of Application', this.formatDisplayDate(this.applicationDate)],
+          ['Proposed Commencement', this.formatDisplayDate(this.commencementDate)],
+          ['Zone Classification', v(this.selectedZoneClassification?.zonalClassificationName)],
+          ['Parking Provided', this.parkingProvided ? (this.parkingProvided === 'yes' ? 'Yes' : 'No') : '-'],
+        ],
+      },
+      {
+        title: 'Premises Location & Road Width',
+        rows: [
+          ['Latitude / Longitude', this.latitude != null && this.longitude != null
+            ? `${this.latitude}, ${this.longitude}` : '-'],
+          ['Road Type', v(this.roadWidthDetails?.roadType)],
+          ['Road Category', v(this.roadWidthDetails?.roadCategory)],
+          ['Road Width', this.previewRoadWidth],
+        ],
+      },
+      {
+        title: 'Power / Generator',
+        rows: [
+          ['Seeking Power Licence (HP)', v(this.powerHP)],
+          ['Installed Generator (HP)', v(this.generatorHP)],
+        ],
+      },
+    ];
+  }
+
+  downloadApplicationForm() {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const head = { fillColor: [11, 61, 145] as [number, number, number], textColor: 255 };
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('Greater Bengaluru Authority', pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(
+      this.selectedCorporation ? `Bengaluru ${this.selectedCorporation.corporationName} City Corporation` : 'Trade Licence',
+      pageWidth / 2, 22, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text('New Trade Licence – Application Form', pageWidth / 2, 29, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Generated on ${new Date().toLocaleString('en-GB')}`, pageWidth - 14, 35, { align: 'right' });
+
+    let y = 39;
+    const nextY = () => ((doc as any).lastAutoTable?.finalY ?? y) + 6;
+
+    for (const section of this.applicationSummary) {
+      autoTable(doc, {
+        startY: y,
+        head: [[section.title, '']],
+        body: section.rows,
+        theme: 'grid',
+        headStyles: head,
+        styles: { fontSize: 9, cellPadding: 1.8 },
+        columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
+      });
+      y = nextY();
+    }
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Major Trade', 'Minor Trade', 'Sub Trade', 'Fee (Rs.)']],
+      body: this.tradeGrid.length
+        ? this.tradeGrid.map((t, i) => [String(i + 1), t.major, t.minor, t.sub, String(t.rate)])
+        : [['-', 'No trade added', '', '', '']],
+      foot: [['', '', '', 'Trade Fee Total', String(this.totalAmount)]],
+      theme: 'grid',
+      headStyles: head,
+      footStyles: { fillColor: [235, 240, 248], textColor: 20, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 1.8 },
+    });
+    y = nextY();
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Documents Enclosed', 'File']],
+      body: this.documentLabels.map(dl => [
+        dl.label + (dl.required ? ' *' : ''),
+        this.documentFileName(dl.key) ?? 'Not uploaded',
+      ]),
+      theme: 'grid',
+      headStyles: head,
+      styles: { fontSize: 9, cellPadding: 1.8 },
+      columnStyles: { 0: { cellWidth: 90 } },
+    });
+    y = nextY();
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Fee Summary', 'Amount (Rs.)']],
+      body: [
+        ['Trade Fee', String(this.totalAmount)],
+        ['Power Fee', String(this.powerFee)],
+        ['OC Exempted Fee', String(this.ocExemptedFee)],
+      ],
+      foot: [['Total Payable', String(this.licenseFee)]],
+      theme: 'grid',
+      headStyles: head,
+      footStyles: { fillColor: [220, 242, 228], textColor: 20, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 1.8 },
+      columnStyles: { 0: { cellWidth: 90 } },
+    });
+    y = nextY();
+
+    const declaration =
+      `I/We ${this.tradeLicenseApplicationDetails.applicantName || '................'} do hereby affirm that the ` +
+      'information furnished in this application is true and correct to the best of my/our knowledge and belief, ' +
+      `and agree to the terms and conditions of the trade licence.${this.agree ? ' (Accepted online)' : ''}`;
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Declaration by Applicant', 14, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(doc.splitTextToSize(declaration, pageWidth - 28), 14, y + 6);
+    doc.text('Signature of Applicant', pageWidth - 14, y + 26, { align: 'right' });
+
+    const safeName = (this.tradeLicenseApplications.newApplicationNumber
+      || this.tradeLicenseApplicationDetails.tradeName || 'Application')
+      .toString().replace(/[^A-Za-z0-9_-]+/g, '_');
+    doc.save(`TradeLicence_ApplicationForm_${safeName}.pdf`);
+  }
+
   private buildDraftPayloadForUpdate() {
     const fromDate = this.tradeLicenseApplications.licenceFromDate
       ? new Date(this.tradeLicenseApplications.licenceFromDate)
@@ -276,8 +470,9 @@ autoDetectCurrentLocation() {
       licenceApplicationStatusID: this.tradeLicenseApplications.licenceApplicationStatusID || 1,
       currentStatus: this.tradeLicenseApplications.currentStatus || 1,
       tradeLicenceID: this.tradeLicenseApplications.tradeLicenceID || 0,
+      // MOH comes from the GBA ward (its mapped legacy MOH keeps approver routing unchanged)
       mohID:
-        this.selectedMLAConstituency?.mohID ??
+        this.selectedGbaWard?.mohID ??
         this.tradeLicenseApplications.mohID ??
         0,
       loginID: loginId,
@@ -299,15 +494,17 @@ autoDetectCurrentLocation() {
       address1: this.tradeLicenseApplicationDetails.address1,
       address2: this.tradeLicenseApplicationDetails.address2,
       address3: this.tradeLicenseApplicationDetails.address3,
-      pincode: this.tradeLicenseApplicationDetails.pincode,
+      pincode: String(this.tradeLicenseApplicationDetails.pincode ?? '').trim(),
       landLineNumber: this.tradeLicenseApplicationDetails.landLineNumber,
       mobileNumber: this.tradeLicenseApplicationDetails.mobileNumber,
       emailID: this.tradeLicenseApplicationDetails.emailID,
       tradeName: this.tradeLicenseApplicationDetails.tradeName,
 
       zonalClassificationID: this.selectedZoneClassification ? this.selectedZoneClassification.zonalClassificationID : 0,
-      mohID: this.selectedMLAConstituency ? this.selectedMLAConstituency.mohID : 0,
-      wardID: this.selectedWard ? this.selectedWard.wardID : 0,
+      // API fills mohID / wardID from the GBA ward; sent too so the payload stays complete
+      gbaWardID: this.selectedGbaWard ? this.selectedGbaWard.gbaWardID : null,
+      mohID: this.selectedGbaWard?.mohID ?? 0,
+      wardID: this.selectedGbaWard?.legacyWardID ?? 0,
 
       propertyID: this.tradeLicenseApplicationDetails.propertyID,
       pidNumber: this.tradeLicenseApplicationDetails.pidNumber,
@@ -415,15 +612,26 @@ autoDetectCurrentLocation() {
       return;
     }
 
-    // 6. MLA Constituency
-    if (!this.selectedMLAConstituency) {
-      this.notificationservice.show('Please select MLA Constituency', 'warning');
+    // 6. Corporation / Zone / Ward (GBA)
+    if (!this.selectedCorporation) {
+      this.notificationservice.show('Please select Corporation', 'warning');
+      return;
+    }
+    if (!this.selectedGbaZone) {
+      this.notificationservice.show('Please select Zone', 'warning');
       return;
     }
 
     // 7. Ward
-    if (!this.selectedWard) {
+    if (!this.selectedGbaWard) {
       this.notificationservice.show('Please select Ward', 'warning');
+      return;
+    }
+    if (!this.selectedGbaWard.isAvailable) {
+      this.notificationservice.show(
+        `Ward '${this.selectedGbaWard.wardName}' is not yet open for applications. Please contact the GBA office.`,
+        'warning'
+      );
       return;
     }
 
@@ -485,11 +693,7 @@ autoDetectCurrentLocation() {
     ========================= */
     if (this.currentStep === 3) {
 
-      // 1. Jurisdiction Zone
-      if (!this.selectedZone) {
-        this.notificationservice.show('Please select Jurisdiction of Health Officer (Zone)', 'warning');
-        return;
-      }
+      // 1. Jurisdiction comes from the Corporation / Zone / Ward chosen in step 1
 
       // 2. Zone Classification
       if (!this.selectedZoneClassification) {
@@ -547,19 +751,19 @@ autoDetectCurrentLocation() {
     if (this.currentStep === 5) {
 
       // 1. Owner Consent
-      if (!this.documents?.['ownerConsent']) {
+      if (!this.hasDocument('ownerConsent')) {
         this.notificationservice.show('Please upload Owner Consent / Lease Agreement document', 'warning');
         return;
       }
 
       // 2. Electricity Bill
-      if (!this.documents?.['electricityBill']) {
+      if (!this.hasDocument('electricityBill')) {
         this.notificationservice.show('Please upload Electricity Bill document', 'warning');
         return;
       }
 
       // 3. Neighbour Consent
-      if (!this.documents?.['neighbour']) {
+      if (!this.hasDocument('neighbour')) {
         this.notificationservice.show('Please upload Neighbour Consent document', 'warning');
         return;
       }
@@ -661,6 +865,15 @@ autoDetectCurrentLocation() {
   ];
 
   tradeGrid: TradeGridItem[] = [];
+
+  // Shown in Preview / application form PDF (no DB column for these two yet)
+  floorNumber = '';
+  parkingProvided: 'yes' | 'no' | '' = '';
+
+  get applicantRepresentationName(): string {
+    const index = Number(this.tradeLicenseApplications.applicantRepersenting) - 1;
+    return this.representations[index] ?? '';
+  }
 
   /* =========================
      DATE / ZONE / FEE
@@ -780,9 +993,11 @@ autoDetectCurrentLocation() {
   generatorHP = 0;
   powerFee = 0;
 
+  readonly ocExemptedFee = 500;
+
   calculateFee() {
     this.powerFee = Math.max(this.powerHP, this.generatorHP) * 100;
-    this.licenseFee = this.totalAmount + this.powerFee + 500; 
+    this.licenseFee = this.totalAmount + this.powerFee + this.ocExemptedFee;
   }
 
   /* =========================
@@ -794,6 +1009,37 @@ autoDetectCurrentLocation() {
       file: File;
     }
   } = {};
+
+  // Same order / labels as the Documents step
+  readonly documentLabels: { key: string; documentId: number; label: string; required: boolean }[] = [
+    { key: 'ownerConsent', documentId: 1, label: 'Owner Consent / Lease Agreement', required: true },
+    { key: 'electricityBill', documentId: 9, label: 'Electricity Bill', required: true },
+    { key: 'oc', documentId: 8, label: 'Occupancy Certificate', required: false },
+    { key: 'neighbour', documentId: 2, label: 'Neighbour Consent', required: true },
+    { key: 'noc', documentId: 7, label: 'Details of no objections and other sanctions', required: false },
+    { key: 'psd', documentId: 6, label: 'Plan sanction details', required: false },
+    { key: 'ccd', documentId: 5, label: 'Commencement certificate details', required: false },
+    { key: 'taxReceipt', documentId: 4, label: 'Tax paid receipt', required: false },
+    { key: 'khataReceipt', documentId: 3, label: 'Khata receipt', required: false },
+  ];
+
+  // Documents already uploaded with a saved draft: documentId -> file name
+  savedDocuments: { [documentId: number]: string } = {};
+
+  /** True when the document was picked now OR was uploaded earlier with this draft. */
+  hasDocument(key: string): boolean {
+    if (this.documents?.[key]) return true;
+    const documentId = this.documentLabels.find(d => d.key === key)?.documentId;
+    return documentId != null && !!this.savedDocuments[documentId];
+  }
+
+  /** File name to show in Preview / PDF (new upload wins over the saved one). */
+  documentFileName(key: string): string | null {
+    const picked = this.documents?.[key]?.file?.name;
+    if (picked) return picked;
+    const documentId = this.documentLabels.find(d => d.key === key)?.documentId;
+    return documentId != null ? this.savedDocuments[documentId] ?? null : null;
+  }
 
   onFileChange(event: any, key: string, documentId: number) {
     const file = event.target.files[0];
@@ -1315,8 +1561,7 @@ fetchRoadWidth(lng: number, lat: number) {
     // 1️⃣ Load dropdown masters (safe to load always)
     this.loadTradeType();
     this.loadTradeMajors();
-    this.loadMLAConstituencies();
-    this.loadZones();
+    this.loadGbaCorporations();
     this.loadZoneClassification();
 
     // 2️⃣ Check if draft exists
@@ -1334,71 +1579,166 @@ fetchRoadWidth(lng: number, lat: number) {
     this.tradeLicenseApplications.licenceFromDate = new Date(this.applicationDate);
   }
 
-  private restoreDraftIfExists(draftId: number): void {
+  /**
+   * Re-opens a half-filled application with EVERYTHING saved for it: applicant + address
+   * (Licence_Master_Temp), application header, trades, uploaded documents, geo-location
+   * and the GBA ward. Previously only the header row was loaded, so step 1 came back
+   * empty and its validation stopped the applicant from continuing.
+   */
+  private async restoreDraftIfExists(draftId: number): Promise<void> {
     if (!draftId || Number.isNaN(draftId)) {
       return;
     }
 
     this.loaderservice.show();
-    this.newLicensesService.getLicenceApplicationById(draftId).subscribe({
-      next: (res: any) => {
-        const application =
-          res?.tradeLicenseApplications ??
-          res?.tradeLicenseApplication ??
-          res?.licenceApplication ??
-          res?.application ??
-          res;
-        const details =
-          res?.tradeLicenseApplicationDetails ??
-          res?.tradeLicenseDetails ??
-          res?.tradeLicenceDetails ??
-          null;
-
-        if (application) {
-          this.tradeLicenseApplications = {
-            ...initializeTradeApplication(),
-            ...application
-          };
-        }
-
-        if (details) {
-          this.tradeLicenseApplicationDetails = {
-            ...initializeApplicationDetails(),
-            ...details
-          };
-        }
-
-        if (this.tradeLicenseApplications.licenceFromDate) {
-          this.tradeLicenseApplications.licenceFromDate = new Date(
-            this.tradeLicenseApplications.licenceFromDate
-          );
-        }
-
-        if (this.tradeLicenseApplications.licenceToDate) {
-          this.tradeLicenseApplications.licenceToDate = new Date(
-            this.tradeLicenseApplications.licenceToDate
-          );
-        }
-
-        this.applySelectionsFromDraft();
-        this.currentStep = Math.max(this.currentStep, 1);
-        this.notificationservice.show('Draft restored. You can continue.', 'success');
-        this.loaderservice.hide();
-      },
-      error: (err) => {
-        //console.error('Failed to restore draft', err);
-        this.notificationservice.show(
-          'Failed to restore draft. Starting a new application.',
-          'warning'
-        );
-        localStorage.removeItem('draftLicenceApplicationId');
-        this.tradeLicenseApplicationDetails = initializeApplicationDetails();
-        this.tradeLicenseApplications = initializeTradeApplication();
-        this.tradeLicenseApplications.licenceFromDate =
-          new Date(this.applicationDate);
-        this.loaderservice.hide();
+    try {
+      const full: any = await firstValueFrom(this.newLicensesService.getDraftFullDetails(draftId));
+      const app = full?.application ?? full?.Application;
+      if (!app) {
+        throw new Error('Draft not found');
       }
-    });
+
+      // Already submitted / paid: not a draft any more -> start a fresh application
+      if (Number(app.licenceApplicationStatusID) !== 1) {
+        this.clearDraftAndStartFresh('This application was already submitted. Starting a new application.');
+        return;
+      }
+
+      // Licence_Master_Temp row (has zone classification, telephone, PID... that full-details lacks)
+      let master: any = null;
+      if (app.tradeLicenceID) {
+        const rows = await firstValueFrom(this.newLicensesService.getTradeLicenceById(Number(app.tradeLicenceID)));
+        master = Array.isArray(rows) ? rows[0] : rows;
+      }
+      const src = { ...app, ...(master ?? {}) };
+
+      this.tradeLicenseApplications = {
+        ...initializeTradeApplication(),
+        licenceApplicationID: Number(app.licenceApplicationID),
+        newApplicationNumber: app.newApplicationNumber ?? '',
+        finanicalYearID: Number(app.finanicalYearID ?? 0),
+        tradeTypeID: Number(app.tradeTypeID ?? 0),
+        bescomRRNumber: app.bescomRRNumber ?? '',
+        gstNumber: app.GSTNumber ?? app.gstNumber ?? '',
+        panNumber: app.PANNumber ?? app.panNumber ?? '',
+        licenceFromDate: app.licenceFromDate ? new Date(app.licenceFromDate) : new Date(this.applicationDate),
+        licenceToDate: app.licenceToDate ? new Date(app.licenceToDate) : (null as any),
+        licenceApplicationStatusID: Number(app.licenceApplicationStatusID),
+        currentStatus: Number(app.currentStatus ?? 1),
+        tradeLicenceID: Number(app.tradeLicenceID ?? 0),
+        mohID: Number(app.mohID ?? 0),
+        loginID: Number(app.loginID ?? 0),
+        entryOriginLoginID: Number(app.entryOriginLoginID ?? 0),
+        inspectingOfficerID: Number(app.InspectingOfficerID ?? 0),
+        licenseType: app.licenseType ?? '',
+        applicantRepersenting: Number(app.ApplicantRepersenting ?? 0),
+        jathaStatus: app.jathaStatus ?? '',
+        docsSubmitted: !!app.docsSubmitted,
+        challanNo: app.ChallanNo ?? '',
+        noOfYearsApplied: Number(app.NoOfYearsApplied ?? 0),
+      };
+      this.tradeLicenceStateService.setTradeLicenceID(this.tradeLicenseApplications.tradeLicenceID);
+
+      this.tradeLicenseApplicationDetails = {
+        ...initializeApplicationDetails(),
+        applicantName: src.applicantName ?? '',
+        doorNumber: src.doorNumber ?? '',
+        address1: src.address1 ?? '',
+        address2: src.address2 ?? '',
+        address3: src.address3 ?? '',
+        pincode: String(src.pincode ?? '').trim(),
+        landLineNumber: src.landLineNumber ?? '',
+        mobileNumber: src.mobileNumber ?? '',
+        emailID: src.emailID ?? '',
+        tradeName: src.tradeName ?? '',
+        zonalClassificationID: Number(src.zonalClassificationID ?? 0),
+        mohID: Number(src.mohID ?? 0),
+        wardID: Number(src.wardID ?? 0),
+        propertyID: Number(src.PropertyID ?? src.propertyID ?? 0),
+        pidNumber: src.PIDNumber ?? '',
+        khathaNumber: src.khathaNumber ?? '',
+        surveyNumber: src.surveyNumber ?? '',
+        street: src.street ?? '',
+        gisNumber: src.GISNumber ?? '',
+      };
+
+      // Proposed commencement is kept in licenceToDate (see bindCommencementDate); only reuse a future date
+      const commencement = this.tradeLicenseApplications.licenceToDate;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      this.commencementDate =
+        commencement && !isNaN(commencement.getTime()) && commencement >= today
+          ? commencement.toISOString().substring(0, 10)
+          : '';
+
+      // Trades
+      const trades: any[] = full?.tradeDetails ?? full?.TradeDetails ?? [];
+      this.tradeGrid = trades.map(t => ({
+        major: t.tradeMajorName ?? '',
+        majorID: Number(t.tradeMajorID ?? 0),
+        minor: t.tradeMinorName ?? '',
+        minorID: Number(t.tradeMinorID ?? 0),
+        sub: t.tradeSubName ?? '',
+        tradeSubID: Number(t.tradeSubID),
+        rate: Number(t.tradeFee ?? 0),
+      }));
+      this.calculateFee();
+
+      // Documents already uploaded (applicant does not have to upload them again)
+      this.savedDocuments = {};
+      for (const d of (full?.documents ?? full?.Documents ?? []) as any[]) {
+        if (d.IsActive === false || d.IsActive === 'N') continue;
+        this.savedDocuments[Number(d.DocumentID)] = d.FileName ?? d.documentName ?? 'Uploaded';
+      }
+
+      // Location + road width (latest saved)
+      const geo = (full?.geoLocations ?? full?.GeoLocations ?? [])[0];
+      if (geo?.Latitude != null && geo?.Longitude != null) {
+        this.latitude = Number(geo.Latitude);
+        this.longitude = Number(geo.Longitude);
+        this.mapCenter = { lat: this.latitude, lng: this.longitude };
+        this.roadWidthDetails = {
+          roadType: '',
+          road_Width_mtrs: String(geo.RoadWidthMtrs ?? ''),
+          roadCategory: geo.RoadCategory ?? '',
+          roadCategoryCode: geo.RoadCategoryCode ?? '',
+        };
+        this.roadWidthConfirmed = geo.IsConfirmed === false ? null : true;
+        this.roadWidthStatus = 'Location restored from your saved application.';
+      }
+
+      await this.ensureDraftMastersLoaded();
+      this.applySelectionsFromDraft();
+
+      this.currentStep = 1;
+      this.notificationservice.show(
+        'Your saved application is restored. Check each step and continue (OTP must be verified again).',
+        'success'
+      );
+    } catch (err) {
+      this.clearDraftAndStartFresh('Could not restore your saved application. Starting a new application.');
+    } finally {
+      this.loaderservice.hide();
+      this.cdr.detectChanges();
+    }
+  }
+
+  /** Trade types / zone classifications must be loaded before a draft's selections can be applied. */
+  private async ensureDraftMastersLoaded(): Promise<void> {
+    if (!this.tradeTypes?.length) {
+      this.tradeTypes = await firstValueFrom(this.newLicensesService.getTradeTypes());
+    }
+    if (!this.zoneClassifications?.length) {
+      this.zoneClassifications = await firstValueFrom(this.newLicensesService.getZoneClassification());
+    }
+  }
+
+  private clearDraftAndStartFresh(message: string): void {
+    localStorage.removeItem('draftLicenceApplicationId');
+    this.tradeLicenseApplicationDetails = initializeApplicationDetails();
+    this.tradeLicenseApplications = initializeTradeApplication();
+    this.tradeLicenseApplications.licenceFromDate = new Date(this.applicationDate);
+    this.notificationservice.show(message, 'warning');
   }
 
   private applySelectionsFromDraft(): void {
@@ -1415,34 +1755,38 @@ fetchRoadWidth(lng: number, lat: number) {
         null;
     }
 
-    const mohId =
-      this.tradeLicenseApplicationDetails.mohID ||
-      this.tradeLicenseApplications.mohID;
-    if (mohId && this.mlaConstituencies?.length) {
-      this.selectedMLAConstituency =
-        this.mlaConstituencies.find(m => m.mohID === mohId) ?? null;
-
-      if (this.selectedMLAConstituency) {
-        this.newLicensesService
-          .getWardsByMLAConstituency(
-            this.selectedMLAConstituency.constituencyID
-          )
-          .subscribe({
-            next: (res) => {
-              this.wards = res;
-              const wardId = this.tradeLicenseApplicationDetails.wardID;
-              if (wardId) {
-                this.selectedWard =
-                  this.wards.find(w => w.wardID === wardId) ?? null;
-              }
-              this.cdr.detectChanges();
-            },
-            error: (err) => {
-              //console.error(err)
-            }
-          });
-      }
+    const tempTradeLicenceId = this.tradeLicenseApplications.tradeLicenceID;
+    if (tempTradeLicenceId) {
+      this.restoreGbaLocation(tempTradeLicenceId);
     }
+  }
+
+  /** Re-selects Corporation / Zone / Ward saved with a draft. Drafts from before GBA have none: applicant picks again. */
+  private restoreGbaLocation(tempTradeLicenceId: number) {
+    this.newLicensesService.getGbaDraftLocation(tempTradeLicenceId).subscribe({
+      next: (loc) => {
+        const pick = () => {
+          this.selectedCorporation =
+            this.gbaCorporations.find(c => c.corporationID === loc.corporationID) ?? null;
+          if (!this.selectedCorporation) return;
+
+          this.newLicensesService.getGbaZones(loc.corporationID).subscribe(zones => {
+            this.gbaZones = zones;
+            this.selectedGbaZone = zones.find(z => z.gbaZoneID === loc.gbaZoneID) ?? null;
+
+            this.newLicensesService.getGbaWards(loc.gbaZoneID).subscribe(wards => {
+              this.gbaWards = wards;
+              this.selectedGbaWard = wards.find(w => w.gbaWardID === loc.gbaWardID) ?? null;
+              this.cdr.detectChanges();
+            });
+          });
+        };
+
+        if (this.gbaCorporations.length) pick();
+        else this.newLicensesService.getGbaCorporations().subscribe(c => { this.gbaCorporations = c; pick(); });
+      },
+      error: () => { /* no GBA ward saved for this draft yet */ }
+    });
   }
 
 
@@ -1517,6 +1861,60 @@ fetchRoadWidth(lng: number, lat: number) {
       }
     });
   }
+
+  //#region GBA Corporation -> Zone -> Ward
+  loadGbaCorporations() {
+    this.newLicensesService.getGbaCorporations().subscribe({
+      next: (res) => {
+        this.gbaCorporations = res;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.notificationservice.show('Could not load corporations. Please refresh the page.', 'error');
+      }
+    });
+  }
+
+  onCorporationChange() {
+    this.selectedGbaZone = null;
+    this.selectedGbaWard = null;
+    this.gbaZones = [];
+    this.gbaWards = [];
+    if (!this.selectedCorporation) return;
+
+    this.newLicensesService.getGbaZones(this.selectedCorporation.corporationID).subscribe({
+      next: (res) => {
+        this.gbaZones = res;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  onGbaZoneChange() {
+    this.selectedGbaWard = null;
+    this.gbaWards = [];
+    if (!this.selectedGbaZone) return;
+
+    this.newLicensesService.getGbaWards(this.selectedGbaZone.gbaZoneID).subscribe({
+      next: (res) => {
+        this.gbaWards = res;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  gbaWardLabel = (w: GbaWard) => `${w.wardNo} - ${w.wardName}`;
+
+  // Search by ward number, English or Kannada name
+  gbaWardSearch = (term: string, w: GbaWard) => {
+    const t = term.toLowerCase();
+    return String(w.wardNo).startsWith(t)
+      || w.wardName.toLowerCase().includes(t)
+      || (w.wardNativeName ?? '').includes(term);
+  };
+  //#endregion
 
   //When MLA Constituency changes
   onMLAConstituencyChange(){
@@ -1651,7 +2049,43 @@ fetchRoadWidth(lng: number, lat: number) {
     });
   }*/
 
+  /**
+   * Draft already exists (created on step 3, or re-opened): UPDATE it instead of inserting
+   * a new trade licence + application every time (that produced hundreds of copies per trader).
+   */
+  private async updateExistingDraft(licenceApplicationID: number, tradeLicenceID: number): Promise<number> {
+    await firstValueFrom(this.newLicensesService.updateTradeLicence(tradeLicenceID, this.buildTradeLicencePayload()));
+
+    const draftPayload = this.buildDraftPayloadForUpdate();
+    draftPayload.tradeLicenceID = tradeLicenceID;
+    await firstValueFrom(this.newLicensesService.updateLicenceApplicationDraft(licenceApplicationID, draftPayload));
+
+    // Replace trades: insert the current grid first, then remove the previously saved rows
+    const before: any = await firstValueFrom(this.newLicensesService.getDraftFullDetails(licenceApplicationID));
+    const oldTradeIds: number[] = (before?.tradeDetails ?? before?.TradeDetails ?? [])
+      .map((t: any) => Number(t.licenceTradeDetailsID))
+      .filter((id: number) => id > 0);
+
+    await this.saveTradeDetailsTemp(licenceApplicationID);
+    if (this.tradeGrid.length) {
+      for (const id of oldTradeIds) {
+        await firstValueFrom(this.newLicensesService.deleteTempTradeDetail(id));
+      }
+    }
+
+    await this.saveUserLocationDetails(licenceApplicationID);
+    await this.saveOrUpdateDocuments(licenceApplicationID);
+    this.persistDraftApplicationId(licenceApplicationID);
+    return licenceApplicationID;
+  }
+
   saveDraft(): Promise<number> {
+    const existingDraftId = this.getCurrentDraftApplicationId();
+    const existingTradeLicenceId = Number(this.tradeLicenseApplications.tradeLicenceID || 0);
+    if (existingDraftId && existingTradeLicenceId) {
+      return this.updateExistingDraft(existingDraftId, existingTradeLicenceId);
+    }
+
     return new Promise((resolve, reject) => {
       this.debugLog('saveDraft started', {
         currentStep: this.currentStep,
@@ -1704,6 +2138,7 @@ fetchRoadWidth(lng: number, lat: number) {
               .post('/licence-application/draft', licenceApplicationDraftPayload)
               .subscribe({
                 next: async (draftRes: any) => {
+                  try {
                   this.debugLog('POST /licence-application/draft success', draftRes);
                   this.persistDraftApplicationId(draftRes.licenceApplicationID);
 
@@ -1712,6 +2147,10 @@ fetchRoadWidth(lng: number, lat: number) {
                   await this.saveOrUpdateDocuments(draftRes.licenceApplicationID);
 
                   resolve(draftRes.licenceApplicationID);
+                  } catch (err) {
+                    this.debugError('Failed to complete draft save', err);
+                    reject(err);
+                  }
                 },
                 error: (err) => {
                   const details =
@@ -1951,15 +2390,29 @@ fetchRoadWidth(lng: number, lat: number) {
         );
         this.router.navigate(['/trader']);
       })
-      .catch(() => {
+      .catch((err) => {
         this.loaderservice.hide();
-        this.notificationservice.show('Save failed', 'error');
+        this.debugError('Save and pay later failed', err);
+        this.notificationservice.show(this.getSaveErrorMessage(err), 'error');
     });
   }
 
   //#endregion
 
   //#region ProccedForPayment
+  private getSaveErrorMessage(err: any): string {
+    const body = err?.error;
+    const validationErrors = body?.errors
+      ? Object.values(body.errors).flat().join(' | ')
+      : '';
+    return validationErrors || body?.message || body?.Message ||
+      body?.error || body?.Error || body?.title ||
+      (typeof body === 'string' && !body.trim().startsWith('<') ? body : '') ||
+      (typeof err === 'string' ? err : '') ||
+      (err?.status === 0 ? 'Cannot reach the API. Please check that the backend is running.' : '') ||
+      'Unable to save the application. Please check the failed request in the browser Network tab.';
+  }
+
   proceedForPayment() {
     this.loaderservice.show();
     this.debugLog('Proceed for payment clicked');
@@ -1972,15 +2425,7 @@ fetchRoadWidth(lng: number, lat: number) {
     .catch((err) => {
       this.loaderservice.hide();
       this.debugError('saveDraft failed before payment', err);
-      const validationErrors = err?.error?.errors
-        ? Object.values(err.error.errors).flat().join(' | ')
-        : '';
-      const msg =
-        validationErrors ||
-        err?.error?.message ||
-        err?.error?.title ||
-        (typeof err?.error === 'string' ? err.error : '') ||
-        'Unable to save before payment';
+      const msg = this.getSaveErrorMessage(err);
       this.notificationservice.show(
         msg,
         'error'
@@ -1997,7 +2442,8 @@ fetchRoadWidth(lng: number, lat: number) {
 
     const payload = {
       licenceApplicationId: this.tradeLicenseApplications.licenceApplicationID,
-      corporationId: 1,
+      // Informational only: the API picks the corporation from the saved GBA ward
+      corporationId: this.selectedCorporation?.corporationID ?? 0,
       amount: this.licenseFee,
       applicantName,
       firstname: applicantName,

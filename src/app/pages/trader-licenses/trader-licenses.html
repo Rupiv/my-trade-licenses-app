@@ -117,7 +117,7 @@
       </div>
 
       <div class="section-header">
-        <h5>Draft Applications</h5>
+        <h5>My Applications</h5>
         <a
           class="view-all"
           *ngIf="allLicensesApplications.length > 1"
@@ -142,6 +142,11 @@
             <span class="status review">{{ app.applicationStatus }}</span>
           </h6>
 
+          <p class="text-warning small mb-1" *ngIf="app.awaitingSubmission">
+            <i class="bi bi-exclamation-triangle"></i>
+            Payment received, but the application has not reached the officers yet. Click "Complete Submission" (no new payment).
+          </p>
+
           <p class="muted">
             Licenses Application Id : {{ app.licenceApplicationID }} - Trade Licenses Id : {{ app.tradeLicenceID }}
           </p>
@@ -158,8 +163,18 @@
           <!-- ACTION LINKS -->
           <div class="license-actions">
             <a (click)="openApplication(app.licenceApplicationID)">View</a>
-            <span>|</span>
-            <a (click)="makePayment(app.licenceApplicationID)">Pay Now</a>
+            <ng-container *ngIf="isDraft(app.applicationStatus)">
+              <span>|</span>
+              <a (click)="continueApplication(app.licenceApplicationID)">Continue Application</a>
+              <span>|</span>
+              <a (click)="makePayment(app.licenceApplicationID)">Pay Now</a>
+            </ng-container>
+            <ng-container *ngIf="app.awaitingSubmission">
+              <span>|</span>
+              <a (click)="completeSubmission(app)">
+                {{ completingId === app.licenceApplicationID ? 'Submitting…' : 'Complete Submission' }}
+              </a>
+            </ng-container>
             <ng-container *ngIf="isApproved(app.applicationStatus)">
               <span>|</span>
               <a (click)="downloadCertificate(app)">Download Licence</a>

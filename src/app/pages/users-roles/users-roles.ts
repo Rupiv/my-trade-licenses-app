@@ -16,8 +16,11 @@ import {
   OfficeDetail,
   UserDesignation,
   LoginMasterRequest,
+  UserJurisdiction,
 } from './user-roles.service';
-import { Zones } from '../../core/models/new-trade-licenses.model';
+import { GbaCorporation, GbaWard, GbaZone, Zones } from '../../core/models/new-trade-licenses.model';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { Observable, of } from 'rxjs';
 import { LoaderService } from '../../shared/components/loader/loader.service';
 import { TokenService } from '../../core/services/token.service';
 
@@ -52,7 +55,7 @@ function emptyUser(): LoginMaster {
 @Component({
   selector: 'app-users-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgSelectModule],
   templateUrl: './users-roles.html',
   styleUrl: './users-roles.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +87,17 @@ export class UsersRoles implements OnInit, OnDestroy {
   zones: Zones[] = [];
   officeList: OfficeDetail[] = [];
   designationList: UserDesignation[] = [];
+
+  /* ─── GBA jurisdiction (Corporation / Zone / Wards) ───
+     Optional and saved separately from the user record (Login_GBAJurisdiction). */
+  corporations: GbaCorporation[] = [];
+  gbaZones: GbaZone[] = [];
+  gbaWards: GbaWard[] = [];
+  gbaCorporationID: number | null = null;
+  gbaZoneID: number | null = null;
+  gbaWardIDs: number[] = [];
+  private gbaHadAssignment = false;       // edit: user already had one (so clearing must be saved)
+  jurisdictionLabels: Record<number, string> = {};
 
   /* ─── Form state ─────────────────────────── */
   selectedUser: LoginMaster | null = null;
@@ -170,6 +184,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.users        = res.data ?? [];
           this.totalRecords = res.totalRecords ?? 0;
           this.isLoading    = false;
+          this.loadJurisdictionLabels();
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -196,6 +211,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.users        = res.data ?? [];
           this.totalRecords = res.totalRecords ?? 0;
           this.isLoading    = false;
+          this.loadJurisdictionLabels();
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -215,6 +231,140 @@ export class UsersRoles implements OnInit, OnDestroy {
     this.loadZones();
     this.loadOffices();
     this.loadDesignations();
+    this.loadCorporations();
+  }
+
+  private loadCorporations(): void {
+    this.usersRolesService
+      .getCorporations()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          this.corporations = res ?? [];
+          this.cdr.markForCheck();
+        },
+        error: () => {},
+      });
+  }
+
+  /* ══════════════════════════════════════════
+     GBA JURISDICTION
+  ══════════════════════════════════════════ */
+
+  private resetJurisdiction(): void {
+    this.gbaCorporationID = null;
+    this.gbaZoneID = null;
+    this.gbaWardIDs = [];
+    this.gbaZones = [];
+    this.gbaWards = [];
+    this.gbaHadAssignment = false;
+  }
+
+  onGbaCorporationChange(corporationId: number | null): void {
+    this.gbaCorporationID = corporationId ? Number(corporationId) : null;
+    this.gbaZoneID = null;
+    this.gbaWardIDs = [];
+    this.gbaZones = [];
+    this.gbaWards = [];
+    if (!this.gbaCorporationID) {
+      this.cdr.markForCheck();
+      return;
+    }
+    this.usersRolesService.getGbaZones(this.gbaCorporationID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((z) => { this.gbaZones = z ?? []; this.cdr.markForCheck(); });
+    this.loadGbaWards();
+  }
+
+  onGbaZoneChange(zoneId: number | null): void {
+    this.gbaZoneID = zoneId ? Number(zoneId) : null;
+    // keep only wards that are inside the newly chosen zone
+    this.loadGbaWards(true);
+  }
+
+  private loadGbaWards(pruneSelection = false): void {
+    if (!this.gbaCorporationID) return;
+    this.usersRolesService.getGbaWards(this.gbaCorporationID, this.gbaZoneID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((w) => {
+        this.gbaWards = (w ?? []).map((x) => ({ ...x, label: `${x.wardNo} - ${x.wardName}` } as GbaWard & { label: string }));
+        if (pruneSelection) {
+          const allowed = new Set(this.gbaWards.map((x) => x.gbaWardID));
+          this.gbaWardIDs = this.gbaWardIDs.filter((id) => allowed.has(id));
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  /** Fills the Corporation / Zone / Wards fields of the edit form from the saved assignment. */
+  private loadJurisdictionForEdit(loginId: number): void {
+    this.usersRolesService.getUserJurisdiction(loginId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          if (!rows?.length) return;
+          this.gbaHadAssignment = true;
+          const corporationId = rows[0].corporationID;
+          const wardIds = rows.map((r) => r.gbaWardID).filter((x): x is number => !!x);
+          const zoneIds = [...new Set(rows.map((r) => r.gbaZoneID).filter((x): x is number => !!x))];
+
+          this.gbaCorporationID = corporationId;
+          // a single zone (whole-zone assignment, or all wards in one zone) is shown as the zone filter
+          this.gbaZoneID = zoneIds.length === 1 && rows.every((r) => r.gbaZoneID === zoneIds[0])
+            ? zoneIds[0]
+            : null;
+          this.gbaWardIDs = wardIds;
+          this.usersRolesService.getGbaZones(corporationId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((z) => { this.gbaZones = z ?? []; this.cdr.markForCheck(); });
+          this.loadGbaWards();
+        },
+        error: () => {},
+      });
+  }
+
+  /** Saves the GBA assignment after the user itself was saved; skipped when nothing to save. */
+  private saveJurisdiction$(loginId: number): Observable<unknown> {
+    if (!loginId || (!this.gbaCorporationID && !this.gbaHadAssignment)) {
+      return of(null);
+    }
+    return this.usersRolesService.saveUserJurisdiction(loginId, {
+      corporationID: this.gbaCorporationID,
+      gbaZoneID: this.gbaZoneID,
+      gbaWardIDs: this.gbaCorporationID ? this.gbaWardIDs : [],
+    });
+  }
+
+  /** "BBMP North Corporation · 3 wards" style label for each user in the current page. */
+  private loadJurisdictionLabels(): void {
+    const ids = this.users.map((u) => this.resolveUserId(u)).filter((id) => id > 0);
+    if (!ids.length) return;
+    this.usersRolesService.getUserJurisdictions(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          const byUser = new Map<number, UserJurisdiction[]>();
+          for (const r of rows ?? []) {
+            byUser.set(r.loginID, [...(byUser.get(r.loginID) ?? []), r]);
+          }
+          const labels: Record<number, string> = {};
+          byUser.forEach((list, loginId) => {
+            const corp = list[0].corporationName;
+            const wards = list.filter((r) => r.gbaWardID);
+            if (wards.length === 1) labels[loginId] = `${corp} · Ward ${wards[0].wardNo} ${wards[0].wardName}`;
+            else if (wards.length > 1) labels[loginId] = `${corp} · ${wards.length} wards`;
+            else if (list[0].zoneName) labels[loginId] = `${corp} · ${list[0].zoneName}`;
+            else labels[loginId] = `${corp} (all wards)`;
+          });
+          this.jurisdictionLabels = labels;
+          this.cdr.markForCheck();
+        },
+        error: () => {},
+      });
+  }
+
+  getJurisdictionLabel(user: LoginMaster): string {
+    return this.jurisdictionLabels[this.resolveUserId(user)] ?? '—';
   }
 
   private loadZones(): void {
@@ -269,6 +419,7 @@ export class UsersRoles implements OnInit, OnDestroy {
   addNewUser(): void {
     this.selectedUser = emptyUser();
     this.isEditMode   = false;
+    this.resetJurisdiction();
     this.scrollToForm();
   }
 
@@ -288,6 +439,8 @@ export class UsersRoles implements OnInit, OnDestroy {
       loginID: resolvedId,
       password: '',
     };
+    this.resetJurisdiction();
+    this.loadJurisdictionForEdit(resolvedId);
     this.scrollToForm();
     this.isLoading = true;
     this.cdr.markForCheck();
@@ -381,12 +534,9 @@ export class UsersRoles implements OnInit, OnDestroy {
       .addUser(payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.isSaving = false;
-          this.showToast('success', 'User added successfully.');
-          this.cancelForm();
-          this.pageNumber = 1;
-          this.refreshList();
+        next: (res) => {
+          const newId = Number(res?.loginID ?? res?.loginId ?? 0);
+          this.afterUserSaved(newId, 'User added successfully.', () => { this.pageNumber = 1; });
         },
         error: (err) => {
           //console.error('Add user failed:', err);
@@ -408,18 +558,42 @@ export class UsersRoles implements OnInit, OnDestroy {
       .updateUser(loginID, payload)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.isSaving = false;
-          this.showToast('success', 'User updated successfully.');
-          this.cancelForm();
-          this.refreshList();
-        },
+        next: () => this.afterUserSaved(loginID, 'User updated successfully.'),
         error: (err) => {
           //console.error('Update user failed:', err);
           this.isSaving = false;
           this.showToast('error', this.getApiErrorMessage(err, 'Failed to update user. Please try again.'));
           this.cdr.markForCheck();
         },
+      });
+  }
+
+  /** User row is saved; now save its GBA assignment (if any), then close the form. */
+  private afterUserSaved(loginId: number, successMessage: string, beforeRefresh?: () => void): void {
+    const finish = (warning?: string) => {
+      this.isSaving = false;
+      if (warning) {
+        this.showToast('warning', warning);
+      } else {
+        this.showToast('success', successMessage);
+      }
+      this.cancelForm();
+      beforeRefresh?.();
+      this.refreshList();
+    };
+
+    if (this.gbaCorporationID && !loginId) {
+      finish('User saved, but the Corporation / Ward assignment could not be saved (user ID not returned). Edit the user to assign it.');
+      return;
+    }
+
+    this.saveJurisdiction$(loginId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => finish(),
+        error: (err) => finish(
+          'User saved, but Corporation / Ward assignment failed: ' +
+          this.getApiErrorMessage(err, 'please edit the user and try again.')),
       });
   }
 

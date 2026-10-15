@@ -1,6 +1,14 @@
 <div class="filter-grid">
+  <div *ngIf="corporations.length">
+    <label class="form-label">Corporation (GBA)</label>
+    <select class="form-select" [(ngModel)]="corporationId" (ngModelChange)="onCorporationChanged()">
+      <option [ngValue]="null">All corporations</option>
+      <option *ngFor="let c of corporations" [ngValue]="c.corporationID">{{ c.corporationName }}</option>
+    </select>
+  </div>
+
   <div>
-    <label class="form-label">Zone</label>
+    <label class="form-label">Zone (old BBMP)</label>
     <div class="suggestion-input-wrap">
       <input
         class="form-control"

@@ -127,3 +127,19 @@
 .status-text.error {
   color: #b91c1c;
 }
+
+/* Shown instead of the map when the application has no captured location */
+.no-location {
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 14px;
+}

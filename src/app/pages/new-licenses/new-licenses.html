@@ -74,8 +74,9 @@
       <div [hidden]="currentStep !== 1">
         <h5 class="section-title required">Applicant Representation</h5>
         <div class="mb-3">
-          <label class="form-check form-check-inline" *ngFor="let r of representations">
-            <input type="radio" class="form-check-input" name="rep">
+          <label class="form-check form-check-inline" *ngFor="let r of representations; let i = index">
+            <input type="radio" class="form-check-input" name="rep"
+                   [value]="i + 1" [(ngModel)]="tradeLicenseApplications.applicantRepersenting">
             {{ r }}
           </label>
         </div>
@@ -120,51 +121,54 @@
             <input class="form-control" [(ngModel)]="tradeLicenseApplicationDetails.landLineNumber">
           </div>
         </div>
+        <!-- GBA location: Corporation -> Zone -> Ward -->
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="required">MLA Constituency</label>
-            <!-- <select class="form-select" [(ngModel)]="selectedMLAConstituency" (change)="onMLAConstituencyChange()">
-              <option [ngValue]="null">Select</option>
-              <option *ngFor="let mla of mlaConstituencies" [ngValue]="mla">
-                {{ mla.mohName }}
-              </option>
-            </select> -->
+            <label class="required">Corporation</label>
             <ng-select
-              [items]="mlaConstituencies"
-              bindLabel="mohName"
-              [(ngModel)]="selectedMLAConstituency"
-              (change)="onMLAConstituencyChange()"
+              [items]="gbaCorporations"
+              bindLabel="corporationName"
+              [(ngModel)]="selectedCorporation"
+              (change)="onCorporationChange()"
               placeholder="Select"
               [clearable]="false">
             </ng-select>
-
-
+          </div>
+          <div class="col-md-4">
+            <label class="required">Zone</label>
+            <ng-select
+              [items]="gbaZones"
+              bindLabel="zoneName"
+              [(ngModel)]="selectedGbaZone"
+              (change)="onGbaZoneChange()"
+              [disabled]="!selectedCorporation"
+              placeholder="Select"
+              [clearable]="false">
+            </ng-select>
           </div>
           <div class="col-md-4">
             <label class="required">Ward</label>
-            <!-- <select class="form-select" [(ngModel)]="selectedWard" [disabled]="!selectedMLAConstituency">
-              <option [ngValue]="null">Select</option>
-              <option *ngFor="let w of wards" [ngValue]="w">
-                {{ w.wardName }}
-              </option>
-            </select> -->
             <ng-select
-              [items]="wards"
-              bindLabel="wardName"
-              [(ngModel)]="selectedWard"
-              [disabled]="!selectedMLAConstituency"
-              [clearable]="false"
-              placeholder="Select">
+              [items]="gbaWards"
+              [(ngModel)]="selectedGbaWard"
+              [disabled]="!selectedGbaZone"
+              [searchFn]="gbaWardSearch"
+              placeholder="Select"
+              [clearable]="false">
+              <ng-template ng-label-tmp let-item="item">{{ gbaWardLabel(item) }}</ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                {{ gbaWardLabel(item) }}
+                <small class="text-muted" *ngIf="item.wardNativeName"> ({{ item.wardNativeName }})</small>
+                <small class="text-danger" *ngIf="!item.isAvailable"> – not yet open</small>
+              </ng-template>
             </ng-select>
-
-
           </div>
+        </div>
+        <div class="row g-3">
           <div class="col-md-4">
             <label class="required">BESCOM RR No.</label>
             <input class="form-control" id="bescom" [(ngModel)]="tradeLicenseApplications.bescomRRNumber">
           </div>
-        </div>
-        <div class="row g-3">
           <div class="col-md-4">
             <label class="required">GST Number</label>
             <input class="form-control" id="gstNumber" [(ngModel)]="tradeLicenseApplications.gstNumber">
@@ -179,7 +183,7 @@
         <div class="row g-3">
           <!-- <div class="col-md-3"><input class="form-control" placeholder="Ward"></div> -->
           <div class="col-md-3"><input class="form-control" placeholder="Door No *" id="doorNo" [(ngModel)]="tradeLicenseApplicationDetails.doorNumber"></div>
-          <div class="col-md-3"><input class="form-control" placeholder="Floor No *" id="floorNo"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Floor No *" id="floorNo" [(ngModel)]="floorNumber"></div>
           <div class="col-md-3"><input class="form-control" placeholder="Street Name *" id="street" [(ngModel)]="tradeLicenseApplicationDetails.address1"></div>
           <div class="col-md-3"><input class="form-control" placeholder="Area Name *" id="area" [(ngModel)]="tradeLicenseApplicationDetails.address2"></div>
           <div class="col-md-3"><input class="form-control" placeholder="Pincode *" id="pincode" [(ngModel)]="tradeLicenseApplicationDetails.pincode"></div>
@@ -338,6 +342,7 @@
                 name="parkingProvided"
                 id="parkingYes"
                 value="yes"
+                [(ngModel)]="parkingProvided"
               />
               <label class="form-check-label" for="parkingYes">
                 Yes
@@ -350,6 +355,7 @@
                 name="parkingProvided"
                 id="parkingNo"
                 value="no"
+                [(ngModel)]="parkingProvided"
               />
               <label class="form-check-label" for="parkingNo">
                 No
@@ -362,15 +368,11 @@
 
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="required">Jurisdiction of Health Officer (Zone)</label>
-            <ng-select
-              [items]="zones"
-              bindLabel="zoneName"
-              [(ngModel)]="selectedZone"
-              [searchable]="true"
-              [clearable]="false"
-              placeholder="Select">
-            </ng-select>
+            <label>Jurisdiction (Corporation / Zone)</label>
+            <input class="form-control" readonly
+              [value]="selectedCorporation && selectedGbaZone
+                ? selectedCorporation.corporationName + ' / ' + selectedGbaZone.zoneName
+                : 'Select Corporation and Zone in step 1'">
           </div>
           <div class="col-md-4">
             <label class="required">Date of Application</label>
@@ -608,22 +610,26 @@
           <tr>
             <td class="required">Owner Consent / Lease Agreement</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'ownerConsent', 1)"></td>
+                      (change)="onFileChange($event,'ownerConsent', 1)">
+              <small class="d-block text-success" *ngIf="!documents['ownerConsent'] && documentFileName('ownerConsent')">✔ Already uploaded: {{ documentFileName('ownerConsent') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td class="required">Electricity Bill</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'electricityBill', 9)"></td>
+                      (change)="onFileChange($event,'electricityBill', 9)">
+              <small class="d-block text-success" *ngIf="!documents['electricityBill'] && documentFileName('electricityBill')">✔ Already uploaded: {{ documentFileName('electricityBill') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td>Occupancy Certificate</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'oc', 8)"></td>
+                      (change)="onFileChange($event,'oc', 8)">
+              <small class="d-block text-success" *ngIf="!documents['oc'] && documentFileName('oc')">✔ Already uploaded: {{ documentFileName('oc') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td class="required">Neighbour Consent</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'neighbour', 2)"></td>
+                      (change)="onFileChange($event,'neighbour', 2)">
+              <small class="d-block text-success" *ngIf="!documents['neighbour'] && documentFileName('neighbour')">✔ Already uploaded: {{ documentFileName('neighbour') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr class="info-row">
             <td colspan="2">
@@ -647,27 +653,32 @@
           <tr>
             <td>Details of no objections and other sanctions</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'noc', 7)"></td>
+                      (change)="onFileChange($event,'noc', 7)">
+              <small class="d-block text-success" *ngIf="!documents['noc'] && documentFileName('noc')">✔ Already uploaded: {{ documentFileName('noc') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td>Plan sanction details</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'psd', 6)"></td>
+                      (change)="onFileChange($event,'psd', 6)">
+              <small class="d-block text-success" *ngIf="!documents['psd'] && documentFileName('psd')">✔ Already uploaded: {{ documentFileName('psd') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td>Commencement certificate details</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'ccd', 5)"></td>
+                      (change)="onFileChange($event,'ccd', 5)">
+              <small class="d-block text-success" *ngIf="!documents['ccd'] && documentFileName('ccd')">✔ Already uploaded: {{ documentFileName('ccd') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td>Tax paid receipt</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'taxReceipt', 4)"></td>
+                      (change)="onFileChange($event,'taxReceipt', 4)">
+              <small class="d-block text-success" *ngIf="!documents['taxReceipt'] && documentFileName('taxReceipt')">✔ Already uploaded: {{ documentFileName('taxReceipt') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
             <td>Khata receipt</td>
             <td><input type="file" accept="application/pdf"
-                      (change)="onFileChange($event,'khataReceipt', 3)"></td>
+                      (change)="onFileChange($event,'khataReceipt', 3)">
+              <small class="d-block text-success" *ngIf="!documents['khataReceipt'] && documentFileName('khataReceipt')">✔ Already uploaded: {{ documentFileName('khataReceipt') }} (choose a file only to replace it)</small></td>
           </tr>
         </table>
 
@@ -794,6 +805,57 @@
           STEP 7 – FINAL PREVIEW
       ======================================================= -->
       <div [hidden]="currentStep !== 8">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+          <h5 class="section-title mb-0">Application Preview</h5>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="downloadApplicationForm()">
+            ⬇ Download Application Form (PDF)
+          </button>
+        </div>
+        <p class="text-muted small mb-3">Please check all details before payment. Use Back to correct anything.</p>
+
+        <div class="row g-3">
+          <div class="col-lg-6" *ngFor="let section of applicationSummary">
+            <table class="table table-bordered table-sm preview-table mb-0">
+              <thead class="table-primary">
+                <tr><th colspan="2">{{ section.title }}</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of section.rows">
+                  <th class="w-50">{{ row[0] }}</th>
+                  <td>{{ row[1] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h5 class="section-title mt-4">Trade Classification</h5>
+        <table class="table table-bordered table-sm">
+          <thead class="table-primary">
+            <tr><th>#</th><th>Major Trade</th><th>Minor Trade</th><th>Sub Trade</th><th class="text-end">Fee (₹)</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of tradeGrid; let i = index">
+              <td>{{ i + 1 }}</td><td>{{ t.major }}</td><td>{{ t.minor }}</td><td>{{ t.sub }}</td>
+              <td class="text-end">{{ t.rate }}</td>
+            </tr>
+            <tr *ngIf="!tradeGrid.length"><td colspan="5" class="text-center text-muted">No trade added</td></tr>
+          </tbody>
+        </table>
+
+        <h5 class="section-title mt-4">Documents Enclosed</h5>
+        <table class="table table-bordered table-sm">
+          <tbody>
+            <tr *ngFor="let dl of documentLabels">
+              <th class="w-50">{{ dl.label }}<span *ngIf="dl.required" class="text-danger"> *</span></th>
+              <td>
+                <span *ngIf="documentFileName(dl.key) as fileName; else notUploaded" class="text-success">✔ {{ fileName }}</span>
+                <ng-template #notUploaded><span class="text-muted">Not uploaded</span></ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
         <h5 class="section-title mt-4">Trade & Fee Summary</h5>
 
         <table class="table table-bordered">
@@ -807,11 +869,12 @@
           </tr>
           <tr>
             <th>OC Exempted Fee</th>
-            <td>₹ 500</td>
+            <td>₹ {{ ocExemptedFee }}</td>
           </tr>
           <tr class="table-success fw-bold">
             <th>Total Payable</th>
-            <td>₹ {{ licenseFee + powerFee }}</td>
+            <!-- licenseFee already = trade + power + OC fee (this is the amount charged) -->
+            <td>₹ {{ licenseFee }}</td>
           </tr>
         </table>
 

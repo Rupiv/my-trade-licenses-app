@@ -1,6 +1,8 @@
 <div class="card table-card">
   <div class="card-body">
     <app-admin-application-filters
+      [corporations]="corporations"
+      [selectedCorporationId]="selectedCorporationId"
       [zones]="zones"
       [mohs]="filteredMohs"
       [wards]="wards"

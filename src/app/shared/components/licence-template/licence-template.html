@@ -9,8 +9,9 @@
         <img src="/LOGO.png" alt="BBMP Logo">
       </div>
       <div class="header-text">
-        <h1>BRUHAT BANGALORE MAHANAGARA PALIKE</h1>
-        <h2>Health Department, Shivaji Nagar MOH</h2>
+        <h1>{{ issuingAuthority | uppercase }}</h1>
+        <h2 *ngIf="corporationName">Greater Bengaluru Authority – Health Department</h2>
+        <h2 *ngIf="!corporationName">Health Department, Shivaji Nagar MOH</h2>
         <h3>Trade Licence Certificate</h3>
       </div>
     </div>
@@ -87,7 +88,7 @@
           <span *ngIf="!showSignatureImage">Authorised Signature</span>
         </div>
         Medical Officer of Health<br>
-        Bruhat Bangalore Mahanagara Palike<br>
+        {{ issuingAuthority }}<br>
         Bangalore
       </div>
     </div>

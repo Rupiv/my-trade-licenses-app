@@ -11,6 +11,7 @@ import { NotificationService } from '../../shared/components/notification/notifi
 import { LicenceProcessTimelineItem } from '../inspection/inspection.service';
 import { LicensesApplicationDocument } from '../inspection/inspection.model';
 import { stampPdfWithUploadDetails } from '../../shared/utils/pdf-stamp.util';
+import { ApplicationFullDetails } from '../../shared/components/application-full-details/application-full-details';
 
 interface AdminApplicationDetails {
   licenceApplicationID: number;
@@ -35,7 +36,7 @@ interface AdminApplicationDetails {
 @Component({
   selector: 'app-admin-licence-application-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, GoogleMapsModule, FormsModule],
+  imports: [CommonModule, RouterModule, GoogleMapsModule, FormsModule, ApplicationFullDetails],
   templateUrl: './admin-licence-application-details.html',
   styleUrl: './admin-licence-application-details.css',
 })

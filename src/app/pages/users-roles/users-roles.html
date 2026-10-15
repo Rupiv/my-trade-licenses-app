@@ -169,6 +169,59 @@
 
   </div>
 
+  <!-- GBA jurisdiction (optional; saved separately, existing Zone / Office flow unchanged) -->
+  <div class="gba-section">
+    <div class="gba-section__title">
+      <i class="bi bi-building"></i>
+      GBA Corporation &amp; Ward Assignment
+      <span class="badge-optional">Optional</span>
+    </div>
+    <small class="field-hint">
+      Pick a corporation only for the whole corporation, add a zone for the whole zone, or select one or more wards.
+    </small>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="f-corporation">Corporation</label>
+        <select id="f-corporation"
+          [ngModel]="gbaCorporationID ?? 0"
+          (ngModelChange)="onGbaCorporationChange(+$event || null)">
+          <option [value]="0">— Not assigned —</option>
+          <option *ngFor="let c of corporations" [value]="c.corporationID">{{ c.corporationName }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="f-gba-zone">GBA Zone</label>
+        <select id="f-gba-zone"
+          [disabled]="!gbaCorporationID"
+          [ngModel]="gbaZoneID ?? 0"
+          (ngModelChange)="onGbaZoneChange(+$event || null)">
+          <option [value]="0">All zones</option>
+          <option *ngFor="let z of gbaZones" [value]="z.gbaZoneID">{{ z.zoneName }}</option>
+        </select>
+      </div>
+
+      <div class="form-group form-group--wide">
+        <label for="f-gba-wards">
+          Wards
+          <span class="badge-optional" *ngIf="gbaCorporationID && !gbaWardIDs.length">All wards of the {{ gbaZoneID ? 'zone' : 'corporation' }}</span>
+        </label>
+        <ng-select
+          labelForId="f-gba-wards"
+          [items]="gbaWards"
+          bindLabel="label"
+          bindValue="gbaWardID"
+          [multiple]="true"
+          [closeOnSelect]="false"
+          [disabled]="!gbaCorporationID"
+          [(ngModel)]="gbaWardIDs"
+          placeholder="Search ward no. or name"
+        ></ng-select>
+      </div>
+    </div>
+  </div>
+
   <div class="form-actions">
     <button class="btn-primary" (click)="saveUser()" [disabled]="isSaving">
       <span *ngIf="isSaving" class="btn-spinner"></span>
@@ -216,6 +269,7 @@
           <th>Mobile</th>
           <th>Office</th>
           <th>Designation</th>
+          <th>Corporation / Ward (GBA)</th>
           <th class="center">Actions</th>
         </tr>
       </thead>
@@ -225,6 +279,7 @@
         <!-- LOADING SKELETON -->
         <ng-container *ngIf="isLoading">
           <tr *ngFor="let i of [1,2,3,4,5]" class="skeleton-row">
+            <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
@@ -249,6 +304,7 @@
             <td>
               <span class="badge">{{ getDesignationName(u.userDesignationID) }}</span>
             </td>
+            <td class="gba-cell">{{ getJurisdictionLabel(u) }}</td>
             <td class="center actions-cell">
               <button
                 class="icon-btn icon-btn--edit"
@@ -272,7 +328,7 @@
 
         <!-- NO DATA -->
         <tr *ngIf="!isLoading && users.length === 0">
-          <td colspan="6" class="no-data">
+          <td colspan="7" class="no-data">
             <i class="bi bi-inbox"></i>
             <span>{{ searchText ? 'No users match your search.' : 'No users found.' }}</span>
             <button *ngIf="searchText" class="btn-link" (click)="clearSearch()">Clear search</button>

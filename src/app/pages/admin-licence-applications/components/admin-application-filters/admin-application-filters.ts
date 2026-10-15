@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MLCConstituency, Ward, Zones } from '../../../../core/models/new-trade-licenses.model';
+import { GbaCorporation, MLCConstituency, Ward, Zones } from '../../../../core/models/new-trade-licenses.model';
 
 export interface AdminApplicationFilterState {
+  corporationId: number | null;
   zoneId: number | null;
   mohId: number | null;
   wardId: number | null;
@@ -17,6 +18,8 @@ export interface AdminApplicationFilterState {
   styleUrl: './admin-application-filters.css'
 })
 export class AdminApplicationFiltersComponent implements OnChanges {
+  @Input() corporations: GbaCorporation[] = [];
+  @Input() selectedCorporationId: number | null = null;
   @Input() zones: Zones[] = [];
   @Input() mohs: MLCConstituency[] = [];
   @Input() wards: Ward[] = [];
@@ -30,6 +33,7 @@ export class AdminApplicationFiltersComponent implements OnChanges {
   @Output() filtersChange = new EventEmitter<AdminApplicationFilterState>();
   @Output() searchChange = new EventEmitter<string>();
 
+  corporationId: number | null = null;
   zoneId: number | null = null;
   mohId: number | null = null;
   wardId: number | null = null;
@@ -70,6 +74,9 @@ export class AdminApplicationFiltersComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['selectedCorporationId']) {
+      this.corporationId = this.selectedCorporationId;
+    }
     if (
       changes['selectedZoneId'] ||
       changes['selectedMohId'] ||
@@ -195,8 +202,13 @@ export class AdminApplicationFiltersComponent implements OnChanges {
     return this.wards.find((ward) => ward.wardID === wardId)?.wardName ?? '';
   }
 
+  onCorporationChanged(): void {
+    this.emitFilters();
+  }
+
   private emitFilters(): void {
     this.filtersChange.emit({
+      corporationId: this.corporationId,
       zoneId: this.zoneId,
       mohId: this.mohId,
       wardId: this.wardId,

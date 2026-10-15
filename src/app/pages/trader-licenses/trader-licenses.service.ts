@@ -31,9 +31,17 @@ export class TradeLicensesService {
     );
   }
 
+  /** Paid but not submitted (payment redirect failed): run the submission steps again. */
+  completeSubmission(licenceApplicationID: number): Observable<{ submitted: boolean; applicationNumber?: string }> {
+    return this.http.post<{ submitted: boolean; applicationNumber?: string }>(
+      `${this.baseUrl}/licence-application-view/${licenceApplicationID}/complete-submission`, {}
+    );
+  }
+
   downloadGeneratedCertificate(licenceApplicationID: number): Observable<Blob> {
     return this.http.get(
-      `${this.baseUrl}/licence/certificate/generated/${licenceApplicationID}/download`,
+      // the dashboard lists draft ids; the API maps them to the submitted application
+      `${this.baseUrl}/licence/certificate/generated/${licenceApplicationID}/download?draft=true`,
       {
         responseType: 'blob'
       }

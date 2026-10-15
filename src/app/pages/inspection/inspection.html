@@ -24,6 +24,12 @@
     </div>
   </div>
 
+  <!-- Full details (read-only): applicant, address, GBA ward, trades, payments, progress -->
+  <app-application-full-details
+    *ngIf="licenceApplicationDetails?.licenceApplicationID"
+    [licenceApplicationId]="licenceApplicationDetails?.licenceApplicationID">
+  </app-application-full-details>
+
     <!-- Map Details -->
     <div class="card section-card">
       <div class="card-header">Map Details</div>
@@ -50,9 +56,12 @@
           <input type="text" class="form-control" [value]="loadlocationDetails?.roadCategory" disabled />
         </div>
 
-        <!-- Right: Map -->
+        <!-- Right: Map (only with a real location; old-system applications have none) -->
+        <div class="no-location" *ngIf="!(mapCenter?.lat && mapCenter?.lng)">
+          Location not captured for this application (applications from the old system have no map location).
+        </div>
         <google-map
-          *ngIf="mapCenter"
+          *ngIf="mapCenter?.lat && mapCenter?.lng"
           height="350px"
           width="100%"
           [center]="mapCenter"
@@ -203,7 +212,7 @@
       <input
         type="file"
         #cameraInput
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         multiple
         hidden
         (change)="onPhotosSelected($event)"
@@ -343,6 +352,8 @@
     <button *ngIf="!isSeniorApprover" class="btn btn-success" [disabled]="isSubmitting" (click)="submitProcessAction(7)">
       Inspected
     </button>
+    <!-- Inspector may forward directly to the higher authority (senior approver can approve it:
+         GBA_SeniorApprovalRule_Fix.sql accepts INSPECTED or FORWARD before approval). -->
     <button *ngIf="!isSeniorApprover" class="btn btn-warning text-dark" [disabled]="isSubmitting" (click)="submitProcessAction(6)">
       Forward To Higher Authority
     </button>

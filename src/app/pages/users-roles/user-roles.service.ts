@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Zones } from '../../core/models/new-trade-licenses.model';
+import { GbaCorporation, GbaWard, GbaZone, Zones } from '../../core/models/new-trade-licenses.model';
 
 /* ======================================================
    MODELS
@@ -50,6 +50,24 @@ export interface OfficeDetail {
   officeName: string;
 }
 
+/** One active GBA assignment row of a user (ward / zone are null for a wider assignment) */
+export interface UserJurisdiction {
+  loginID: number;
+  corporationID: number;
+  corporationName: string;
+  gbaZoneID: number | null;
+  zoneName: string | null;
+  gbaWardID: number | null;
+  wardNo: number | null;
+  wardName: string | null;
+}
+
+export interface UserJurisdictionRequest {
+  corporationID: number | null;   // null = remove GBA assignment
+  gbaZoneID: number | null;
+  gbaWardIDs: number[];
+}
+
 export interface UserDesignation {
   userDesignationId: number;
   userDesignationName: string;
@@ -72,6 +90,7 @@ export class UsersRolesService {
   private readonly officeUrl      = `${this.baseUrl}/office-details/api/getall`;
   private readonly designationUrl = `${this.baseUrl}/office-details/api/get-all-user-designation`;
   private readonly zonesUrl       = `${this.baseUrl}/bbmp-zones`;
+  private readonly gbaUrl         = `${this.baseUrl}/gba`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -140,5 +159,35 @@ export class UsersRolesService {
 
   getZones(): Observable<Zones[]> {
     return this.http.get<Zones[]>(this.zonesUrl);
+  }
+
+  /* ─── GBA JURISDICTION (Corporation / Zone / Wards) ──
+     Saved separately from login-master, so the existing user flow is unchanged.
+  ──────────────────────────────────────────────────── */
+  getCorporations(): Observable<GbaCorporation[]> {
+    return this.http.get<GbaCorporation[]>(`${this.gbaUrl}/corporations`);
+  }
+
+  getGbaZones(corporationId: number): Observable<GbaZone[]> {
+    return this.http.get<GbaZone[]>(`${this.gbaUrl}/corporations/${corporationId}/zones`);
+  }
+
+  getGbaWards(corporationId: number, zoneId?: number | null): Observable<GbaWard[]> {
+    let params = new HttpParams().set('corporationId', corporationId);
+    if (zoneId) params = params.set('zoneId', zoneId);
+    return this.http.get<GbaWard[]>(`${this.gbaUrl}/wards`, { params });
+  }
+
+  getUserJurisdiction(loginId: number): Observable<UserJurisdiction[]> {
+    return this.http.get<UserJurisdiction[]>(`${this.gbaUrl}/user-jurisdiction/${loginId}`);
+  }
+
+  getUserJurisdictions(loginIds: number[]): Observable<UserJurisdiction[]> {
+    const params = new HttpParams().set('loginIds', loginIds.join(','));
+    return this.http.get<UserJurisdiction[]>(`${this.gbaUrl}/user-jurisdiction`, { params });
+  }
+
+  saveUserJurisdiction(loginId: number, req: UserJurisdictionRequest): Observable<any> {
+    return this.http.put<any>(`${this.gbaUrl}/user-jurisdiction/${loginId}`, req);
   }
 }

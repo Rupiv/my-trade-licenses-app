@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { Subscription } from 'rxjs';
@@ -47,11 +47,22 @@ export class Login {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private auth: AuthService,
     private tokenService: TokenService,
     private notificationService: NotificationService,
     private loginService: LoginService
   ) {}
+
+  /** Sends a trader back to the page they were on (e.g. payment result) if the session expired there. */
+  private goToTrader(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '';
+    if (returnUrl.startsWith('/trader/')) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+    this.router.navigate(['/trader']);
+  }
 
   private normalizeRole(role: string | null | undefined): string {
     return (role ?? '').toLowerCase().replace(/[\s_-]+/g, '');
@@ -168,7 +179,7 @@ export class Login {
         if (role === 'admin') {
           this.router.navigate(['/admin']);
         } else if (role === 'trader' || role === 'tradeowner') {
-          this.router.navigate(['/trader']);
+          this.goToTrader();
         } else if (role === 'approver' || role === 'approvingofficer') {
           this.router.navigate(['/approver']);
         } else if (role === 'seniorapprover' || role === 'seniorapprovingofficer') {
@@ -226,7 +237,7 @@ export class Login {
         );
 
         if (role === 'tradeowner' || role === 'trader') {
-          this.router.navigate(['/trader']);
+          this.goToTrader();
           return;
         }
 

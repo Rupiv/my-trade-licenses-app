@@ -10,6 +10,7 @@ import { ChangeDetectorRef } from '@angular/core';
 import { signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
+import { environment } from '../../../environments/environment';
 
 
 @Component({
@@ -157,19 +158,19 @@ export class CreateAccount {
       next: (res) => {
         this.setUsrToken();
         this.notificationService.show(
-          res?.Message || 'Account created successfully!',
+          res?.message || res?.Message || 'Account created successfully!',
           'success'
         );
       },
       error: (err) => {
-        //Duplicate / SQL error comes here
+        //Duplicate / SQL error comes here (API returns camelCase JSON: { message })
         let message = 'Something went wrong. Please try again.';
 
         if (err?.error) {
           if (typeof err.error === 'string') {
             message = err.error; // e.g. "Mobile number already registered"
-          } else if (err.error.Message) {
-            message = err.error.Message;
+          } else if (err.error.message || err.error.Message) {
+            message = err.error.message || err.error.Message;
           }
         }
 
@@ -195,7 +196,9 @@ export class CreateAccount {
 
   setUsrToken() {
     const payload = {
-      mobileNumber: this.registerModel.mobileNumber
+      mobileNumber: this.registerModel.mobileNumber,
+      // login-user rejects requests without a captcha token; same token the login page sends while captcha is disabled
+      captchaToken: environment.captchaToken || 'test'
     };
 
     this.auth.userlogin(payload).subscribe({

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { MLCConstituency, Ward, Zones } from '../../core/models/new-trade-licenses.model';
+import { GbaCorporation, MLCConstituency, Ward, Zones } from '../../core/models/new-trade-licenses.model';
 
 export interface AdminApplication {
   licenceApplicationID: number;
@@ -21,6 +21,11 @@ export interface AdminApplication {
   wardID: number;
   wardName: string;
   loginID: number;
+  // GBA (present once GBA_StoredProcedure_Updates.sql has run)
+  corporationID?: number | null;
+  corporationName?: string | null;
+  gbaWardName?: string | null;
+  locationStatus?: 'CONFIRMED' | 'DERIVED' | 'UNMAPPED' | null;
 }
 
 export interface AdminApplicationsResponse {
@@ -41,6 +46,7 @@ export interface AdminApplicationsResponse {
 }
 
 export interface AdminApplicationsQuery {
+  corporationId?: number | null;
   zoneId?: number | null;
   mohId?: number | null;
   wardId?: number | null;
@@ -65,6 +71,9 @@ export class AdminApplicationsService {
       .set('pageNumber', query.pageNumber.toString())
       .set('pageSize', query.pageSize.toString());
 
+    if (query.corporationId) {
+      params = params.set('corporationId', query.corporationId.toString());
+    }
     if (query.zoneId) {
       params = params.set('zoneId', query.zoneId.toString());
     }
@@ -89,6 +98,10 @@ export class AdminApplicationsService {
 
   getZones(): Observable<Zones[]> {
     return this.http.get<Zones[]>(`${this.baseUrl}/bbmp-zones`);
+  }
+
+  getCorporations(): Observable<GbaCorporation[]> {
+    return this.http.get<GbaCorporation[]>(`${this.baseUrl}/gba/corporations`);
   }
 
   getMohs(): Observable<MLCConstituency[]> {

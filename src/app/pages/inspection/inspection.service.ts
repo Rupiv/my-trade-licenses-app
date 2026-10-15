@@ -101,9 +101,17 @@ export class InspectionService {
     pageNumber: number;
     pageSize: number;
   }) {
-    return this.http.post<ApprovedApplications>(
+    // The senior-approver API is GET with query params (only the approver API was moved to POST)
+    return this.http.get<ApprovedApplications>(
       `${this.baseUrl}/trade-licence/senior-approver/applications`,
-      request
+      {
+        params: {
+          loginId: request.loginId,
+          licenceApplicationId: request.licenceApplicationId,
+          pageNumber: request.pageNumber,
+          pageSize: request.pageSize,
+        },
+      }
     );
   }
   //Documents for inspection
