@@ -287,7 +287,7 @@ export class AdminLicenceApplicationDetails {
       licenceApplicationID,
       loginID,
       licenceProcessID,
-      currentStatus: String(currentStatusID),
+      currentStatus: currentStatusID,
       remarks: this.remarks.trim(),
       actionReasonIds: ''
     }).subscribe({

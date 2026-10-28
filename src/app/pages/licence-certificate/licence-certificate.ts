@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, ViewEncapsulation, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LicenceTemplate } from '../../shared/components/licence-template/licence-template';
@@ -116,10 +116,18 @@ export class LicenceCertificate {
     private inspectionService: InspectionService,
     private api: ApiService,
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private location: Location
   ) {}
 
   private from = '';
+
+  // Officer screens that may save the generated certificate (triggers the auto-save on view,
+  // which is what makes it downloadable from the trader's Track Application page afterwards).
+  private readonly staffFromValues = new Set(['admin', 'senior-approver', 'approver', 'zone-approver']);
+  private get isStaffView(): boolean {
+    return this.staffFromValues.has(this.from);
+  }
 
   ngOnInit(): void {
     const rawParam = this.route.snapshot.paramMap.get('licensesApplicationId') ?? '';
@@ -179,6 +187,11 @@ export class LicenceCertificate {
       this.router.navigate(['/admin/licence-applications', this.licenceApplicationId]);
       return;
     }
+    if (this.isStaffView) {
+      // senior-approver / approver / zone-approver: back to wherever this was opened from.
+      this.location.back();
+      return;
+    }
     if (this.licenceApplicationId) {
       this.router.navigate(['/trader/view-licenses-application', this.licenceApplicationId]);
       return;
@@ -187,7 +200,7 @@ export class LicenceCertificate {
   }
 
   get showSaveButton(): boolean {
-    return this.from === 'admin';
+    return this.isStaffView;
   }
 
   async saveGeneratedCertificate(trigger: 'auto' | 'manual' = 'manual'): Promise<void> {
@@ -317,7 +330,7 @@ export class LicenceCertificate {
   }
 
   private tryAutoSaveForAdmin(): void {
-    if (this.from !== 'admin') {
+    if (!this.isStaffView) {
       return;
     }
 

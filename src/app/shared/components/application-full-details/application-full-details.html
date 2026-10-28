@@ -2,6 +2,9 @@
   <div class="card-header afd-header">
     <span><i class="bi bi-file-earmark-text"></i> Full Application Details</span>
     <small class="text-muted" *ngIf="view?.final?.applicationNumber">{{ view?.final?.applicationNumber }}</small>
+    <button type="button" class="btn btn-sm btn-success ms-auto" *ngIf="isApproved" (click)="viewCertificate()">
+      <i class="bi bi-file-earmark-pdf"></i> View / Download Licence Certificate
+    </button>
   </div>
 
   <div class="card-body">

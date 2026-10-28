@@ -388,7 +388,7 @@ export class Inspection {
           licenceApplicationID,
           loginID: loginId,
           licenceProcessID,
-          currentStatus: String(resolvedCurrentStatusID),
+          currentStatus: resolvedCurrentStatusID,
           remarks,
           actionReasonIds: ''
         };

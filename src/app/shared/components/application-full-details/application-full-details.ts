@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   ApplicationView,
   ViewLicensesApplicationService,
@@ -29,7 +30,8 @@ export class ApplicationFullDetails implements OnChanges {
 
   constructor(
     private readonly viewService: ViewLicensesApplicationService,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -64,6 +66,22 @@ export class ApplicationFullDetails implements OnChanges {
 
   get statusName(): string {
     return (this.view?.final?.statusName || this.app.licenceApplicationStatusName || '—').trim();
+  }
+
+  get isApproved(): boolean {
+    return this.statusName.toUpperCase() === 'APPROVED';
+  }
+
+  /** '/admin', '/senior-approver', '/approver', '/zone-approver' - whichever section this is rendered in. */
+  private get sectionPrefix(): string {
+    return '/' + (this.router.url.split('/').filter(Boolean)[0] || 'admin');
+  }
+
+  viewCertificate(): void {
+    if (!this.licenceApplicationId) return;
+    this.router.navigate([`${this.sectionPrefix}/licence-certificate`, this.licenceApplicationId], {
+      queryParams: { from: this.sectionPrefix.slice(1) },
+    });
   }
 
   get address(): string {

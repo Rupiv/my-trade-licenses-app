@@ -120,7 +120,7 @@ export class InspectionService {
     licenceApplicationID: number;
     loginID: number;
     licenceProcessID: number;
-    currentStatus: string;
+    currentStatus: number;
     remarks: string;
     actionReasonIds: string;
   }) {

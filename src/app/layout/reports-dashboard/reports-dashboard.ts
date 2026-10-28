@@ -13,24 +13,30 @@ export class ReportsDashboard {
 
   constructor(private router: Router) {}
 
+  // This dashboard is shared by admin/approver/senior-approver/zone-approver; navigate
+  // under whichever section it's currently loaded in instead of hardcoding /admin.
+  private get sectionPrefix(): string {
+    return '/' + (this.router.url.split('/').filter(Boolean)[0] || 'admin');
+  }
+
   onControlSheetClick() {
-    this.router.navigate(['/admin/reports/control-sheet']);
+    this.router.navigate([`${this.sectionPrefix}/reports/control-sheet`]);
   }
 
   onNotRenewedLicensesClick(){
-    this.router.navigate(['/admin/reports/not-renewed-licenses']);
+    this.router.navigate([`${this.sectionPrefix}/reports/not-renewed-licenses`]);
   }
 
   onWardWiseLicensesClick(){
-    this.router.navigate(['/admin/reports/ward-wise-licenses']);
+    this.router.navigate([`${this.sectionPrefix}/reports/ward-wise-licenses`]);
   }
 
   onRevenueCollectionClick(){
-    this.router.navigate(['/admin/reports/revenue-collection']);
+    this.router.navigate([`${this.sectionPrefix}/reports/revenue-collection`]);
   }
 
   onApplicationWiseLicensesClick(){
-    this.router.navigate(['/admin/reports/application-wise-licenses']);
+    this.router.navigate([`${this.sectionPrefix}/reports/application-wise-licenses`]);
   }
 
 }

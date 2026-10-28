@@ -96,6 +96,11 @@ export class ZoneApprovingOfficerService {
     );
   }
 
+  getZoneApproverLookup(loginId: number) {
+    const params = new HttpParams().set('loginId', loginId.toString());
+    return this.http.get<any>(`${this.baseUrl}/trade-licence/zone-approver/lookup`, { params });
+  }
+
   getZoneApproverDashboard(loginId: number, mohId?: number | null, wardId?: number | null) {
     let params = new HttpParams().set('loginId', loginId.toString());
 

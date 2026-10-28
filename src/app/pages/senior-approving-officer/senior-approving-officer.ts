@@ -8,6 +8,16 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { InspectionSubmittedApplication, SeniorApprovedApplications } from './senior-approving-officer.model';
 
+interface ZoneOption {
+  id: number;
+  name: string;
+}
+
+interface WardOption {
+  id: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-senior-approving-officer',
   imports: [FormsModule, RouterModule, CommonModule],
@@ -26,7 +36,13 @@ export class SeniorApprovingOfficer {
     totalPages = 0;
     pages: number[] = [];
     isLoading = false;
-    
+
+    // Full zone/ward list for this officer (from /lookup), independent of the loaded page
+    zoneOptions: ZoneOption[] = [];
+    wardOptions: WardOption[] = [];
+    selectedZoneId: number | null = null;
+    selectedWardId: number | null = null;
+
   constructor(
     private notificationservice: NotificationService,
     private loaderservice: LoaderService,
@@ -38,6 +54,57 @@ export class SeniorApprovingOfficer {
   ) {}
 
   ngOnInit(): void {
+    this.loadLookup();
+    this.loadSubmittedInspectionApplications();
+  }
+
+  private loadLookup(): void {
+    const loginId = this.resolveLoginId();
+    if (!loginId) {
+      return;
+    }
+
+    this.seniorapprovingofficerService.getSeniorApproverLookup(loginId).subscribe({
+      next: (res: any) => {
+        const rawZones = res?.zones ?? res?.Zones ?? [];
+        const rawWards = res?.wards ?? res?.Wards ?? [];
+
+        this.zoneOptions = rawZones
+          .map((z: any) => ({
+            id: Number(z?.zoneID ?? z?.ZoneID ?? z?.gbaZoneID ?? z?.GbaZoneID),
+            name: String(z?.zoneName ?? z?.ZoneName ?? '').trim()
+          }))
+          .filter((z: ZoneOption) => Number.isFinite(z.id) && z.id > 0 && !!z.name);
+
+        this.wardOptions = rawWards
+          .map((w: any) => ({
+            id: Number(w?.wardID ?? w?.WardID ?? w?.gbaWardID ?? w?.GbaWardID),
+            name: String(w?.wardName ?? w?.WardName ?? '').trim()
+          }))
+          .filter((w: WardOption) => Number.isFinite(w.id) && w.id > 0 && !!w.name);
+
+        if (this.selectedZoneId && !this.zoneOptions.some((z) => z.id === this.selectedZoneId)) {
+          this.selectedZoneId = null;
+        }
+        if (this.selectedWardId && !this.wardOptions.some((w) => w.id === this.selectedWardId)) {
+          this.selectedWardId = null;
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Filter dropdowns stay empty; the application list itself still loads.
+      }
+    });
+  }
+
+  onZoneChanged(): void {
+    this.selectedWardId = null;
+    this.pageNumber = 1;
+    this.loadSubmittedInspectionApplications();
+  }
+
+  onWardChanged(): void {
+    this.pageNumber = 1;
     this.loadSubmittedInspectionApplications();
   }
 
@@ -61,7 +128,10 @@ export class SeniorApprovingOfficer {
       this.isLoading = false;
       return;
     }
-    this.seniorapprovingofficerService.getSubmittedInspectionApplications(loginId, this.pageNumber, this.pageSize).subscribe({
+    this.seniorapprovingofficerService.getSubmittedInspectionApplications(loginId, this.pageNumber, this.pageSize, {
+      mohId: this.selectedZoneId,
+      wardId: this.selectedWardId
+    }).subscribe({
       next: (response: SeniorApprovedApplications) => {
         //console.log('Response:', response);
         this.submittedInspectionApplications = response?.data ?? response?.Data ?? [];

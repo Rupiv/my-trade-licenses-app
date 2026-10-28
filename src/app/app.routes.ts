@@ -118,6 +118,12 @@ export const routes: Routes = [
       { path: '', component: SeniorapprovingDashboard },
       { path: 'senior-approving-officer', component: SeniorApprovingOfficer },
       { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -134,6 +140,12 @@ export const routes: Routes = [
       { path: '', component: ApprovingDashboard },
       { path: 'approving-officer', component: ApprovingOfficer },
       { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -147,6 +159,13 @@ export const routes: Routes = [
     children: [
       { path: '', component: ZoneapproverDashboard },
       { path: 'zone-approving-officer', component: ZoneApprovingOfficer },
+      { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'licence-applications/:licenceApplicationId', component: AdminLicenceApplicationDetails }
     ]
   },

@@ -58,6 +58,11 @@ export class SeniorApprovingOfficerService {
     );
   }
 
+  getSeniorApproverLookup(loginId: number) {
+    const params = new HttpParams().set('loginId', loginId.toString());
+    return this.http.get<any>(`${this.baseUrl}/trade-licence/senior-approver/lookup`, { params });
+  }
+
   getSeniorApproverDashboard(loginId: number, mohId?: number | null, wardId?: number | null) {
     let params = new HttpParams().set('loginId', loginId.toString());
 

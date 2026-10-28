@@ -11,6 +11,16 @@ import {
   ZoneApprovingOfficerService
 } from './zone-approving-officer.service';
 
+interface ZoneOption {
+  id: number;
+  name: string;
+}
+
+interface WardOption {
+  id: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-zone-approving-officer',
   imports: [CommonModule, FormsModule, RouterModule],
@@ -23,13 +33,15 @@ export class ZoneApprovingOfficer implements OnDestroy {
   applications: ZoneApproverApplication[] = [];
   filteredApplications: ZoneApproverApplication[] = [];
   pageApplications: ZoneApproverApplication[] = [];
-  zones: string[] = [];
-  wards: string[] = [];
+
+  // Full zone/ward list for this officer (from /lookup), independent of the loaded page
+  zoneOptions: ZoneOption[] = [];
+  wardOptions: WardOption[] = [];
   visibleStatuses: string[] = [];
   statusOptions: string[] = [];
 
-  selectedZone = '';
-  selectedWard = '';
+  selectedZoneId: number | null = null;
+  selectedWardId: number | null = null;
   selectedStatus = '';
   searchText = '';
 
@@ -54,6 +66,7 @@ export class ZoneApprovingOfficer implements OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadLookup();
     this.loadZoneApproverApplications();
   }
 
@@ -62,6 +75,47 @@ export class ZoneApprovingOfficer implements OnDestroy {
     if (this.filterTimer) {
       clearTimeout(this.filterTimer);
     }
+  }
+
+  private loadLookup(): void {
+    const loginId = this.tokenService.getUserId();
+    if (!loginId) {
+      return;
+    }
+
+    const sub = this.zoneApprovingOfficerService.getZoneApproverLookup(loginId).subscribe({
+      next: (res: any) => {
+        const rawZones = res?.zones ?? res?.Zones ?? [];
+        const rawWards = res?.wards ?? res?.Wards ?? [];
+
+        this.zoneOptions = rawZones
+          .map((z: any) => ({
+            id: Number(z?.zoneID ?? z?.ZoneID ?? z?.gbaZoneID ?? z?.GbaZoneID),
+            name: String(z?.zoneName ?? z?.ZoneName ?? '').trim()
+          }))
+          .filter((z: ZoneOption) => Number.isFinite(z.id) && z.id > 0 && !!z.name);
+
+        this.wardOptions = rawWards
+          .map((w: any) => ({
+            id: Number(w?.wardID ?? w?.WardID ?? w?.gbaWardID ?? w?.GbaWardID),
+            name: String(w?.wardName ?? w?.WardName ?? '').trim()
+          }))
+          .filter((w: WardOption) => Number.isFinite(w.id) && w.id > 0 && !!w.name);
+
+        if (this.selectedZoneId && !this.zoneOptions.some((z) => z.id === this.selectedZoneId)) {
+          this.selectedZoneId = null;
+        }
+        if (this.selectedWardId && !this.wardOptions.some((w) => w.id === this.selectedWardId)) {
+          this.selectedWardId = null;
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Filter dropdowns stay empty; the application list itself still loads.
+      }
+    });
+
+    this.subscriptions.add(sub);
   }
 
   loadZoneApproverApplications(): void {
@@ -75,7 +129,11 @@ export class ZoneApprovingOfficer implements OnDestroy {
     const currentRequest = ++this.requestId;
 
     const sub = this.zoneApprovingOfficerService
-      .getZoneApproverApplications(loginId, this.pageNumber, this.pageSize)
+      .getZoneApproverApplications(loginId, this.pageNumber, this.pageSize, {
+        mohId: this.selectedZoneId,
+        wardId: this.selectedWardId,
+        applicationNumber: this.searchText.trim() || null
+      })
       .subscribe({
         next: (response: ZoneApproverApplicationsResponse) => {
           if (currentRequest !== this.requestId) {
@@ -89,18 +147,7 @@ export class ZoneApprovingOfficer implements OnDestroy {
           this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
           this.visibleStatuses = response?.visibleStatuses ?? response?.VisibleStatuses ?? [];
 
-          this.zones = Array.from(
-            new Set(this.applications.map((app) => app.mohName).filter(Boolean))
-          ).sort();
-          this.wards = this.buildWardOptions();
           this.statusOptions = this.buildStatusOptions();
-
-          if (this.selectedZone && !this.zones.includes(this.selectedZone)) {
-            this.selectedZone = '';
-          }
-          if (this.selectedWard && !this.wards.includes(this.selectedWard)) {
-            this.selectedWard = '';
-          }
           if (this.selectedStatus && !this.statusOptions.includes(this.selectedStatus)) {
             this.selectedStatus = '';
           }
@@ -121,8 +168,6 @@ export class ZoneApprovingOfficer implements OnDestroy {
           this.totalRecords = 0;
           this.totalPages = 0;
           this.visibleStatuses = [];
-          this.zones = [];
-          this.wards = [];
           this.statusOptions = [];
           this.pages = [];
           this.isLoading = false;
@@ -134,16 +179,14 @@ export class ZoneApprovingOfficer implements OnDestroy {
   }
 
   onZoneChanged(): void {
-    this.selectedWard = '';
-    this.wards = this.buildWardOptions();
-    if (this.selectedWard && !this.wards.includes(this.selectedWard)) {
-      this.selectedWard = '';
-    }
-    this.applyLocalFilters();
+    this.selectedWardId = null;
+    this.pageNumber = 1;
+    this.loadZoneApproverApplications();
   }
 
   onWardChanged(): void {
-    this.applyLocalFilters();
+    this.pageNumber = 1;
+    this.loadZoneApproverApplications();
   }
 
   onStatusChanged(): void {
@@ -156,7 +199,8 @@ export class ZoneApprovingOfficer implements OnDestroy {
     }
 
     this.filterTimer = setTimeout(() => {
-      this.applyLocalFilters();
+      this.pageNumber = 1;
+      this.loadZoneApproverApplications();
     }, 300);
   }
 
@@ -200,39 +244,17 @@ export class ZoneApprovingOfficer implements OnDestroy {
   }
 
   private applyLocalFilters(): void {
-    const search = this.searchText.trim().toLowerCase();
-    const selectedZone = this.selectedZone.trim().toLowerCase();
-    const selectedWard = this.selectedWard.trim().toLowerCase();
+    // Zone/Ward/search are already applied server-side (loadZoneApproverApplications).
+    // Status has no server filter param here, so it's applied client-side on the loaded page.
     const selectedStatus = this.selectedStatus.trim().toLowerCase();
 
-    this.filteredApplications = this.applications.filter((app) => {
-      const matchesZone = !selectedZone || (app.mohName || '').toLowerCase() === selectedZone;
-      const matchesWard = !selectedWard || (app.wardName || '').toLowerCase() === selectedWard;
-      const matchesStatus =
-        !selectedStatus ||
-        (app.licenceApplicationStatusName || '').toLowerCase() === selectedStatus;
-      const matchesSearch =
-        !search ||
-        (app.applicationNumber || '').toLowerCase().includes(search) ||
-        (app.applicantName || '').toLowerCase().includes(search) ||
-        (app.tradeName || '').toLowerCase().includes(search) ||
-        (app.mobileNumber || '').toLowerCase().includes(search) ||
-        (app.wardName || '').toLowerCase().includes(search) ||
-        (app.licenceApplicationStatusName || '').toLowerCase().includes(search);
-
-      return matchesZone && matchesWard && matchesStatus && matchesSearch;
-    });
+    this.filteredApplications = !selectedStatus
+      ? this.applications
+      : this.applications.filter(
+          (app) => (app.licenceApplicationStatusName || '').toLowerCase() === selectedStatus
+        );
 
     this.pageApplications = this.filteredApplications;
-  }
-
-  private buildWardOptions(): string[] {
-    const selectedZone = this.selectedZone.trim().toLowerCase();
-    const source = selectedZone
-      ? this.applications.filter((app) => (app.mohName || '').toLowerCase() === selectedZone)
-      : this.applications;
-
-    return Array.from(new Set(source.map((app) => app.wardName).filter(Boolean))).sort();
   }
 
   private buildStatusOptions(): string[] {
@@ -274,13 +296,8 @@ export class ZoneApprovingOfficer implements OnDestroy {
   }
 
   get displayTotalRecords(): number {
-    const hasLocalFilter = Boolean(
-      this.searchText.trim() ||
-      this.selectedZone.trim() ||
-      this.selectedWard.trim() ||
-      this.selectedStatus.trim()
-    );
-    return hasLocalFilter ? this.filteredApplications.length : this.totalRecords;
+    // Zone/Ward/search are server-side (totalRecords already reflects them); only Status is local.
+    return this.selectedStatus.trim() ? this.filteredApplications.length : this.totalRecords;
   }
 
   onParallaxMove(event: MouseEvent): void {
