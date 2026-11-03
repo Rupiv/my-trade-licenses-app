@@ -5,7 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:deploy": "ng build --configuration deploy",
+    "build:deploy": "ng build --configuration deploy && node -e \"require('fs').copyFileSync('dist/my-trade-licenses-app/browser/index.csr.html','dist/my-trade-licenses-app/browser/index.html')\"",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:my-trade-licenses-app": "node dist/my-trade-licenses-app/server/server.mjs",
