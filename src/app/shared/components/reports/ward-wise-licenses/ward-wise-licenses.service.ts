@@ -26,7 +26,7 @@ export class WardWiseLicensesService {
 
   getWardWiseLicenses(financialYearID: number): Observable<WardWiseLicenseResponse> {
     return this.http.get<WardWiseLicenseResponse>(
-      `${this.baseUrl}reports/ward-wise-licenses?financialYearID=${financialYearID}`
+      `${this.baseUrl}/reports/ward-wise-licenses?financialYearID=${financialYearID}`
     );
   }
 }

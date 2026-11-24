@@ -31,6 +31,8 @@ export class Login {
   mobileNumber = '';
 
   captchaToken = '';
+  /** One-time proof from otp/verify; login-user requires it for this mobile number. */
+  private otpToken = '';
   captchaInProgress = false;
   pendingLoginMode: LoginMode | null = null;
   readonly captchaSiteKey = environment.recaptchaSiteKey;
@@ -225,7 +227,9 @@ export class Login {
     const payload = {
       mobileNumber: this.mobileNumber,
       captchaToken: this.captchaToken,
+      otpToken: this.otpToken,
     };
+    this.otpToken = ''; // single use
 
     this.auth.userlogin(payload).subscribe({
       next: () => {
@@ -328,12 +332,14 @@ export class Login {
       .subscribe({
         next: (res) => {
           if (res.isValid) {
+            this.otpToken = res.otpToken ?? '';
             this.notificationService.show(
               'OTP is verified!',
               'success'
             );
             this.isVerifyingOtp = true;
           } else {
+            this.otpToken = '';
             this.isVerifyingOtp = false;
             this.notificationService.show(
               'Invalid OTP',

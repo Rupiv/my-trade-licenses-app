@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
@@ -10,6 +10,13 @@ import { Router, RouterModule } from '@angular/router';
   styleUrl: './not-renewed-licenses.css',
 })
 export class NotRenewedLicenses {
+  // Reports are shared by admin / approver / senior-approver / zone-approver:
+  // go back to the reports page of the section this one is open in.
+  private readonly sectionRouter = inject(Router);
+  get reportsLink(): string {
+    return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
+  }
+
 
   constructor(private router: Router){ }
 

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { WardWiseLicensesService } from './ward-wise-licenses.service';
 import { WardLicenseTable, WardLicenseSummary } from './ward-wise-licenses.model';
 
@@ -19,6 +19,13 @@ import { LoaderService } from '../../loader/loader.service';
   styleUrl: './ward-wise-licenses.css',
 })
 export class WardWiseLicenses implements OnInit {
+  // Reports are shared by admin / approver / senior-approver / zone-approver:
+  // go back to the reports page of the section this one is open in.
+  private readonly sectionRouter = inject(Router);
+  get reportsLink(): string {
+    return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
+  }
+
 
   summary!: WardLicenseSummary;
 

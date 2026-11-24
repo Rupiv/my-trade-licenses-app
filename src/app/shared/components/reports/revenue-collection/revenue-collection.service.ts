@@ -26,7 +26,7 @@ export class RevenueCollectionService {
 
   getRevenueCollection(): Observable<RevenueCollectionResponse> {
     return this.http.get<RevenueCollectionResponse>(
-      `${this.baseUrl}reports/revenue-collection`
+      `${this.baseUrl}/reports/revenue-collection`
     );
   }
 }

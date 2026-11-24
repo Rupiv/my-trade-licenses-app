@@ -26,38 +26,38 @@ export class MasterDataComplianceService {
     return this.get<TradeMajor[]>('/master/trade-major');
   }
   createMajorTrade(payload: any) {
-    return this.http.post(`${this.baseUrl}master/trade-major`, payload);
+    return this.http.post(`${this.baseUrl}/master/trade-major`, payload);
   }
   updateMajorTrade(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}master/trade-major/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/master/trade-major/${id}`, payload);
   }
 
   getTradeMinorsByMajor(majorId: number) {
     return this.get<TradeMinor[]>(`/master/trade-minor/by-major/${majorId}`);
   }
   createMinorTrade(payload: any) {
-    return this.http.post(`${this.baseUrl}master/trade-minor`, payload);
+    return this.http.post(`${this.baseUrl}/master/trade-minor`, payload);
   }
   updateMinorTrade(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}master/trade-minor/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/master/trade-minor/${id}`, payload);
   }
 
   getTradeSubsByMinor(minorId: number) {
     return this.get<TradeSub[]>(`/master/trade-sub/by-minor/${minorId}`);
   }
   createSubTrade(payload: any) {
-    return this.http.post(`${this.baseUrl}master/trade-sub`, payload);
+    return this.http.post(`${this.baseUrl}/master/trade-sub`, payload);
   }
   updateSubTrade(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}master/trade-sub/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/master/trade-sub/${id}`, payload);
   }
 
   createTradeLicenceFee(payload: TradeLicensesFee) {
-    return this.http.post(`${this.baseUrl}trade-licence-fees`, payload);
+    return this.http.post(`${this.baseUrl}/trade-licence-fees`, payload);
   }
 
   updateTradeLicenceFee(id: number, payload: TradeLicensesFee) {
-    return this.http.put(`${this.baseUrl}trade-licence-fees/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/trade-licence-fees/${id}`, payload);
   }
 
   getTradeLicenceFeeBySubTrade(tradeSubId: number) {
@@ -68,50 +68,53 @@ export class MasterDataComplianceService {
     return this.get<TradeType[]>('/trade-type');
   }
   createTradeType(payload: any) {
-    return this.http.post(`${this.baseUrl}trade-type`, payload);
+    return this.http.post(`${this.baseUrl}/trade-type`, payload);
   }
   updateTradeType(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}trade-type/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/trade-type/${id}`, payload);
   }
 
   getMLAConstituency(){
     return this.get<MLCConstituency[]>('/master-moh');
   }
   createMLA(payload: any) {
-    return this.http.post(`${this.baseUrl}master-moh`, payload);
+    return this.http.post(`${this.baseUrl}/master-moh`, payload);
   }
   updateMLA(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}master-moh/${id}`, payload);
+    return this.http.put(`${this.baseUrl}/master-moh/${id}`, payload);
   }
 
   getWardsByMLAConstituency(mlaId: number) {
     return this.get<Ward[]>(`/bbmp-wards/by-constituency/${mlaId}`);
   }
   createWard(payload: any) {
-    return this.http.post(`${this.baseUrl}bbmp-wards`, payload);
+    return this.http.post(`${this.baseUrl}/bbmp-wards`, payload);
   }
   updateWard(payload: any) {
-    return this.http.put(`${this.baseUrl}bbmp-wards`, payload);
+    return this.http.put(`${this.baseUrl}/bbmp-wards`, payload);
   }
 
   getZones(){
     return this.get<Zones[]>('/bbmp-zones');
   }
   createZone(payload: any) {
-    return this.http.post(`${this.baseUrl}bbmp-zones`, payload);
+    // The zone API answers with a plain-text message, not JSON
+    return this.http.post(`${this.baseUrl}/bbmp-zones`, payload, { responseType: 'text' });
   }
   updateZone(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}bbmp-zones/${id}`, payload);
+    // PUT bbmp-zones takes the zone id from the body (zoneID); plain-text response
+    return this.http.put(`${this.baseUrl}/bbmp-zones`, payload, { responseType: 'text' });
   }
 
   getZoneClassification(){
     return this.get<ZoneClassification[]>('/trade-zonal-classification');
   }
   createZoneClassification(payload: any) {
-    return this.http.post(`${this.baseUrl}trade-zonal-classification`, payload);
+    return this.http.post(`${this.baseUrl}/trade-zonal-classification`, payload);
   }
   updateZoneClassification(id: number, payload: any) {
-    return this.http.put(`${this.baseUrl}trade-zonal-classification/${id}`, payload);
+    // PUT trade-zonal-classification takes the id from the body (zonalClassificationID)
+    return this.http.put(`${this.baseUrl}/trade-zonal-classification`, payload);
   }
 }
 

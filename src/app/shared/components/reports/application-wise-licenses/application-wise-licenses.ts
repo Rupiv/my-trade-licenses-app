@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import * as XLSX from 'xlsx';
@@ -64,6 +64,13 @@ const WARD_API = '/api/api/bbmp-wards/by-constituency';
   styleUrls: ['./application-wise-licenses.css'],
 })
 export class ApplicationWiseLicenses implements OnInit {
+  // Reports are shared by admin / approver / senior-approver / zone-approver:
+  // go back to the reports page of the section this one is open in.
+  private readonly sectionRouter = inject(Router);
+  get reportsLink(): string {
+    return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
+  }
+
 
   constructor(private http: HttpClient) {}
 

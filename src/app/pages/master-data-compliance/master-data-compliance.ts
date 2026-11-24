@@ -659,7 +659,7 @@ export class MasterDataCompliance {
           const payload = {
             zonalClassificationID: zoneClassValue.zonalClassificationID,
             zonalClassificationName: zoneClassValue.zonalClassificationName,
-            isActive: "Y",
+            isActive: true, // bool on the API
             entryDate: new Date().toISOString()
           };
 
@@ -676,7 +676,7 @@ export class MasterDataCompliance {
           const payload = {
             zonalClassificationID: 0,
             zonalClassificationName: zoneClassValue.zonalClassificationName,
-            isActive: "Y",
+            isActive: true, // bool on the API
             entryDate: new Date().toISOString()
           };
 

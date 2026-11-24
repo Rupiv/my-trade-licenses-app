@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AssemblyConstituency, GbaCorporation, GbaWard, GbaZone, LicenseDocuments, MLCConstituency, RoadWidthDetails, TradeLicenseApplicationDetails, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
-import { platform } from 'os';
 import { Observable } from 'rxjs';
 
 @Injectable({

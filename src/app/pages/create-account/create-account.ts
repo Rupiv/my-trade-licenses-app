@@ -120,17 +120,22 @@ export class CreateAccount {
     return mobileRegex.test(this.registerModel.mobileNumber);
   }
 
+  /** One-time proof from otp/verify; login-user requires it for this mobile number. */
+  private otpToken = '';
+
   verifyOtpAutomatically() {
     this.createAccountService
     .verifyOtp(this.registerModel.mobileNumber, this.otp)
     .subscribe({
       next: (res) => {
         if (res.isValid) {
+          this.otpToken = res.otpToken ?? '';
           this.notificationService.show(
             'OTP is Verified.',
             'success'
           );
         } else {
+          this.otpToken = '';
           this.isVerifyingOtp = false;
           this.notificationService.show(
             'Invalid OTP',
@@ -198,8 +203,10 @@ export class CreateAccount {
     const payload = {
       mobileNumber: this.registerModel.mobileNumber,
       // login-user rejects requests without a captcha token; same token the login page sends while captcha is disabled
-      captchaToken: environment.captchaToken || 'test'
+      captchaToken: environment.captchaToken || 'test',
+      otpToken: this.otpToken
     };
+    this.otpToken = ''; // single use
 
     this.auth.userlogin(payload).subscribe({
       next: () => {
