@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 })
 export class TradeLicensesService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 
@@ -28,6 +28,23 @@ export class TradeLicensesService {
   getAppliedLicensesApplications(loginId: number): Observable<AppliedLicensesResponse> {
     return this.get<AppliedLicensesResponse>(
       `/trade-licence/user/${loginId}/applications`
+    );
+  }
+
+  /** Paid but not submitted (payment redirect failed): run the submission steps again. */
+  completeSubmission(licenceApplicationID: number): Observable<{ submitted: boolean; applicationNumber?: string }> {
+    return this.http.post<{ submitted: boolean; applicationNumber?: string }>(
+      `${this.baseUrl}/licence-application-view/${licenceApplicationID}/complete-submission`, {}
+    );
+  }
+
+  downloadGeneratedCertificate(licenceApplicationID: number): Observable<Blob> {
+    return this.http.get(
+      // the dashboard lists draft ids; the API maps them to the submitted application
+      `${this.baseUrl}/licence/certificate/generated/${licenceApplicationID}/download?draft=true`,
+      {
+        responseType: 'blob'
+      }
     );
   }
 }

@@ -45,14 +45,27 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: any) => {
 
-        if (error.status === 401) {
-          // 🔥 AUTO LOGOUT WHEN TOKEN EXPIRES
+        // Only treat a 401 as "the session is dead" when the token itself is actually
+        // expired - not every 401 means that (a single unrelated endpoint failing with
+        // 401 must not wipe out an otherwise-valid session, e.g. mid payment-gateway flow).
+        if (error.status === 401 && this.isTokenExpired(token)) {
           this.tokenService.logout();
         }
 
         return throwError(() => error);
       })
     );
+  }
+
+  private isTokenExpired(token: string | null): boolean {
+    if (!token) return true;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp) return true;
+      return Date.now() > payload.exp * 1000;
+    } catch {
+      return true;
+    }
   }
 
 }

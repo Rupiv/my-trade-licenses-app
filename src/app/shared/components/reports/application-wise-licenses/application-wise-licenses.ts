@@ -51,9 +51,9 @@ export interface StatusSummary {
 /* ===================== API ===================== */
 
 const API_URL =
-  'https://pickitover.com/api/api/trade-licence/admin/applications';
-const ZONE_API = 'https://pickitover.com/api/api/bbmp-zones';
-const WARD_API = 'https://pickitover.com/api/api/bbmp-wards/by-constituency';
+  '/api/api/trade-licence/admin/applications';
+const ZONE_API = '/api/api/bbmp-zones';
+const WARD_API = '/api/api/bbmp-wards/by-constituency';
 /* ===================== COMPONENT ===================== */
 
 @Component({

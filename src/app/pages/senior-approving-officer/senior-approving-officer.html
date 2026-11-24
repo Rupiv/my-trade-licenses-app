@@ -27,6 +27,26 @@
   <div class="card filter-card mb-3">
     <div class="card-body">
       <div class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label">Zone</label>
+          <select class="form-select" [(ngModel)]="selectedZoneId" (change)="onZoneChanged()">
+            <option [ngValue]="null">All Zones</option>
+            <option *ngFor="let zone of zoneOptions" [ngValue]="zone.id">
+              {{ zone.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Ward</label>
+          <select class="form-select" [(ngModel)]="selectedWardId" (change)="onWardChanged()">
+            <option [ngValue]="null">All Wards</option>
+            <option *ngFor="let ward of wardOptions" [ngValue]="ward.id">
+              {{ ward.name }}
+            </option>
+          </select>
+        </div>
+
         <div class="col-md-3">
           <label class="form-label">Search</label>
           <input class="form-control" placeholder="Application No / Trader" />
@@ -49,10 +69,6 @@
             <option>High</option>
             <option>Normal</option>
           </select>
-        </div>
-
-        <div class="col-md-3 text-end">
-          <button class="btn btn-secondary">Apply Filters</button>
         </div>
       </div>
     </div>

@@ -7,13 +7,13 @@ import { Observable } from 'rxjs';
 })
 export class PaymentSuccessService {
 
-  private baseUrl = 'https://pickitover.com/api/api/';
+  private baseUrl = '/api/api';
 
   constructor(private http: HttpClient) {}
 
   // ✅ NEW: Decrypt payment params via backend
   decryptPayment(data: string, key: string, iv: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}payment/decrypt-payment`, {
+    return this.http.get(`${this.baseUrl}/payment/decrypt-payment`, {
       params: { data, key, iv }
     });
   }

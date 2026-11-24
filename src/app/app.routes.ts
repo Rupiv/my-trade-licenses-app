@@ -87,8 +87,8 @@ export const routes: Routes = [
   {
     path: 'trader',
     component: DashboardLayout,
-    // canActivate: [AuthGuard, RoleGuard],
-    // data: { roles: ['trader'] },
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['trader', 'tradeowner'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
@@ -110,14 +110,20 @@ export const routes: Routes = [
   {
     path: 'senior-approver',
     component: DashboardLayout,
-    // canActivate: [AuthGuard, RoleGuard],
-    // data: { roles: ['seniorapprovingofficer'] },
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['seniorapprover', 'seniorapprovingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
       { path: '', component: SeniorapprovingDashboard },
       { path: 'senior-approving-officer', component: SeniorApprovingOfficer },
       { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -126,14 +132,20 @@ export const routes: Routes = [
   {
     path: 'approver',
     component: DashboardLayout,
-    // canActivate: [AuthGuard, RoleGuard],
-    // data: { roles: ['approvingofficer'] },
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['approver', 'approvingofficer'] },
     children: [
 
       // DEFAULT PAGE inside dashboard
       { path: '', component: ApprovingDashboard },
       { path: 'approving-officer', component: ApprovingOfficer },
       { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -142,11 +154,18 @@ export const routes: Routes = [
   {
     path: 'zone-approver',
     component: DashboardLayout,
-    // canActivate: [AuthGuard, RoleGuard],
-    // data: { roles: ['zonalapprover'] },
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['zoneapprover', 'zonalapprover'] },
     children: [
       { path: '', component: ZoneapproverDashboard },
       { path: 'zone-approving-officer', component: ZoneApprovingOfficer },
+      { path: 'reports', component: ReportsDashboard },
+      { path: 'reports/control-sheet', component: ControlSheet },
+      { path: 'reports/not-renewed-licenses', component: NotRenewedLicenses },
+      { path: 'reports/revenue-collection', component: RevenueCollection },
+      { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
+      { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
+      { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'licence-applications/:licenceApplicationId', component: AdminLicenceApplicationDetails }
     ]
   },

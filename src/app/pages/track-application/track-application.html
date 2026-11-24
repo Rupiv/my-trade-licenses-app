@@ -181,11 +181,14 @@
             <i class="bi bi-file-earmark-text"></i>
             Download Acknowledgement
           </button>
-          <!-- Download Provisional License -->
-          <button class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2">
-            <i class="bi bi-file-earmark-check"></i>
-            Download Provisional License
-          </button>                                             
+          <button
+            class="btn btn-success px-4 py-2 d-flex align-items-center gap-2"
+            [disabled]="!canDownloadCertificate || loading"
+            (click)="downloadCertificateFromTrack()"
+          >
+            <i class="bi bi-download"></i>
+            Download Licence Certificate
+          </button>
         </div>
       </div>
 

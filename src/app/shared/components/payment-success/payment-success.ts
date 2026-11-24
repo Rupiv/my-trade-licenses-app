@@ -67,6 +67,15 @@ export class PaymentSuccess implements OnInit, OnDestroy {
           this.licensesApplicationId = String(res.applicationId ?? '');
           this.status = res.status ?? '';
 
+          // Only a gateway-confirmed success may continue to submission
+          if (String(this.status).toLowerCase() !== 'success') {
+            this.loaderservice.hide();
+            this.router.navigate(['trader/payment-failed'], {
+              queryParams: { txnid: this.txnId, error: `Payment ${this.status || 'not completed'}` }
+            });
+            return;
+          }
+
           this.isLoading = false;
           this.cdr.detectChanges();
 
@@ -110,7 +119,7 @@ export class PaymentSuccess implements OnInit, OnDestroy {
 
   goToApplication(): void {
     this.router.navigate([
-      'trader/licenses-application',
+      'trader/view-licenses-application',
       this.licensesApplicationId
     ]);
   }

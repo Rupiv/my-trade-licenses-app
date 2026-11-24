@@ -54,6 +54,68 @@
 .summary-grid p {
   margin: 0;
   font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.progress-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 18px;
+  border-left: 2px solid #dbe2ea;
+}
+
+.progress-timeline li {
+  position: relative;
+  padding: 0 0 14px 12px;
+}
+
+.progress-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0d6efd;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #0d6efd33;
+}
+
+.progress-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.pt-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+
+.pt-remarks {
+  font-size: 14px;
+  color: #374151;
+  margin-top: 2px;
+}
+
+.summary-grid .span-2 {
+  grid-column: span 2;
+}
+
+.summary-grid.single {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 576px) {
+  .summary-grid .span-2 {
+    grid-column: auto;
+  }
+  .inspection-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 .table {
   margin: 0;

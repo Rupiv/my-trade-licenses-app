@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { TokenService } from '../../core/services/token.service';
 import { TradeLicensesService } from './trader-licenses.service';
@@ -11,7 +10,7 @@ import { AppliedLicensesResponse, LicenceApplicationDetails } from '../../core/m
 
 @Component({
   selector: 'app-trader-licenses',
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './trader-licenses.html',
   styleUrl: './trader-licenses.css',
 })
@@ -19,7 +18,6 @@ export class TraderLicenses {
 
   userName = '';
   showInspectionDisclaimer = true;
-  inspectionDeclarationAccepted = false;
   private readonly inspectionDisclaimerStorageKey = 'trader_inspection_disclaimer_seen';
 
   constructor(private router: Router,
@@ -36,7 +34,6 @@ export class TraderLicenses {
       ? `${this.inspectionDisclaimerStorageKey}_${loginId}`
       : this.inspectionDisclaimerStorageKey;
     this.showInspectionDisclaimer = sessionStorage.getItem(key) !== '1';
-    this.inspectionDeclarationAccepted = false;
   }
 
   //load all applied applications by loginID
@@ -80,12 +77,20 @@ export class TraderLicenses {
   }
 
   getProgress(status: string): number {
-    switch (status) {
+    switch ((status || '').trim().toUpperCase()) {
       case 'ENTERED':
-        return 25;
-      case 'VERIFIED':
-        return 50;
+        return 10;
+      case 'APPLIED':
+        return 30;
+      case 'OBJECTION':
+        return 45;
+      case 'INSPECTED':
+        return 60;
+      case 'FORWARD':
+      case 'FORWARD TO HIGHER AUTHORITY':
+        return 80;
       case 'APPROVED':
+      case 'REJECTED':
         return 100;
       default:
         return 10;
@@ -100,8 +105,83 @@ export class TraderLicenses {
     ]);
   }
 
+  /** Not yet submitted (status ENTERED): can be continued / paid. */
+  isDraft(status: string): boolean {
+    return (status || '').trim().toUpperCase() === 'ENTERED';
+  }
+
+  /** Re-open a half-filled application in the New Application form (it restores everything saved). */
+  continueApplication(licenceApplicationID: number): void {
+    localStorage.setItem('draftLicenceApplicationId', String(licenceApplicationID));
+    this.router.navigate(['/trader/new-licenses']);
+  }
+
   makePayment(licenseId: number) {
-    this.router.navigate(['/trade-license/payment', licenseId]);
+    // Payment happens from the application's Preview step
+    this.continueApplication(licenseId);
+  }
+
+  completingId: number | null = null;
+
+  /** Paid but never reached the officers (payment redirect failed): submit it now, no new payment. */
+  completeSubmission(app: LicenceApplicationDetails): void {
+    if (this.completingId) return;
+    this.completingId = app.licenceApplicationID;
+    this.loaderservice.show();
+    this.tradelicensesservice.completeSubmission(app.licenceApplicationID).subscribe({
+      next: (res) => {
+        this.completingId = null;
+        this.loaderservice.hide();
+        this.notificationservice.show(
+          `Application submitted${res?.applicationNumber ? ' (No. ' + res.applicationNumber + ')' : ''}. It is now with the inspecting officer.`,
+          'success'
+        );
+        this.loadAppliedLicensesApplicationByLoginId();
+      },
+      error: (err) => {
+        this.completingId = null;
+        this.loaderservice.hide();
+        this.notificationservice.show(
+          err?.error?.message || err?.error?.Message || 'Could not complete the submission. Please try again.',
+          'warning'
+        );
+      },
+    });
+  }
+
+  isApproved(status: string): boolean {
+    return (status || '').trim().toUpperCase() === 'APPROVED';
+  }
+
+  downloadCertificate(application: LicenceApplicationDetails): void {
+    if (!application?.licenceApplicationID) {
+      this.notificationservice.show('Invalid application selected.', 'warning');
+      return;
+    }
+
+    this.loaderservice.show();
+    this.tradelicensesservice
+      .downloadGeneratedCertificate(application.licenceApplicationID)
+      .subscribe({
+        next: (blob) => {
+          this.loaderservice.hide();
+          const appNo = (application.applicationNumber || application.licenceApplicationID.toString())
+            .replace(/[^a-z0-9-_]/gi, '_');
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Licence_${appNo}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          this.loaderservice.hide();
+          console.error('Unable to download generated certificate', err);
+          this.notificationservice.show('Generated licence not found. Please contact admin.', 'warning');
+        }
+      });
   }
 
   licenses = [
@@ -153,14 +233,6 @@ export class TraderLicenses {
   }
 
   dismissInspectionDisclaimer(): void {
-    if (!this.inspectionDeclarationAccepted) {
-      this.notificationservice.show(
-        'Please accept the declaration before proceeding.',
-        'warning'
-      );
-      return;
-    }
-
     this.showInspectionDisclaimer = false;
     const loginId = this.tokenservice.getUserId();
     const key = loginId

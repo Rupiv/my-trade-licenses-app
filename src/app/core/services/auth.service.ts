@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ApiService } from './api.service';
+import { HttpClient } from '@angular/common/http';
 import { TokenService } from './token.service';
 import { tap } from 'rxjs';
 
@@ -7,14 +7,15 @@ import { tap } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly baseUrl = '/api/api';
 
   constructor(
-    private api: ApiService,
+    private http: HttpClient,
     private tokenService: TokenService
   ) {}
 
   login(payload: any) {
-    return this.api.post<any>('/Auth/login', payload).pipe(
+    return this.http.post<any>(`${this.baseUrl}/Auth/login`, payload).pipe(
       tap(res => {
         if (res.success && res.accessToken) {
           this.tokenService.setToken(res.accessToken);
@@ -24,7 +25,7 @@ export class AuthService {
   }
   // For user login
   userlogin(payload: any) {
-    return this.api.post<any>('/Auth/login-USER', payload).pipe(
+    return this.http.post<any>(`${this.baseUrl}/Auth/login-user`, payload).pipe(
       tap(res => {
         if (res.success && res.accessToken) {
           this.tokenService.setToken(res.accessToken);

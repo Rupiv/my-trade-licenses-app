@@ -6,7 +6,7 @@ import { Injectable } from '@angular/core';
 })
 export class BusinessOwnerService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // ðŸ‘ˆ change to your backend
+  private baseUrl = '/api/api/'; // proxied in dev, same-origin in production
 
   constructor(private http: HttpClient) {}
 

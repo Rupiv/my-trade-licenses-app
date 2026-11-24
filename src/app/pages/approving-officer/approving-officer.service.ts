@@ -8,7 +8,7 @@ import { AllApprovedApplication, ApprovedApplications, LicenceApplicationModel }
 })
 export class ApprovingOfficerService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 
@@ -38,36 +38,19 @@ export class ApprovingOfficerService {
     );
   }
 
-  getAppliedApproverApplications(
-    loginId: number,
-    pageNumber: number,
-    pageSize: number,
-    filters?: {
-      mohId?: number | null;
-      wardId?: number | null;
-      licenceApplicationId?: number | null;
-      applicationNumber?: string | null;
-    }
-  ) {
-    let params = new HttpParams()
-      .set('loginId', loginId.toString())
-      .set('pageNumber', pageNumber.toString())
-      .set('pageSize', pageSize.toString());
-
-    if (filters?.mohId) {
-      params = params.set('mohId', filters.mohId.toString());
-    }
-    if (filters?.wardId) {
-      params = params.set('wardId', filters.wardId.toString());
-    }
-    if (filters?.licenceApplicationId) {
-      params = params.set('licenceApplicationId', filters.licenceApplicationId.toString());
-    }
-    if (filters?.applicationNumber?.trim()) {
-      params = params.set('applicationNumber', filters.applicationNumber.trim());
-    }
-
-    return this.http.get<ApprovedApplications>(`${this.baseUrl}/trade-licence/approver/applications`, { params });
+  getAppliedApproverApplications(request: {
+    loginId: number;
+    mohId?: number;
+    wardId?: number;
+    licenceApplicationId?: number;
+    applicationNumber?: string;
+    pageNumber: number;
+    pageSize: number;
+  }) {
+    return this.http.post<ApprovedApplications>(
+      `${this.baseUrl}/trade-licence/approver/applications`,
+      request
+    );
   }
 
   getApproverLookup(loginId: number) {

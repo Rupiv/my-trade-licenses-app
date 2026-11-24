@@ -6,7 +6,7 @@ import { Injectable } from '@angular/core';
 })
 export class SystemSettingsService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // ðŸ‘ˆ change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 

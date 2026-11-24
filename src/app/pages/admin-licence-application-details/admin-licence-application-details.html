@@ -28,6 +28,9 @@
       </div>
     </div>
 
+    <!-- Full details (read-only): applicant, address, GBA ward, trades, payments, progress -->
+    <app-application-full-details [licenceApplicationId]="details.licenceApplicationID"></app-application-full-details>
+
     <!-- Map Details -->
     <div class="card section-card">
       <div class="card-header">Map Details</div>
@@ -53,8 +56,12 @@
           <input type="text" class="form-control" [value]="loadlocationDetails?.roadCategory" disabled />
         </div>
 
-        <!-- Right: Map -->
+        <!-- Right: Map (only with a real location; old-system applications have none) -->
+        <div class="no-location" *ngIf="!(mapCenter?.lat && mapCenter?.lng)">
+          Location not captured for this application (applications from the old system have no map location).
+        </div>
         <google-map
+          *ngIf="mapCenter?.lat && mapCenter?.lng"
           height="350px"
           width="100%"
           [center]="mapCenter"
@@ -89,9 +96,9 @@
               <button
                 class="btn btn-outline-primary btn-sm"
                 type="button"
-                (click)="openOrDownloadDocument(doc.ApplicationDocumentID)"
+                (click)="openOrDownloadDocument(doc)"
               >
-                Open / Download
+                Download (Stamped)
               </button>
             </div>
             <div class="document-date mt-1">
@@ -114,6 +121,33 @@
           <label class="form-check-label">
             {{ item.label }}
           </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-card">
+      <div class="card-header">On-Site Inspection Photos</div>
+      <div class="card-body">
+        <div *ngIf="inspectionPhotosLoading" class="text-muted">Loading inspection photos...</div>
+        <div *ngIf="!inspectionPhotosLoading && savedInspectionPhotoUrls.length === 0" class="text-muted">
+          No inspection photos available.
+        </div>
+        <div class="row g-3" *ngIf="!inspectionPhotosLoading && savedInspectionPhotoUrls.length > 0">
+          <div class="col-md-3 col-sm-4 col-6" *ngFor="let item of savedInspectionPhotoUrls">
+            <div class="photo-card position-relative">
+              <img
+                [src]="item.blobUrl"
+                class="img-fluid rounded photo-preview"
+                [alt]="item.doc.FileName"
+                style="width:100%; height:160px; object-fit:cover;"
+              />
+              <div class="text-center mt-1">
+                <small class="text-muted" style="font-size:11px; word-break:break-all;">
+                  {{ item.doc.FileName }}
+                </small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

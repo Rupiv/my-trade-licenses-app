@@ -28,6 +28,14 @@ export class LicenceTemplate {
   @Input() renewBefore = '';
   @Input() qrCodeOrCertificateHash = '';
   @Input() signatureImageUrl = '/SIGNATURE.png';
+  // GBA corporation (e.g. 'Central'); empty for licences issued before GBA -> BBMP header as before
+  @Input() corporationName = '';
+
+  get issuingAuthority(): string {
+    return this.corporationName
+      ? `Bengaluru ${this.corporationName} City Corporation`
+      : 'Bruhat Bangalore Mahanagara Palike';
+  }
 
   generatedAt = new Date();
   showSignatureImage = true;

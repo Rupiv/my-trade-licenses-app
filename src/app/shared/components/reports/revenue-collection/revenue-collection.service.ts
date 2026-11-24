@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 })
 export class RevenueCollectionService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 

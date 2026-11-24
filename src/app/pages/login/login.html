@@ -1,8 +1,6 @@
 <div class="page">
-
-  <!-- LEFT PANEL -->
   <div class="left-panel">
-    <a routerLink="/" class="back-link">← Back to Home</a>
+    <a routerLink="/" class="back-link">Back to Home</a>
 
     <div class="watermark">
       <i class="bi bi-buildings"></i>
@@ -27,22 +25,19 @@
       </p>
 
       <div class="hero-points">
-        <div>✔ 24/7 Online Applications</div>
-        <div>✔ Real-time Status Tracking</div>
-        <div>✔ Instant Downloads & Receipts</div>
+        <div>24/7 Online Applications</div>
+        <div>Real-time Status Tracking</div>
+        <div>Instant Downloads & Receipts</div>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT PANEL -->
   <div class="right-panel">
     <div class="card">
       <h2>Sign In</h2>
       <p class="subtitle">Enter your credentials to access your account</p>
 
       <form (ngSubmit)="onSubmit()">
-
-        <!-- LOGIN SWITCH -->
         <div class="login-switch">
           <label class="login-switch-label">
             <input
@@ -54,7 +49,6 @@
           </label>
         </div>
 
-        <!-- USER LOGIN -->
         <ng-container *ngIf="isUserLogin">
           <label>Mobile Number</label>
           <input
@@ -67,14 +61,11 @@
           />
 
           <div class="otp-field">
-            <!-- <button type="button" class="btn-outline" (click)="onClicksendOTP()">
-              Send OTP
-            </button> -->
             <button
               type="button"
               class="btn btn-primary"
               (click)="onClicksendOTP()"
-                [disabled]="isOtpLoading()">
+              [disabled]="isOtpLoading()">
               {{ isOtpLoading()
                   ? 'Resend OTP in ' + otpCooldown() + 's'
                   : 'Send OTP'
@@ -95,14 +86,14 @@
           </div>
         </ng-container>
 
-        <!-- ADMIN LOGIN -->
         <ng-container *ngIf="!isUserLogin">
-          <label>Email Address</label>
+          <label>Username / Phone / Email</label>
           <input
-            type="email"
+            type="text"
             [(ngModel)]="email"
             name="email"
-            placeholder="Enter email"
+            placeholder="Enter username, phone, or email"
+            autocomplete="username"
             required
           />
 
@@ -123,12 +114,22 @@
           </a>
         </ng-container>
 
+        <re-captcha
+          *ngIf="captchaEnabled"
+          [siteKey]="captchaSiteKey"
+          size="invisible"
+          errorMode="handled"
+          (resolved)="onCaptchaResolved($event)"
+          (errored)="onCaptchaErrored()"
+          (expired)="onCaptchaExpired()"
+        ></re-captcha>
+
         <button class="btn-primary" type="submit">
-          {{ isUserLogin ? 'Verify & Login →' : 'Sign In →' }}
+          {{ isUserLogin ? 'Verify & Login ->' : 'Sign In ->' }}
         </button>
 
         <p class="switch">
-          Don’t have an account?
+          Don't have an account?
           <a routerLink="/create-account">Create Account</a>
         </p>
       </form>
@@ -138,5 +139,4 @@
       </p>
     </div>
   </div>
-
 </div>

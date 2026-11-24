@@ -7,7 +7,7 @@ import { PortalAdminModel } from '../../core/models/portal-admin.model';
 })
 export class PortalAdminService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
   //https://pickitover.com/api/api/dashboard/application-status-count
   constructor(private http: HttpClient) {}
 

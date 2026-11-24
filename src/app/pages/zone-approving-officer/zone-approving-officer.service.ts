@@ -57,7 +57,7 @@ export interface ZoneApproverDashboardResponse {
   providedIn: 'root'
 })
 export class ZoneApprovingOfficerService {
-  private readonly baseUrl = 'https://pickitover.com/api/api/';
+  private readonly baseUrl = '/api/api';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -94,6 +94,11 @@ export class ZoneApprovingOfficerService {
       `${this.baseUrl}/trade-licence/zone-approver/applications`,
       { params }
     );
+  }
+
+  getZoneApproverLookup(loginId: number) {
+    const params = new HttpParams().set('loginId', loginId.toString());
+    return this.http.get<any>(`${this.baseUrl}/trade-licence/zone-approver/lookup`, { params });
   }
 
   getZoneApproverDashboard(loginId: number, mohId?: number | null, wardId?: number | null) {

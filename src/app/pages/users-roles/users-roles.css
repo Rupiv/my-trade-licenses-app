@@ -73,12 +73,13 @@
   to   { opacity: 1; }
 }
 
-.modal {
+.delete-modal {
   background: #fff;
   border-radius: 16px;
   padding: 2rem 2.5rem;
   max-width: 400px;
   width: 90%;
+  display: block;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: popIn 0.25s ease;
@@ -89,7 +90,7 @@
   to   { transform: scale(1);   opacity: 1; }
 }
 
-.modal__icon {
+.delete-modal__icon {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -102,21 +103,21 @@
   color: #ef4444;
 }
 
-.modal__title {
+.delete-modal__title {
   font-size: 1.125rem;
   font-weight: 700;
   color: #111827;
   margin: 0 0 0.5rem;
 }
 
-.modal__body {
+.delete-modal__body {
   font-size: 0.9rem;
   color: #6b7280;
   line-height: 1.6;
   margin: 0 0 1.5rem;
 }
 
-.modal__actions {
+.delete-modal__actions {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
@@ -257,6 +258,63 @@
 .field-hint {
   font-size: 0.72rem;
   color: #9ca3af;
+}
+
+/* GBA Corporation / Ward assignment */
+.gba-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gba-section__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group--wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .form-group--wide {
+    grid-column: auto;
+  }
+}
+
+.form-group select:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ng-select's inner search box must not get the page's input box styling */
+.form-group ng-select input,
+.form-group ng-select input:focus {
+  height: auto;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+::ng-deep .gba-section .ng-select .ng-select-container {
+  min-height: 40px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.gba-cell {
+  font-size: 0.8rem;
+  color: #4b5563;
+  max-width: 260px;
 }
 
 .form-actions {
@@ -621,7 +679,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 @media (max-width: 640px) {
   .form-grid { grid-template-columns: 1fr; }
   .table-search { min-width: unset; width: 100%; }
-  .modal { padding: 1.5rem; }
-  .modal__actions { flex-direction: column; }
-  .modal__actions button { width: 100%; justify-content: center; }
+  .delete-modal { padding: 1.5rem; }
+  .delete-modal__actions { flex-direction: column; }
+  .delete-modal__actions button { width: 100%; justify-content: center; }
 }

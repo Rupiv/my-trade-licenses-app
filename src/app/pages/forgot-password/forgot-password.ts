@@ -27,7 +27,8 @@ export class ForgotPasswordComponent implements OnDestroy {
   username: string = '';
   maskedMobile: string = ''; 
   mobileNo: string = '';
-  sendOtpError: string = '';   
+  sendOtpError: string = '';
+  private resetToken: string = '';   // issued by verify-otp, required by reset-password
 
   // ─── Step 2: OTP ───────────────────────────────────────────────
   otpDigits: string[] = ['', '', '', '', '', ''];
@@ -55,7 +56,7 @@ export class ForgotPasswordComponent implements OnDestroy {
     this.sendOtpError = '';  // ← clear previous error
 
     this.http.post<{ message: string; mobileNo: string }>(
-      'https://pickitover.com/api/api/Auth/forgot-password/send-otp',
+      '/api/api/Auth/forgot-password/send-otp',
       { login: this.username, mobileNo: this.mobileNo }  // ← also send mobileNo
     ).subscribe({
       next: (res) => {
@@ -150,13 +151,20 @@ onOtpInput(event: Event, index: number): void {
     this.loaderservice.show();
     this.otpError = '';
 
-    this.http.post('https://pickitover.com/api/api/Auth/forgot-password/verify-otp', {
-      mobileNo: this.mobileNo,   // ← changed from login: this.username
+    this.http.post<{ isValid: boolean; resetToken?: string; message?: string }>('/api/api/Auth/forgot-password/verify-otp', {
+      login: this.username,   // API verifies against the mobile registered for this username
       otp: this.otpValue
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.ngZone.run(() => {
           this.loaderservice.hide();
+          if (!res?.isValid || !res.resetToken) {
+            this.otpError = res?.message || 'Invalid OTP. Please try again.';
+            this.otpDigits = ['', '', '', '', '', ''];
+            this.focusOtpBox(0);
+            return;
+          }
+          this.resetToken = res.resetToken;
           this.currentStep = 3;
         });
       },
@@ -175,9 +183,10 @@ resetPassword(): void {
   if (!this.newPassword || this.newPassword.length < 8 || this.newPassword !== this.confirmPassword) return;
   this.loaderservice.show();
 
-  this.http.post('https://pickitover.com/api/api/Auth/forgot-password/reset-password', {
+  this.http.post('/api/api/Auth/forgot-password/reset-password', {
     login: this.username,
-    newPassword: this.newPassword
+    newPassword: this.newPassword,
+    resetToken: this.resetToken
   }).subscribe({
     next: () => {
       this.ngZone.run(() => {
@@ -201,8 +210,9 @@ resetPassword(): void {
     this.otpDigits = ['', '', '', '', '', ''];
     this.otpError = '';
 
-    this.http.post('https://pickitover.com/api/api/Auth/forgot-password/send-otp', {
-      login: this.username
+    this.http.post('/api/api/Auth/forgot-password/send-otp', {
+      login: this.username,
+      mobileNo: this.mobileNo
     }).subscribe({
       next: () => {
         this.startResendCooldown();

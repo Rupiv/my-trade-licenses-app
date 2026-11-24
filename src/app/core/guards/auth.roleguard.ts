@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { TokenService } from '../services/token.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,16 +9,28 @@ import { AuthService } from '../services/auth.service';
 @Injectable({ providedIn: 'root' })
 export class RoleGuard implements CanActivate {
 
-    constructor(private router: Router) {}
+    constructor(
+        private router: Router,
+        private tokenService: TokenService
+    ) {}
+
+    private normalizeRole(role: string | null | undefined): string {
+        return (role ?? '').toLowerCase().replace(/[\s_-]+/g, '');
+    }
 
     canActivate(route: ActivatedRouteSnapshot): boolean {
+        const expectedRoles = (route.data['roles'] ?? []) as string[];
+        const userRole = this.normalizeRole(
+            this.tokenService.getEffectiveRole() ||
+            this.tokenService.getUserRole() ||
+            this.tokenService.getRole()
+        );
 
-        const expectedRoles = route.data['roles'];
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const normalizedExpectedRoles = expectedRoles.map(role => this.normalizeRole(role));
 
-        if (!user || !expectedRoles.includes(user.role)) {
-        this.router.navigate(['/login']);
-        return false;
+        if (!userRole || !normalizedExpectedRoles.includes(userRole)) {
+            this.router.navigate(['/login']);
+            return false;
         }
 
         return true;

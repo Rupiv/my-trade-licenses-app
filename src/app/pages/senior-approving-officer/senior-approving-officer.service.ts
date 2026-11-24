@@ -7,7 +7,7 @@ import { SeniorApprovedApplications, SeniorApproverDashboardResponse } from './s
 })
 export class SeniorApprovingOfficerService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 
@@ -56,6 +56,11 @@ export class SeniorApprovingOfficerService {
       `${this.baseUrl}/trade-licence/senior-approver/applications`,
       { params }
     );
+  }
+
+  getSeniorApproverLookup(loginId: number) {
+    const params = new HttpParams().set('loginId', loginId.toString());
+    return this.http.get<any>(`${this.baseUrl}/trade-licence/senior-approver/lookup`, { params });
   }
 
   getSeniorApproverDashboard(loginId: number, mohId?: number | null, wardId?: number | null) {

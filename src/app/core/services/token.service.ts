@@ -45,6 +45,22 @@ export class TokenService {
     }
   }
 
+  private readTokenRole(decoded: any): string {
+    const rawRole =
+      decoded?.designation ??
+      decoded?.role ??
+      decoded?.roles ??
+      decoded?.unique_name ??
+      decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+      '';
+
+    if (Array.isArray(rawRole)) {
+      return rawRole[0] ?? '';
+    }
+
+    return String(rawRole ?? '').trim();
+  }
+
   // 🔥 Get UserId as NUMBER
   // getUserId(): number | null {
   //   const decoded = this.getDecodedToken();
@@ -62,13 +78,13 @@ export class TokenService {
 
   getRole(): string {
     const decoded: any = this.getDecodedToken();
-    return decoded?.designation ?? '';
+    return this.readTokenRole(decoded);
   }
 
 
   getUserRole(): string {
     const decoded = this.getDecodedToken();
-    return decoded?.designation ?? '';
+    return this.readTokenRole(decoded);
   }
 
   getEffectiveRole(): string {

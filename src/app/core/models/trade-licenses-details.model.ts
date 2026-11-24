@@ -101,6 +101,8 @@ export interface LicenceApplicationDetails {
   tradeLicenceID: number;
   applicantName: string;
   tradeName: string;
+  /** Paid, but never submitted to the officers (payment redirect failed) */
+  awaitingSubmission?: boolean;
   documents : Documents;
   geoLocation: GeoLocation;
 }

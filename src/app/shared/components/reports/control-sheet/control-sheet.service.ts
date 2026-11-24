@@ -8,7 +8,7 @@ import { ControlSheetResponse } from './control-sheet.model';
 })
 export class ControlSheetService {
 
-  private baseUrl = 'https://pickitover.com/api/api/'; // 👈 change to your backend
+  private baseUrl = '/api/api'; // proxy through Angular in dev
 
   constructor(private http: HttpClient) {}
 
@@ -27,7 +27,7 @@ export class ControlSheetService {
   
   getControlSheet(financialYearID: number): Observable<ControlSheetResponse> {
     return this.http.get<ControlSheetResponse>(
-      `${this.baseUrl}reports/control-sheet?financialYearID=${financialYearID}`
+      `${this.baseUrl}/reports/control-sheet?financialYearID=${financialYearID}`
     );
   }
 }

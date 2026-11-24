@@ -10,6 +10,8 @@ import { TokenService } from '../../core/services/token.service';
 import { NotificationService } from '../../shared/components/notification/notification.service';
 import { LicenceProcessTimelineItem } from '../inspection/inspection.service';
 import { LicensesApplicationDocument } from '../inspection/inspection.model';
+import { stampPdfWithUploadDetails } from '../../shared/utils/pdf-stamp.util';
+import { ApplicationFullDetails } from '../../shared/components/application-full-details/application-full-details';
 
 interface AdminApplicationDetails {
   licenceApplicationID: number;
@@ -33,7 +35,8 @@ interface AdminApplicationDetails {
 
 @Component({
   selector: 'app-admin-licence-application-details',
-  imports: [CommonModule, RouterModule, GoogleMapsModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, RouterModule, GoogleMapsModule, FormsModule, ApplicationFullDetails],
   templateUrl: './admin-licence-application-details.html',
   styleUrl: './admin-licence-application-details.css',
 })
@@ -48,6 +51,8 @@ export class AdminLicenceApplicationDetails {
   documents: LicensesApplicationDocument[] = [];
   documentsLoading = false;
   documentsError = '';
+  savedInspectionPhotoUrls: { doc: LicensesApplicationDocument; blobUrl: string }[] = [];
+  inspectionPhotosLoading = false;
 
   inspectionChecklist = [
     { label: 'Trade name board displayed', checked: false },
@@ -91,6 +96,8 @@ export class AdminLicenceApplicationDetails {
       this.errorMessage = 'Invalid application id.';
       return;
     }
+
+    this.loadSavedInspectionPhotos(id);
 
     this.portalAdminService
       .getAdminApplications({
@@ -172,21 +179,86 @@ export class AdminLicenceApplicationDetails {
     });
   }
 
-  openOrDownloadDocument(applicationDocumentId: number): void {
+  openOrDownloadDocument(doc: LicensesApplicationDocument): void {
+    const applicationDocumentId = doc?.ApplicationDocumentID;
     if (!applicationDocumentId) {
       return;
     }
 
     this.inspectionService.getDocumentDetailsById(applicationDocumentId).subscribe({
-      next: (res: Blob) => {
-        const blob = new Blob([res], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
+      next: async (res: Blob) => {
+        const sourceBlob = res instanceof Blob ? res : new Blob([res]);
+        try {
+          const stampedBlob = await stampPdfWithUploadDetails(sourceBlob, {
+            fileName: doc.documentName,
+            uploadedOn: doc.EntryDate
+          });
+          this.openBlobInNewTab(stampedBlob);
+        } catch (e) {
+          console.error('Failed to stamp PDF', e);
+          this.openBlobInNewTab(sourceBlob);
+          this.notificationService.show('Opened original file (timestamp stamp supports PDF only)', 'warning');
+        }
       },
       error: () => {
-        this.notificationService.show('Unable to open document', 'error');
+        this.notificationService.show('Unable to download document', 'error');
       }
     });
+  }
+
+  private loadSavedInspectionPhotos(licenceApplicationID: number): void {
+    this.inspectionPhotosLoading = true;
+    this.savedInspectionPhotoUrls = [];
+
+    this.inspectionService.getDocumentDetails(licenceApplicationID).subscribe({
+      next: (docs) => {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        const photoDocs = (docs ?? []).filter(
+          (doc) => doc.DocumentID === 10 && imageExtensions.includes((doc.FileExtension || '').toLowerCase())
+        );
+
+        if (photoDocs.length === 0) {
+          this.inspectionPhotosLoading = false;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        let pending = photoDocs.length;
+        photoDocs.forEach((doc) => {
+          this.inspectionService.getDocumentDetailsById(doc.ApplicationDocumentID).subscribe({
+            next: (blob: Blob) => {
+              const url = URL.createObjectURL(blob);
+              this.savedInspectionPhotoUrls = [...this.savedInspectionPhotoUrls, { doc, blobUrl: url }];
+              pending--;
+              if (pending === 0) {
+                this.inspectionPhotosLoading = false;
+              }
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              pending--;
+              if (pending === 0) {
+                this.inspectionPhotosLoading = false;
+              }
+              this.cdr.detectChanges();
+            }
+          });
+        });
+      },
+      error: () => {
+        this.inspectionPhotosLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private openBlobInNewTab(blob: Blob): void {
+    const url = window.URL.createObjectURL(blob);
+    const popup = window.open(url, '_blank');
+    if (!popup) {
+      this.notificationService.show('Please allow popups to view document', 'warning');
+    }
+    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
   }
 
   submitAdminAction(licenceProcessID: number, successMessage: string): void {
@@ -215,7 +287,7 @@ export class AdminLicenceApplicationDetails {
       licenceApplicationID,
       loginID,
       licenceProcessID,
-      currentStatus: String(currentStatusID),
+      currentStatus: currentStatusID,
       remarks: this.remarks.trim(),
       actionReasonIds: ''
     }).subscribe({

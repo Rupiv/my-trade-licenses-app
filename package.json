@@ -5,9 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:deploy": "ng build --configuration deploy && node -e \"require('fs').copyFileSync('dist/my-trade-licenses-app/browser/index.csr.html','dist/my-trade-licenses-app/browser/index.html')\"",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:my-trade-licenses-app": "node dist/my-trade-licenses-app/server/server.mjs"
+    "serve:ssr:my-trade-licenses-app": "node dist/my-trade-licenses-app/server/server.mjs",
+    "serve:deploy": "node dist/my-trade-licenses-app/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -38,10 +40,13 @@
     "bootstrap-icons": "^1.13.1",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
+    "ng-recaptcha": "^13.2.1",
+    "pdf-lib": "^1.17.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.5"

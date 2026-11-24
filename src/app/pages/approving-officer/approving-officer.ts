@@ -97,10 +97,31 @@ export class ApprovingOfficer implements OnDestroy {
     }
 
     const currentRequest = ++this.requestId;
+    const requestBody: Record<string, unknown> = {
+      loginId,
+      pageNumber: this.pageNumber,
+      pageSize: this.pageSize
+    };
+
+    if (this.selectedZoneId) {
+      requestBody['mohId'] = this.selectedZoneId;
+    }
+    if (this.selectedWardId) {
+      requestBody['wardId'] = this.selectedWardId;
+    }
+    if (this.searchText.trim()) {
+      requestBody['applicationNumber'] = this.searchText.trim();
+    }
+
     const sub = this.approvingofficerService
-      .getAppliedApproverApplications(loginId, this.pageNumber, this.pageSize, {
-        wardId: this.selectedWardId,
-        applicationNumber: this.searchText
+      .getAppliedApproverApplications(requestBody as {
+        loginId: number;
+        mohId?: number;
+        wardId?: number;
+        licenceApplicationId?: number;
+        applicationNumber?: string;
+        pageNumber: number;
+        pageSize: number;
       })
       .subscribe({
         next: (res: ApprovedApplications) => {

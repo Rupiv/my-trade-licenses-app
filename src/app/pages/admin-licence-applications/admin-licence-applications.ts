@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminApplicationFiltersComponent, AdminApplicationFilterState } from './components/admin-application-filters/admin-application-filters';
 import { AdminApplicationTableComponent } from './components/admin-application-table/admin-application-table';
 import { AdminApplication, AdminApplicationsService } from './admin-applications.service';
-import { MLCConstituency, Ward, Zones } from '../../core/models/new-trade-licenses.model';
+import { GbaCorporation, MLCConstituency, Ward, Zones } from '../../core/models/new-trade-licenses.model';
 
 @Component({
   selector: 'app-admin-licence-applications',
@@ -21,6 +21,8 @@ export class AdminLicenceApplications implements OnDestroy {
   filteredMohs: MLCConstituency[] = [];
   wards: Ward[] = [];
 
+  corporations: GbaCorporation[] = [];
+  selectedCorporationId: number | null = null;
   selectedZoneId: number | null = null;
   selectedMohId: number | null = null;
   selectedWardId: number | null = null;
@@ -39,8 +41,14 @@ export class AdminLicenceApplications implements OnDestroy {
   constructor(
     private readonly adminApplicationsService: AdminApplicationsService,
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly cdr: ChangeDetectorRef
   ) {}
+
+  /** App runs zoneless: data set in an async callback is only drawn after this (or a user click). */
+  private refreshView(): void {
+    this.cdr.markForCheck();
+  }
 
   ngOnInit(): void {
     this.readRouteFilters();
@@ -59,7 +67,9 @@ export class AdminLicenceApplications implements OnDestroy {
     const zoneChanged = this.selectedZoneId !== filterState.zoneId;
     const mohChanged = this.selectedMohId !== filterState.mohId;
     const wardChanged = this.selectedWardId !== filterState.wardId;
+    const corporationChanged = this.selectedCorporationId !== filterState.corporationId;
 
+    this.selectedCorporationId = filterState.corporationId;
     this.selectedZoneId = filterState.zoneId;
     this.selectedStatus = filterState.status;
     this.filteredMohs = this.selectedZoneId
@@ -81,7 +91,7 @@ export class AdminLicenceApplications implements OnDestroy {
       this.loadWardsForSelectedMoh();
     }
 
-    if (zoneChanged || mohChanged || wardChanged) {
+    if (corporationChanged || zoneChanged || mohChanged || wardChanged) {
       this.pageNumber = 1;
       this.loadAdminApplications();
       return;
@@ -136,6 +146,7 @@ export class AdminLicenceApplications implements OnDestroy {
     const currentRequest = ++this.requestId;
 
     const query = {
+      corporationId: this.selectedCorporationId,
       zoneId: this.selectedZoneId,
       mohId: this.selectedMohId,
       wardId: this.selectedWardId,
@@ -164,6 +175,7 @@ export class AdminLicenceApplications implements OnDestroy {
         this.pageNumber = Number(response?.pageNumber ?? response?.PageNumber ?? this.pageNumber);
         this.pageSize = Number(response?.pageSize ?? response?.PageSize ?? this.pageSize);
         this.isLoadingApplications = false;
+        this.refreshView();
       },
       error: (error) => {
         if (currentRequest !== this.requestId) {
@@ -174,13 +186,30 @@ export class AdminLicenceApplications implements OnDestroy {
         this.statusOptions = [];
         this.totalRecords = 0;
         this.isLoadingApplications = false;
+        this.refreshView();
       }
     });
 
     this.subscriptions.add(sub);
   }
 
+  // Separate from zones/MOH so the old filters keep working if the GBA masters are unavailable
+  private loadCorporations(): void {
+    const sub = this.adminApplicationsService.getCorporations().subscribe({
+      next: (corporations) => {
+        this.corporations = corporations ?? [];
+        this.refreshView();
+      },
+      error: () => {
+        this.corporations = [];
+        this.refreshView();
+      }
+    });
+    this.subscriptions.add(sub);
+  }
+
   private loadFilterMasters(): void {
+    this.loadCorporations();
     const sub = forkJoin({
       zones: this.adminApplicationsService.getZones(),
       mohs: this.adminApplicationsService.getMohs()
@@ -189,12 +218,14 @@ export class AdminLicenceApplications implements OnDestroy {
         this.zones = zones ?? [];
         this.mohs = mohs ?? [];
         this.filteredMohs = [...this.mohs];
+        this.refreshView();
       },
       error: (error) => {
         //console.error('Failed to load application filters', error);
         this.zones = [];
         this.mohs = [];
         this.filteredMohs = [];
+        this.refreshView();
       }
     });
 
@@ -237,10 +268,12 @@ export class AdminLicenceApplications implements OnDestroy {
         this.wards = Array.from(unique.values()).sort((a, b) =>
           (a.wardName || '').localeCompare(b.wardName || '')
         );
+        this.refreshView();
       },
       error: (error) => {
         //console.error('Failed to load wards', error);
         this.wards = [];
+        this.refreshView();
       }
     });
 

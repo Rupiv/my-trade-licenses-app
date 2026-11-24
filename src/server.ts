@@ -58,7 +58,7 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
       throw error;
     }
 
-    console.log(`Node Express server listening on https://pickitover.com/api:${port}`);
+    console.log(`Node Express server listening on https://pickitover.com:${port}/api`);
   });
 }
 

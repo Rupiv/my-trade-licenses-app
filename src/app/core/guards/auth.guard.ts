@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -21,17 +21,14 @@ export class AuthGuard {
   //   this.router.navigate(['/login']);
   //   return false;
   // }
-  canActivate(): boolean {
+  canActivate(_route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
 
     const token = this.auth.getToken(); // use service
 
-    if (!token) {
-      this.router.navigate(['/login']);
-      return false;
-    }
-    
+    // Keep where the user was going (e.g. payment-success coming back from the gateway
+    // after the session expired) so login can send them back there.
     if (!token || this.auth.isTokenExpired(token)) {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
       return false;
     }
 

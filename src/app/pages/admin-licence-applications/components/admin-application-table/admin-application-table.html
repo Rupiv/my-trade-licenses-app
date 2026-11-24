@@ -6,6 +6,7 @@
         <th>Applicant Name</th>
         <th>Trade Name</th>
         <th>Mobile Number</th>
+        <th>Corporation (GBA)</th>
         <th>Zone</th>
         <th>MOH</th>
         <th>Ward</th>
@@ -16,7 +17,7 @@
     </thead>
     <tbody>
       <tr *ngIf="isLoading">
-        <td colspan="10" class="text-center py-3">Loading applications...</td>
+        <td colspan="11" class="text-center py-3">Loading applications...</td>
       </tr>
 
       <tr *ngFor="let app of applications" class="clickable-row" (click)="onRowClicked(app)">
@@ -24,6 +25,11 @@
         <td>{{ app.applicantName || '-' }}</td>
         <td>{{ app.tradeName || '-' }}</td>
         <td>{{ app.mobileNumber || '-' }}</td>
+        <td>
+          {{ app.corporationName || '-' }}
+          <small class="d-block text-muted" *ngIf="app.gbaWardName">{{ app.gbaWardName }}</small>
+          <small class="d-block text-muted" *ngIf="app.locationStatus === 'DERIVED'">(from old ward)</small>
+        </td>
         <td>{{ app.zoneName || '-' }}</td>
         <td>{{ app.mohName || '-' }}</td>
         <td>{{ app.wardName || '-' }}</td>
@@ -54,7 +60,7 @@
       </tr>
 
       <tr *ngIf="!isLoading && applications.length === 0">
-        <td colspan="10" class="text-center text-muted py-3">No Data Found</td>
+        <td colspan="11" class="text-center text-muted py-3">No Data Found</td>
       </tr>
     </tbody>
   </table>
