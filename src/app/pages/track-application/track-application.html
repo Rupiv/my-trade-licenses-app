@@ -177,7 +177,11 @@
 
         <div class="action-buttons mt-4 d-flex justify-content-center gap-3">
           <!-- Download Acknowledgement -->
-          <button class="btn btn-outline-primary px-4 py-2 d-flex align-items-center gap-2">
+          <button
+            class="btn btn-outline-primary px-4 py-2 d-flex align-items-center gap-2"
+            [disabled]="!selectedApplication?.applicationNumber || loading"
+            (click)="openAcknowledgement()"
+          >
             <i class="bi bi-file-earmark-text"></i>
             Download Acknowledgement
           </button>

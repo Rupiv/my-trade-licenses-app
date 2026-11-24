@@ -29,6 +29,8 @@ export class PaymentSuccess implements OnInit, OnDestroy {
   isLoading = true;
   decryptError = false;
   countdown = 10;
+  /** True once the gateway-confirmed payment has been followed by a successful final submission. */
+  submissionComplete = false;
 
   private countdownInterval: any;
 
@@ -117,6 +119,13 @@ export class PaymentSuccess implements OnInit, OnDestroy {
     this.router.navigate(['trader']);
   }
 
+  /** Corporation-specific payment acknowledgement (by the draft id this page receives from the gateway). */
+  goToAcknowledgement(): void {
+    this.router.navigate(['trader/licence-acknowledgement', this.licensesApplicationId], {
+      queryParams: { source: 'draft' }
+    });
+  }
+
   goToApplication(): void {
     this.router.navigate([
       'trader/view-licenses-application',
@@ -179,6 +188,8 @@ export class PaymentSuccess implements OnInit, OnDestroy {
   private submitLicenceApplicationFinal(licenceApplicationID: number): void {
     this.paymentSuccessService.saveApplicationToLicensesApp(licenceApplicationID).subscribe({
       next: (licenceRes: any) => {
+        this.submissionComplete = true;
+        this.cdr.detectChanges();
         if (this.isAlreadyFinallySubmitted(licenceRes)) {
           this.loaderservice.hide();
           return;
@@ -188,6 +199,8 @@ export class PaymentSuccess implements OnInit, OnDestroy {
       error: (err) => {
         const payload = err?.error ?? err;
         if (this.isAlreadyFinallySubmitted(payload)) {
+          this.submissionComplete = true;
+          this.cdr.detectChanges();
           this.loaderservice.hide();
           return;
         }

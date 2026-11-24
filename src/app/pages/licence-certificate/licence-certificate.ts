@@ -1,17 +1,25 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, ViewEncapsulation, HostListener } from '@angular/core';
+import { afterNextRender, ChangeDetectorRef, Component, HostListener, Injector, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { LicenceTemplate } from '../../shared/components/licence-template/licence-template';
 import { InspectionService } from '../inspection/inspection.service';
 import { LicenceApplicationModel } from '../../core/models/trade-licenses-details.model';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../shared/components/notification/notification.service';
-import { timeout } from 'rxjs/operators';
-import { firstValueFrom } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
+import { firstValueFrom, forkJoin, of } from 'rxjs';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { HttpErrorResponse } from '@angular/common/http';
+import { GbaCertificate, GbaCertificateData } from '../../shared/components/gba-certificate/gba-certificate';
+import {
+  CorporationTemplateService,
+  ResolvedCorporationTemplate,
+} from '../../core/services/corporation-template.service';
+import { ViewLicensesApplicationService } from '../view-licenses-application/view-licenses-application.service';
+import { buildCertificateData, CertificateSourceRecord } from '../../shared/utils/gba-document.mapper';
+import { downloadBlob, renderElementToPdfBlob } from '../../shared/utils/dom-pdf.util';
 
-interface ApprovedLicenceCertificateItem {
+interface ApprovedLicenceCertificateItem extends CertificateSourceRecord {
   licenceApplicationID: number;
   applicationNumber: string;
   financialYear: string;
@@ -68,11 +76,15 @@ interface SaveGeneratedCertificatePayload {
   fileName: string;
   contentType: string;
   fileContentBase64: string;
+  // Which design produced the file (null = legacy BBMP); see docs/gba-certificate-backend-spec.md
+  templateIdentifier: string | null;
+  corporationID: number | null;
+  corporationCode: string | null;
 }
 
 @Component({
   selector: 'app-licence-certificate',
-  imports: [CommonModule, RouterModule, LicenceTemplate],
+  imports: [CommonModule, RouterModule, LicenceTemplate, GbaCertificate],
   templateUrl: './licence-certificate.html',
   styleUrl: './licence-certificate.css',
   encapsulation: ViewEncapsulation.None,
@@ -87,6 +99,13 @@ export class LicenceCertificate {
   licenceApplicationId: number | null = null;
   private autoSaveAttemptedForApplicationNo = '';
   private autoSaveFailedNotified = false;
+
+  /** Set when the licence belongs to a GBA corporation: render its corporation-specific design. */
+  gbaTemplate: ResolvedCorporationTemplate | null = null;
+  gbaData: GbaCertificateData | null = null;
+  /** True while deciding BBMP vs GBA design, so neither is shown (or auto-saved) prematurely. */
+  resolvingTemplate = false;
+  private templateRequestSeq = 0;
 
   viewModel: LicenceCertificateViewModel = {
     wardName: '-',
@@ -117,7 +136,11 @@ export class LicenceCertificate {
     private api: ApiService,
     private notificationService: NotificationService,
     private router: Router,
-    private location: Location
+    private location: Location,
+    private cdr: ChangeDetectorRef,
+    private injector: Injector,
+    private corporationTemplates: CorporationTemplateService,
+    private applicationView: ViewLicensesApplicationService
   ) {}
 
   private from = '';
@@ -225,6 +248,9 @@ export class LicenceCertificate {
         fileName,
         contentType: 'application/pdf',
         fileContentBase64: await this.blobToBase64(pdfBlob),
+        templateIdentifier: this.gbaTemplate?.certificateTemplateId ?? null,
+        corporationID: this.gbaTemplate?.corporationID ?? null,
+        corporationCode: this.gbaTemplate?.code ?? null,
       };
 
       await firstValueFrom(
@@ -248,6 +274,8 @@ export class LicenceCertificate {
       }
     } finally {
       this.isSaving = false;
+      // Zoneless: this runs after an await, outside any HTTP callback - redraw the Save button.
+      this.cdr.markForCheck();
     }
   }
 
@@ -263,6 +291,7 @@ export class LicenceCertificate {
         if (!application?.applicationNumber) {
           this.loading = false;
           this.errorMessage = 'Application number not found for this id.';
+          this.cdr.markForCheck();
           return;
         }
 
@@ -272,6 +301,7 @@ export class LicenceCertificate {
       error: () => {
         this.loading = false;
         this.errorMessage = 'Unable to load licence application details.';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -291,6 +321,7 @@ export class LicenceCertificate {
       if (cachedRecord) {
         this.viewModel = this.buildViewModelFromCertificate(cachedRecord);
         this.loading = false;
+        this.resolveDocumentTemplate(cachedRecord);
       }
     }
 
@@ -304,6 +335,7 @@ export class LicenceCertificate {
             if (this.loading) {
               this.loading = false;
               this.errorMessage = 'No approved licence certificate found.';
+              this.cdr.markForCheck();
             }
             return;
           }
@@ -318,15 +350,76 @@ export class LicenceCertificate {
           this.viewModel = this.buildViewModelFromCertificate(record);
           this.loading = false;
           this.errorMessage = '';
-          this.tryAutoSaveForAdmin();
+          this.resolveDocumentTemplate(record, () => this.tryAutoSaveForAdmin());
         },
         error: () => {
           if (this.loading) {
             this.loading = false;
             this.errorMessage = 'Unable to load approved licence certificate.';
+            this.cdr.markForCheck();
           }
         }
       });
+  }
+
+  /**
+   * GBA corporation-specific design when the approved licence carries a confirmed GBA corporation
+   * that is configured in corporation-templates.config.ts; otherwise the legacy BBMP design.
+   * The extra GBA fields (division, ward no, geo, years opted) come from the application view.
+   */
+  private resolveDocumentTemplate(record: ApprovedLicenceCertificateItem, onResolved?: () => void): void {
+    const seq = ++this.templateRequestSeq;
+    this.resolvingTemplate = true;
+
+    this.corporationTemplates.resolve(record.corporationName).subscribe((template) => {
+      if (seq !== this.templateRequestSeq) {
+        return;
+      }
+      if (!template) {
+        this.gbaTemplate = null;
+        this.gbaData = null;
+        this.resolvingTemplate = false;
+        this.afterRender(onResolved);
+        return;
+      }
+
+      const id = Number(record.licenceApplicationID || this.licenceApplicationId);
+      const view$ = id > 0
+        ? this.applicationView.getSubmittedApplication(id).pipe(timeout(10000), catchError(() => of(null)))
+        : of(null);
+      const years$ = id > 0
+        ? this.inspectionService.getlicenceApplicationDetails(id).pipe(
+            timeout(10000),
+            map((app: any) => {
+              const years = Number(app?.NoOfYearsApplied ?? app?.noOfYearsApplied);
+              return Number.isFinite(years) && years > 0 ? years : null;
+            }),
+            catchError(() => of(null))
+          )
+        : of(null);
+
+      forkJoin([view$, years$]).subscribe(([view, years]) => {
+        if (seq !== this.templateRequestSeq) {
+          return;
+        }
+        this.gbaTemplate = template;
+        this.gbaData = buildCertificateData(record, view, years);
+        this.resolvingTemplate = false;
+        this.afterRender(onResolved);
+      });
+    });
+  }
+
+  /**
+   * The app is zoneless: state set outside an HTTP callback is not redrawn on its own. Schedule a
+   * render and run `then` only after it, so the DOM shows the chosen design before anything
+   * (the officer auto-save) captures it.
+   */
+  private afterRender(then?: () => void): void {
+    this.cdr.markForCheck();
+    if (then) {
+      afterNextRender(() => then(), { injector: this.injector });
+    }
   }
 
   private tryAutoSaveForAdmin(): void {
@@ -469,14 +562,7 @@ export class LicenceCertificate {
     try {
       const fileName = this.buildCertificateFileName();
       const pdfBlob = await this.buildCertificatePdfBlob('download');
-      const objectUrl = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
+      downloadBlob(pdfBlob, fileName);
     } catch (error) {
       console.error('Failed to generate certificate pdf', error);
       this.notificationService.show('Failed to download certificate PDF.', 'error');
@@ -498,58 +584,32 @@ export class LicenceCertificate {
       }
     }
 
+    // The generic fallback is not the corporation design: never save/download it for a GBA licence.
+    if (this.gbaTemplate) {
+      throw new Error('GBA certificate is not rendered; refusing to produce a substitute PDF.');
+    }
     return this.buildFallbackPdfBlob();
   }
 
   private async buildCertificatePdfFromDom(mode: 'save' | 'download'): Promise<Blob | null> {
+    if (this.loading || this.resolvingTemplate) {
+      throw new Error('Certificate is still loading.');
+    }
     const target = document.querySelector('.license-certificate-page .certificate') as HTMLElement | null;
     if (!target) {
       return null;
     }
 
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-      import('html2canvas'),
-      import('jspdf'),
-    ]);
-
-    const canvas = await html2canvas(target, {
-      scale: mode === 'save' ? 1.1 : 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-
-    const imageType = mode === 'save' ? 'JPEG' : 'PNG';
-    const imgData =
-      mode === 'save'
-        ? canvas.toDataURL('image/jpeg', 0.72)
-        : canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF({
-      orientation: 'p',
-      unit: 'pt',
-      format: 'a4',
-      compress: mode === 'save',
-    });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imageWidth = pageWidth;
-    const imageHeight = (canvas.height * imageWidth) / canvas.width;
-
-    let heightLeft = imageHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, imageType, 0, position, imageWidth, imageHeight, undefined, mode === 'save' ? 'FAST' : 'MEDIUM');
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imageHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, imageType, 0, position, imageWidth, imageHeight, undefined, mode === 'save' ? 'FAST' : 'MEDIUM');
-      heightLeft -= pageHeight;
+    // The captured page must be the design that was resolved for this licence.
+    const renderedTemplate = target.getAttribute('data-template');
+    const expectedTemplate = this.gbaTemplate?.certificateTemplateId ?? null;
+    if (renderedTemplate !== expectedTemplate) {
+      throw new Error(
+        `Rendered certificate (${renderedTemplate ?? 'BBMP'}) does not match the expected design (${expectedTemplate ?? 'BBMP'}).`
+      );
     }
 
-    return pdf.output('blob');
+    return renderElementToPdfBlob(target, mode);
   }
 
   private async buildFallbackPdfBlob(): Promise<Blob> {

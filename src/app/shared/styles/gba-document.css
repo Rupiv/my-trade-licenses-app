@@ -1,0 +1,119 @@
+/*
+ * Shared A4 page styles for the GBA corporation documents (certificate = PDF page 1,
+ * acknowledgement = PDF page 2).
+ *
+ * All sizes are in PDF points (pt), measured with PyMuPDF from docs/templates/*.pdf, so the
+ * page can be compared 1:1 with the reference (A4 = 595.3 x 841.9 pt). Text that is fixed
+ * in the design is positioned absolutely at the measured glyph-top; text whose length depends
+ * on the application flows in .gba-flow (see each component's CSS).
+ *
+ * Font: the PDFs embed Calibri. Windows ships it; Carlito is metric-compatible elsewhere.
+ *
+ * Baseline correction: the PDF places Calibri glyphs with a 0.75em ascender, while browsers lay the
+ * line box out with Calibri's Windows ascent/descent (0.952 / 0.269em), which puts the baseline
+ * 0.0915em lower. Text (not boxes or rules) is therefore lifted by --gba-baseline-lift; measured
+ * against the reference renders this brings text to within ~0.5pt.
+ */
+:host {
+  display: block;
+  background: #fff;
+}
+
+.gba-doc {
+  --gba-baseline-lift: -0.0915em;
+  position: relative;
+  width: 595.3pt;
+  height: 841.9pt;
+  margin: 20px auto;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #fff;
+  color: #000;
+  font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1;
+}
+
+/* Border: 3pt black, 0.7pt white, 0.7pt black, 24pt from the page edge. */
+.gba-border {
+  position: absolute;
+  left: 24pt;
+  top: 24pt;
+  width: 547.4pt;
+  height: 794pt;
+  box-sizing: border-box;
+  border: 3pt solid #000;
+}
+
+.gba-border::after {
+  content: '';
+  position: absolute;
+  inset: 0.7pt;
+  border: 0.7pt solid #000;
+}
+
+/* Images placed at the rectangle measured in the PDF (inline left/top/width/height). */
+.gba-abs {
+  position: absolute;
+  display: block;
+  object-fit: fill;
+}
+
+/* Same emblem position on both pages and in all five PDFs. */
+.gba-logo {
+  left: 43.2pt;
+  top: 36pt;
+  width: 72.6pt;
+  height: 73.1pt;
+}
+
+.gba-watermark {
+  pointer-events: none;
+}
+
+/* A single line of fixed design text at an absolute glyph-top position. */
+.gba-line {
+  position: absolute;
+  margin-top: var(--gba-baseline-lift);
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Header lines are centred on the white header band (x 110.5 - 497.6pt). */
+.gba-header-line {
+  left: 110.5pt;
+  width: 387.1pt;
+  text-align: center;
+}
+
+/* Page titles are centred on the page. */
+.gba-page-title {
+  left: 0;
+  width: 595.3pt;
+  text-align: center;
+  font-size: 18pt;
+}
+
+.gba-corporation,
+.gba-department {
+  font-size: 14.04pt;
+}
+
+.gba-division {
+  left: 43.2pt;
+  font-size: 14.04pt;
+}
+
+.gba-ward {
+  right: 43.7pt;
+  font-size: 12pt;
+  text-align: right;
+}
+
+/* Everything whose height depends on the application data. */
+.gba-flow {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+}

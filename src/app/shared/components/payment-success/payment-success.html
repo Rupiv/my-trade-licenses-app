@@ -57,6 +57,9 @@
     <button class="btn btn-primary" (click)="goToApplication()">
       View Application
     </button>
+    <button *ngIf="submissionComplete" class="btn btn-outline-primary" (click)="goToAcknowledgement()">
+      View Payment Acknowledgement
+    </button>
     <button class="btn btn-outline-secondary" (click)="goToDashboard()">
       Go to Dashboard Now
     </button>

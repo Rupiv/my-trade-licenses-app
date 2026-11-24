@@ -251,6 +251,14 @@
       <button class="btn btn-outline-secondary" routerLink="/trader">Back</button>
       <button
         class="btn btn-outline-primary"
+        *ngIf="canViewAcknowledgement"
+        [routerLink]="['/trader/licence-acknowledgement', licenceApplicationId]"
+        [queryParams]="{ source: 'draft' }"
+      >
+        View Payment Acknowledgement
+      </button>
+      <button
+        class="btn btn-outline-primary"
         *ngIf="isApproved"
         [routerLink]="['/trader/licence-certificate', licenceApplicationId]"
       >

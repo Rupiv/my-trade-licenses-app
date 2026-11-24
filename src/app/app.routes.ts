@@ -22,6 +22,7 @@ import { WardWiseLicenses } from './shared/components/reports/ward-wise-licenses
 import { Inspection } from './pages/inspection/inspection';
 import { ViewLicensesApplication } from './pages/view-licenses-application/view-licenses-application';
 import { LicenceCertificate } from './pages/licence-certificate/licence-certificate';
+import { LicenceAcknowledgement } from './pages/licence-acknowledgement/licence-acknowledgement';
 import { LicenceCertificateLookup } from './pages/licence-certificate-lookup/licence-certificate-lookup';
 import { AdminLicenceApplications } from './pages/admin-licence-applications/admin-licence-applications';
 import { AdminLicenceApplicationDetails } from './pages/admin-licence-application-details/admin-licence-application-details';
@@ -71,6 +72,7 @@ export const routes: Routes = [
       { path: 'master-data-compliance', component: MasterDataCompliance },
       { path: 'licence-certificate-lookup', component: LicenceCertificateLookup },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
+      { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },
       { path: 'licence-applications', component: AdminLicenceApplications },
       { path: 'licence-applications/:licenceApplicationId', component: AdminLicenceApplicationDetails },
 
@@ -102,6 +104,7 @@ export const routes: Routes = [
       { path: 'track-application', component: TrackApplication },
       { path: 'view-licenses-application/:licensesApplicationId', component: ViewLicensesApplication },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
+      { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },
       { path: 'licence-certificate-lookup', component: LicenceCertificateLookup },
       { path: 'payment-success', component: PaymentSuccess },
       { path: 'payment-failed', component: PaymentFailed }
@@ -124,6 +127,7 @@ export const routes: Routes = [
       { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
       { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
+      { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -146,6 +150,7 @@ export const routes: Routes = [
       { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
       { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
+      { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },
       { path: 'inspection/:applicationNo', component: Inspection, runGuardsAndResolvers: 'always' }
 
       // OTHER PAGES
@@ -166,6 +171,7 @@ export const routes: Routes = [
       { path: 'reports/ward-wise-licenses', component: WardWiseLicenses },
       { path: 'reports/application-wise-licenses', component: ApplicationWiseLicenses },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
+      { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },
       { path: 'licence-applications/:licenceApplicationId', component: AdminLicenceApplicationDetails }
     ]
   },

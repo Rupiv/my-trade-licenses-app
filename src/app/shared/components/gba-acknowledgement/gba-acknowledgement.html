@@ -1,0 +1,71 @@
+<div class="acknowledgement gba-doc" [attr.data-template]="template.acknowledgementTemplateId">
+  <div class="gba-border"></div>
+
+  <img
+    *ngIf="!missingImages.has('watermark')"
+    class="gba-abs gba-watermark"
+    [ngStyle]="watermarkStyle"
+    [src]="assets.watermarkUrl"
+    alt=""
+    (error)="onImageError('watermark')"
+  >
+  <img
+    *ngIf="!missingImages.has('logo')"
+    class="gba-abs gba-logo"
+    [src]="assets.gbaLogoUrl"
+    alt="Greater Bengaluru Authority"
+    (error)="onImageError('logo')"
+  >
+  <img
+    *ngIf="!missingImages.has('seal')"
+    class="gba-abs"
+    [ngStyle]="sealStyle"
+    [src]="template.sealUrl"
+    [alt]="template.fullName"
+    (error)="onImageError('seal')"
+  >
+
+  <div class="gba-line gba-header-line ack-authority">{{ assets.authorityName }}</div>
+  <div class="gba-line gba-header-line gba-corporation ack-corporation">{{ template.fullName }}</div>
+  <div class="gba-line gba-header-line gba-department ack-department">{{ assets.departmentName }}</div>
+  <div class="gba-line gba-page-title ack-title">ACKNOWLEDGEMENT OF ONLINE APPLICATION FOR TRADE LICENCE</div>
+
+  <div class="gba-line gba-division ack-division">Division : {{ data.division }}</div>
+  <div class="gba-line gba-ward ack-ward">Ward No &amp; Name : {{ data.ward }}</div>
+
+  <div class="gba-flow ack-flow">
+    <table class="ack-grid">
+      <colgroup>
+        <col style="width: 172pt">
+        <col>
+      </colgroup>
+      <tr *ngFor="let row of rows">
+        <th>{{ row[0] }}</th>
+        <td>{{ row[1] }}</td>
+      </tr>
+    </table>
+
+    <div class="ack-letter">
+      <p><b>Dear Applicant,</b></p>
+      <p>
+        Your online application for grant of Trade Licence has been successfully received by the Greater
+        Bengaluru&nbsp;Authority.
+      </p>
+      <p>
+        The application will be scrutinized and processed within
+        <b>30 days from the date of submission of the application and successful payment of the prescribed fees</b>,
+        subject to fulfillment of the applicable statutory requirements and submission of all requisite
+        information and documents.
+      </p>
+      <p>
+        Please quote the Application Reference Number for all future correspondence and tracking of your
+        application.
+      </p>
+      <p>
+        Note: <b>This acknowledgement confirms only the receipt of the application and payment of the
+        prescribed fee. It shall not be construed as approval or grant of the Trade Licence.</b>
+      </p>
+      <p><b>This is a computer-generated acknowledgement and does not require a signature or seal.</b></p>
+    </div>
+  </div>
+</div>

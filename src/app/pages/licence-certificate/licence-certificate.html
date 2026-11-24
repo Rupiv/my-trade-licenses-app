@@ -3,12 +3,12 @@
     <button class="btn btn-outline-secondary" (click)="goBack()">
       Back to Application
     </button>
-    <button class="btn btn-secondary" (click)="printCertificate()">Print</button>
-    <button class="btn btn-primary" (click)="downloadPdf()">Download</button>
+    <button class="btn btn-secondary" [disabled]="loading || resolvingTemplate" (click)="printCertificate()">Print</button>
+    <button class="btn btn-primary" [disabled]="loading || resolvingTemplate" (click)="downloadPdf()">Download</button>
     <button
       *ngIf="showSaveButton"
       class="btn btn-success"
-      [disabled]="isSaving"
+      [disabled]="isSaving || loading || resolvingTemplate"
       (click)="saveGeneratedCertificate()"
     >
       {{ isSaving ? 'Saving...' : 'Save Licence' }}
@@ -17,9 +17,18 @@
 
   <div *ngIf="loading" class="loading-state">Loading certificate...</div>
   <div *ngIf="!loading && errorMessage" class="error-state">{{ errorMessage }}</div>
+  <div *ngIf="!loading && !errorMessage && resolvingTemplate" class="loading-state">Preparing certificate...</div>
 
+  <!-- GBA corporation-specific design (page 1 of the corporation's reference PDF) -->
+  <app-gba-certificate
+    *ngIf="!loading && !errorMessage && !resolvingTemplate && gbaTemplate && gbaData"
+    [template]="gbaTemplate"
+    [data]="gbaData"
+  ></app-gba-certificate>
+
+  <!-- Legacy BBMP design for licences without a GBA corporation (unchanged) -->
   <app-licence-template
-    *ngIf="!errorMessage"
+    *ngIf="!loading && !errorMessage && !resolvingTemplate && !gbaTemplate"
     [wardName]="viewModel.wardName"
     [corporationName]="viewModel.corporationName"
     [licenceNo]="viewModel.licenceNo"

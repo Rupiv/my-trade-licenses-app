@@ -1,0 +1,65 @@
+/*
+ * Page 2 (acknowledgement). Shared page/border/header styles: shared/styles/gba-document.css.
+ * Numbers are PDF points measured from docs/templates/*.pdf page 2 (comments give the source y).
+ */
+
+/* Header glyph tops 51.1 / 86.3 / 103.4; the authority line is 20.04pt here (24pt on page 1). */
+.ack-authority { top: 51.1pt; font-size: 20.04pt; }
+.ack-corporation { top: 86.3pt; }
+.ack-department { top: 103.4pt; }
+.ack-title { top: 134.7pt; }
+
+/* Division 172.9, ward 174.4. */
+.ack-division { top: 172.9pt; }
+.ack-ward { top: 174.4pt; }
+
+/* Table x 37.6 - 557.9, first rule y 201.9; letter text x 43.2 - 554.8. */
+.ack-flow {
+  left: 37.6pt;
+  width: 520.3pt;
+  top: 201.9pt;
+  bottom: 28.4pt;
+}
+
+/* 8 rows of 27.1pt, 0.48pt rules, label column 172pt (split at x 209.6). */
+.ack-grid {
+  width: 520.3pt;
+  border-collapse: collapse;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+.ack-grid tr {
+  height: 27.1pt;
+}
+
+.ack-grid th,
+.ack-grid td {
+  border: 0.48pt solid #000;
+  padding: 1pt 5.1pt;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 12pt;
+  line-height: 14.5pt;
+  overflow-wrap: anywhere;
+}
+
+.ack-grid th {
+  font-weight: 700;
+}
+
+/* Italic 12pt, 14.5pt pitch, one blank line (14.2pt) between paragraphs; first glyph top 435.9. */
+.ack-letter {
+  position: relative;
+  top: var(--gba-baseline-lift);
+  margin-top: 15.1pt;
+  padding: 0 3.1pt 0 5.6pt;
+  font-style: italic;
+  font-size: 12pt;
+  line-height: 14.5pt;
+  text-align: justify;
+}
+
+.ack-letter p {
+  margin: 0 0 14.2pt;
+}

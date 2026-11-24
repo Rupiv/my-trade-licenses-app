@@ -5,6 +5,8 @@ import {
   ApplicationView,
   ViewLicensesApplicationService,
 } from '../../../pages/view-licenses-application/view-licenses-application.service';
+import { acknowledgementBlocker } from '../../utils/gba-document.mapper';
+import { findCorporationTemplate } from '../../../core/config/corporation-templates.config';
 
 /**
  * Read-only "Full Application Details" for officer screens (inspector, zone approver, senior
@@ -82,6 +84,16 @@ export class ApplicationFullDetails implements OnChanges {
     this.router.navigate([`${this.sectionPrefix}/licence-certificate`, this.licenceApplicationId], {
       queryParams: { from: this.sectionPrefix.slice(1) },
     });
+  }
+
+  /** Submitted, gateway-confirmed payment, configured GBA corporation (see acknowledgementBlocker). */
+  get canViewAcknowledgement(): boolean {
+    return acknowledgementBlocker(this.view) === null && !!findCorporationTemplate(this.view?.gba?.corporationName);
+  }
+
+  viewAcknowledgement(): void {
+    if (!this.licenceApplicationId) return;
+    this.router.navigate([`${this.sectionPrefix}/licence-acknowledgement`, this.licenceApplicationId]);
   }
 
   get address(): string {

@@ -1,0 +1,129 @@
+<div class="certificate gba-doc" [attr.data-template]="template.certificateTemplateId">
+  <div class="gba-border"></div>
+
+  <img
+    *ngIf="!missingImages.has('watermark')"
+    class="gba-abs gba-watermark"
+    [ngStyle]="watermarkStyle"
+    [src]="assets.watermarkUrl"
+    alt=""
+    (error)="onImageError('watermark')"
+  >
+  <img
+    *ngIf="!missingImages.has('logo')"
+    class="gba-abs gba-logo"
+    [src]="assets.gbaLogoUrl"
+    alt="Greater Bengaluru Authority"
+    (error)="onImageError('logo')"
+  >
+  <img
+    *ngIf="!missingImages.has('seal')"
+    class="gba-abs"
+    [ngStyle]="sealStyle"
+    [src]="template.sealUrl"
+    [alt]="template.fullName"
+    (error)="onImageError('seal')"
+  >
+
+  <div class="gba-line gba-header-line cert-authority">{{ assets.authorityName }}</div>
+  <div class="gba-line gba-header-line gba-corporation cert-corporation">{{ template.fullName }}</div>
+  <div class="gba-line gba-header-line gba-department cert-department">{{ assets.departmentName }}</div>
+  <div class="gba-line gba-page-title cert-title">TRADE LICENCE CERTIFICATE</div>
+
+  <div class="gba-line gba-division cert-division">Division : {{ data.division }}</div>
+  <div class="gba-line gba-ward cert-ward">Ward No &amp; Name : {{ data.ward }}</div>
+
+  <div class="cert-pill cert-pill-application">Application No : {{ data.applicationNo }}</div>
+  <div class="cert-pill cert-pill-licence">Licence No : {{ data.licenceNo }}</div>
+
+  <div class="gba-flow cert-flow">
+    <p class="cert-certify">
+      This is to certify that <b>Smt./ Shri {{ data.applicantName }}</b> has been issued a Trade Licence
+      bearing No. {{ data.licenceNo }} for carrying on the trade of <b>M/s. {{ data.tradeName }}</b>,
+      situated at {{ data.tradeAddress }}.
+    </p>
+
+    <table class="cert-grid">
+      <colgroup>
+        <col style="width: 86.2pt">
+        <col style="width: 77.5pt">
+        <col style="width: 65.3pt">
+        <col style="width: 59.2pt">
+        <col style="width: 49.5pt">
+        <col style="width: 54.1pt">
+        <col style="width: 54.1pt">
+        <col style="width: 69.5pt">
+      </colgroup>
+      <tr class="cert-head-1">
+        <th>Major Trade<br>Name</th>
+        <th>Minor Trade<br>Name</th>
+        <th>Sub Trade<br>Name</th>
+        <th>GST No.</th>
+        <th>EPID<br>Khatha<br>No</th>
+        <th>Longitude</th>
+        <th>Latitude</th>
+        <th>Road Width</th>
+      </tr>
+      <tr class="cert-values-1">
+        <td>{{ data.majorTrade }}</td>
+        <td>{{ data.minorTrade }}</td>
+        <td>{{ data.subTrade }}</td>
+        <td>{{ data.gstNo }}</td>
+        <td>{{ data.epidKhathaNo }}</td>
+        <td>{{ data.longitude }}</td>
+        <td>{{ data.latitude }}</td>
+        <td>{{ data.roadWidth }}</td>
+      </tr>
+      <tr class="cert-head-2">
+        <th>Road Type<br>(Commercial /<br>Residential)</th>
+        <th>Receipt No &amp;<br>Date</th>
+        <th>Fees<br>Collected</th>
+        <th>No of Years<br>Opted</th>
+        <th>Issued<br>Date</th>
+        <th>Time</th>
+        <th>Valid up<br>to</th>
+        <th>Next Renewal<br>Date</th>
+      </tr>
+      <tr class="cert-values-2">
+        <td>{{ data.roadType }}</td>
+        <td>{{ data.receiptNoAndDate }}</td>
+        <td>{{ data.feesCollected }}</td>
+        <td>{{ data.yearsOpted }}</td>
+        <td>{{ data.issuedDate }}</td>
+        <td>{{ data.issuedTime }}</td>
+        <td>{{ data.validUpto }}</td>
+        <td>{{ data.nextRenewalDate }}</td>
+      </tr>
+    </table>
+
+    <p class="cert-conditions-intro">
+      The licence is issued subject to the conditions specified in the byelaws for the said trade. Some of
+      the important conditions are :
+    </p>
+    <ol class="cert-conditions">
+      <li>This licence is issued under the provision of GBG Act 2024 &amp; related bylaws.</li>
+      <li>The licence certificate must be exhibited in a prominent place of the trade premises for public view.</li>
+      <li>To ensure that the hygiene and sanitation of trade premises is maintained to safeguard the health of the public.</li>
+      <li>To adhere to food safety measures as per FSSAI act.</li>
+      <li>All safety measures w.r.t public health like MSW rules/COTPA act/plastic handling and management rules.</li>
+      <li>This issuance of licence certificate shall not absolve the guarantee from any obligations cast on him under any other law and hence is liable for suspension, revocation or cancelation at any point of time.</li>
+      <li>This licence certificate holds good to run the trade for which it is granted only.</li>
+      <li>The signages, display boards to be displayed prominently in Kannada language in the trade premises.</li>
+      <li>The above trade license is liable to be cancelled if details provided by the applicant found to be wrong or against the provision of GBG Act 2024.</li>
+    </ol>
+
+    <!-- Pinned to the bottom of the frame (y 687 - 787.8pt), like the reference. -->
+    <div class="cert-footer">
+      <div class="cert-note cert-note-system">This is system generated certificate does not require signature</div>
+      <!-- QR shown only when the backend supplies one; the sample QR in the PDF is never used. -->
+      <ng-container *ngIf="data.qrCodeUrl">
+        <img class="cert-qr" [src]="data.qrCodeUrl" alt="Verification QR code">
+        <div class="cert-note cert-note-qr">Scan this QR Code to verify the genunity of this trade license certificate</div>
+      </ng-container>
+      <div class="cert-photo">
+        <img *ngIf="data.premisesPhotoUrl" [src]="data.premisesPhotoUrl" alt="Trade premises">
+        <span *ngIf="!data.premisesPhotoUrl">Photograph of the Concerned<br>Trade Premises</span>
+      </div>
+    </div>
+  </div>
+</div>

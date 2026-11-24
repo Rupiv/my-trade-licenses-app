@@ -1,0 +1,68 @@
+/* Same page chrome as the licence certificate page (licence-certificate.css). */
+.licence-ack-page {
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  background: #f5f5f5;
+  overflow-x: auto;
+}
+
+.licence-ack-page .page-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.licence-ack-page .loading-state,
+.licence-ack-page .error-state {
+  text-align: center;
+  margin: 32px auto;
+  max-width: 640px;
+  font-size: 14px;
+  color: #444;
+}
+
+.licence-ack-page .error-state {
+  color: #a33;
+}
+
+.licence-ack-page .acknowledgement {
+  margin: 0 auto;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .licence-ack-page .page-actions,
+  .licence-ack-page .loading-state,
+  .licence-ack-page .error-state {
+    display: none !important;
+  }
+
+  .licence-ack-page,
+  .licence-ack-page .acknowledgement,
+  .licence-ack-page .acknowledgement * {
+    visibility: visible;
+  }
+
+  .licence-ack-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 0;
+    background: #fff;
+    min-height: 0;
+  }
+
+  .licence-ack-page .acknowledgement {
+    margin: 0;
+  }
+}

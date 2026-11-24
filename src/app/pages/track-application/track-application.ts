@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { TokenService } from '../../core/services/token.service';
 import {
@@ -62,7 +62,8 @@ export class TrackApplication {
   constructor(
     private tokenservice: TokenService,
     private trackApplicationService: TrackApplicationService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private router: Router
   ) {}
 
   private normalizeRole(role: string | null | undefined): string {
@@ -150,6 +151,19 @@ export class TrackApplication {
       .toUpperCase();
 
     return status === 'APPROVED';
+  }
+
+  /**
+   * Opens the corporation-specific payment acknowledgement. That page itself checks the application
+   * was submitted and the payment is gateway-confirmed, and explains why when it is not.
+   */
+  openAcknowledgement(): void {
+    const app = this.selectedApplication;
+    if (!app?.licenceApplicationID || !app.applicationNumber) {
+      this.notificationService.show('The acknowledgement is available once the application is submitted.', 'warning');
+      return;
+    }
+    this.router.navigate(['/trader/licence-acknowledgement', app.licenceApplicationID]);
   }
 
   downloadCertificateFromTrack(): void {

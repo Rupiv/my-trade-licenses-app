@@ -1,0 +1,18 @@
+<div class="licence-ack-page">
+  <div class="page-actions">
+    <button class="btn btn-outline-secondary" (click)="goBack()">Back</button>
+    <button class="btn btn-secondary" [disabled]="!data" (click)="print()">Print</button>
+    <button class="btn btn-primary" [disabled]="!data || downloading" (click)="download()">
+      {{ downloading ? 'Preparing...' : 'Download' }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">Loading acknowledgement...</div>
+  <div *ngIf="!loading && errorMessage" class="error-state">{{ errorMessage }}</div>
+
+  <app-gba-acknowledgement
+    *ngIf="!loading && !errorMessage && template && data"
+    [template]="template"
+    [data]="data"
+  ></app-gba-acknowledgement>
+</div>

@@ -5,6 +5,8 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { GoogleMapsModule } from '@angular/google-maps';
 import { ApplicationView, ViewLicensesApplicationService } from './view-licenses-application.service';
 import { NotificationService } from '../../shared/components/notification/notification.service';
+import { acknowledgementBlocker } from '../../shared/utils/gba-document.mapper';
+import { findCorporationTemplate } from '../../core/config/corporation-templates.config';
 
 @Component({
   selector: 'app-view-licenses-application',
@@ -128,6 +130,11 @@ export class ViewLicensesApplication {
 
   get isSubmitted(): boolean {
     return !!this.view?.final || Number(this.app.licenceApplicationStatusID) > 1;
+  }
+
+  /** Payment acknowledgement: submitted + gateway-confirmed payment + configured GBA corporation. */
+  get canViewAcknowledgement(): boolean {
+    return acknowledgementBlocker(this.view) === null && !!findCorporationTemplate(this.view?.gba?.corporationName);
   }
 
   get isApproved(): boolean {
