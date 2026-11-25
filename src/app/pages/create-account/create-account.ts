@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { RecaptchaComponent, RecaptchaModule } from 'ng-recaptcha';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CreateAccountService } from './create-account.service';
@@ -15,11 +16,16 @@ import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-create-account',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, RecaptchaModule],
   templateUrl: './create-account.html',
   styleUrl: './create-account.css',
 })
 export class CreateAccount {
+  // Same invisible reCAPTCHA as the login page: the automatic login after registration needs a real
+  // token (the API no longer accepts a placeholder outside development).
+  @ViewChild(RecaptchaComponent) recaptcha?: RecaptchaComponent;
+  readonly captchaSiteKey = environment.recaptchaSiteKey;
+  readonly captchaEnabled = environment.captchaEnabled;
    registerModel = {
     fullName: '',
     emailID: '',
@@ -200,10 +206,35 @@ export class CreateAccount {
   }
 
   setUsrToken() {
+    if (!this.captchaEnabled) {
+      // development builds only (CAPTCHA disabled): the API accepts this only in Development
+      this.loginAfterRegistration(environment.captchaToken || 'test');
+      return;
+    }
+    this.recaptcha?.execute(); // -> onCaptchaResolved
+  }
+
+  onCaptchaResolved(token: string | null) {
+    if (!token) {
+      this.onCaptchaErrored();
+      return;
+    }
+    this.loginAfterRegistration(token);
+  }
+
+  onCaptchaExpired() {
+    this.notificationService.show('Captcha expired. Please log in from the login page.', 'warning');
+  }
+
+  onCaptchaErrored() {
+    this.notificationService.show('Account created. Please log in from the login page.', 'warning');
+    this.router.navigate(['/login']);
+  }
+
+  private loginAfterRegistration(captchaToken: string) {
     const payload = {
       mobileNumber: this.registerModel.mobileNumber,
-      // login-user rejects requests without a captcha token; same token the login page sends while captcha is disabled
-      captchaToken: environment.captchaToken || 'test',
+      captchaToken,
       otpToken: this.otpToken
     };
     this.otpToken = ''; // single use

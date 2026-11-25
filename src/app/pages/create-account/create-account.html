@@ -122,6 +122,16 @@
           </div>
         </div>
 
+        <re-captcha
+          *ngIf="captchaEnabled"
+          [siteKey]="captchaSiteKey"
+          size="invisible"
+          errorMode="handled"
+          (resolved)="onCaptchaResolved($event)"
+          (errored)="onCaptchaErrored()"
+          (expired)="onCaptchaExpired()"
+        ></re-captcha>
+
         <!-- ===== PRIMARY ACTION ===== -->
         <button class="btn-primary btn-lg" type="submit">
           Create Account →

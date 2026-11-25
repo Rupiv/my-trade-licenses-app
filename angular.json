@@ -58,6 +58,12 @@
               "outputHashing": "all"
             },
             "deploy": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.deploy.ts"
+                }
+              ],
               "baseHref": "/gba/",
               "deployUrl": "/gba/",
               "budgets": [
