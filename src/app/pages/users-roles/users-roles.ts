@@ -514,11 +514,6 @@ export class UsersRoles implements OnInit, OnDestroy {
       updatedBy:         this.getLoggedInUserId(),
     };
 
-    console.log('[UsersRoles] saveUser payload', {
-      mode: this.isEditMode ? 'update' : 'create',
-      loginID: userId,
-      payload,
-    });
 
     if (this.isEditMode && userId) {
       this.updateUser(userId, payload);
@@ -528,7 +523,6 @@ export class UsersRoles implements OnInit, OnDestroy {
   }
 
   private insertUser(payload: LoginMasterRequest): void {
-    console.log('[UsersRoles] POST /login-master payload', payload);
 
     this.usersRolesService
       .addUser(payload)
@@ -548,11 +542,6 @@ export class UsersRoles implements OnInit, OnDestroy {
   }
 
   private updateUser(loginID: number, payload: LoginMasterRequest): void {
-    console.log('[UsersRoles] PUT /login-master/{id}', {
-      url: `/api/api/login-master/${loginID}`,
-      loginID,
-      payload,
-    });
 
     this.usersRolesService
       .updateUser(loginID, payload)
@@ -620,10 +609,6 @@ export class UsersRoles implements OnInit, OnDestroy {
     this.isDeleting = true;
     const updatedBy = this.getLoggedInUserId();
 
-    console.log('[UsersRoles] DELETE /login-master/{id}', {
-      loginID: this.userToDeleteId,
-      updatedBy,
-    });
 
     this.usersRolesService
       .deleteUser(this.userToDeleteId, updatedBy)
@@ -716,12 +701,6 @@ export class UsersRoles implements OnInit, OnDestroy {
     // login-master APIs appear to expect the updater's loginID, not the auth subject id.
     const resolvedId = loginMasterId ?? systemUserId ?? 1;
 
-    console.log('[UsersRoles] resolved updatedBy', {
-      resolvedId,
-      loginMasterId,
-      systemUserId,
-      decodedToken,
-    });
 
     return resolvedId;
   }

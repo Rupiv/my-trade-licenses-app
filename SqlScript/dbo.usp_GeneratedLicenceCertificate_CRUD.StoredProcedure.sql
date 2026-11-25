@@ -4,6 +4,16 @@
   2) Allow user panel/API to fetch saved file location for download
 */
 
+-- SAFETY GUARD (security review, 2026-11-24): the API uses dbo.GeneratedLicenceCertificate, not
+-- dbo.LicenceGeneratedCertificate. Do not create a second, unused certificate table.
+IF OBJECT_ID('dbo.GeneratedLicenceCertificate', 'U') IS NOT NULL
+   AND OBJECT_ID('dbo.LicenceGeneratedCertificate', 'U') IS NULL
+BEGIN
+  RAISERROR('Stopped: this database uses dbo.GeneratedLicenceCertificate (API). Re-target this script before running it.', 16, 1);
+  SET NOEXEC ON;
+END;
+GO
+
 IF OBJECT_ID('dbo.LicenceGeneratedCertificate', 'U') IS NULL
 BEGIN
   CREATE TABLE dbo.LicenceGeneratedCertificate

@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { PaymentSuccessService } from './payment-success.service';
 import { LoaderService } from '../loader/loader.service';
+import { NotificationService } from '../notification/notification.service';
 import { TradeLicenceStateService } from '../../services/trade-licenses-service';
 
 @Component({
@@ -33,6 +34,17 @@ export class PaymentSuccess implements OnInit, OnDestroy {
   submissionComplete = false;
 
   private countdownInterval: any;
+  private readonly notifier = inject(NotificationService);
+
+  // Payment is confirmed but the automatic submission failed: the trader must know, and can finish it
+  // with "Complete Submission" on the dashboard (the existing recovery path).
+  private submissionFailed(): void {
+    this.loaderservice.hide();
+    this.notifier.show(
+      'Payment received, but the application could not be submitted automatically. ' +
+      'Please use "Complete Submission" on your dashboard, or contact support with Transaction ID ' + this.txnId + '.',
+      'warning');
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -146,7 +158,7 @@ export class PaymentSuccess implements OnInit, OnDestroy {
 
     this.paymentSuccessService.saveApplicationToTradeLicenseWithPayment(licenceApplicationID).subscribe({
       next: () => this.submitTradeLicenceFinal(licenceApplicationID),
-      error: () => this.loaderservice.hide()
+      error: () => this.submissionFailed()
     });
   }
 
@@ -154,15 +166,15 @@ export class PaymentSuccess implements OnInit, OnDestroy {
     this.resolveTradeLicenceID(licenceApplicationID).subscribe({
       next: (tradeLicenceID) => {
         if (!tradeLicenceID) {
-          this.loaderservice.hide();
+          this.submissionFailed();
           return;
         }
         this.paymentSuccessService.saveApplicationToTradeLicense(tradeLicenceID).subscribe({
           next: () => this.submitLicenceApplicationFinal(licenceApplicationID),
-          error: () => this.loaderservice.hide()
+          error: () => this.submissionFailed()
         });
       },
-      error: () => this.loaderservice.hide()
+      error: () => this.submissionFailed()
     });
   }
 
@@ -204,7 +216,7 @@ export class PaymentSuccess implements OnInit, OnDestroy {
           this.loaderservice.hide();
           return;
         }
-        this.loaderservice.hide();
+        this.submissionFailed();
       }
     });
   }

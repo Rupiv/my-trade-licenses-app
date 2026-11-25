@@ -28,6 +28,14 @@ type ModalType =
 export class MasterDataCompliance {
 
   activeModal: ModalType | null = null;
+  // A failed save keeps the form open; tell the user why (the API message when it sends one)
+  private showSaveError(err: any): void {
+    const msg = err?.error?.message || err?.error?.Message ||
+      (typeof err?.error === 'string' && !err.error.trim().startsWith('<') ? err.error : '') ||
+      'Unable to save. Please try again.';
+    this.notificationService.show(msg, 'error');
+  }
+
   constructor(
     private masterDataComplianceService: MasterDataComplianceService,
     private fb: FormBuilder,
@@ -456,11 +464,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateWard(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMLAConstituencyChange();
               this.wardForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } 
         else {
@@ -475,11 +483,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createWard(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMLAConstituencyChange();
               this.wardForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 
@@ -500,11 +508,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateMajorTrade(majorValue.tradeMajorID, payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadTradeMajors();
               this.majorTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } else {
 
@@ -515,11 +523,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createMajorTrade(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadTradeMajors();
               this.majorTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 
@@ -540,11 +548,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateMinorTrade(minorValue.tradeMinorID, payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMajorChange();
               this.minorTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } else {
 
@@ -556,11 +564,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createMinorTrade(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMajorChange();
               this.minorTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 
@@ -583,11 +591,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateSubTrade(subValue.tradeSubID, payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMinorChange();
               this.subTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } else {
 
@@ -600,11 +608,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createSubTrade(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.onMinorChange();
               this.subTradeForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 
@@ -624,11 +632,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateZone(zoneValue.zoneID, payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadZones();
               this.zoneForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } else {
 
@@ -641,11 +649,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createZone(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadZones();
               this.zoneForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 
@@ -665,11 +673,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .updateZoneClassification(zoneClassValue.zonalClassificationID, payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadZoneClassification();
               this.zoneClassificationForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         } else {
 
@@ -682,11 +690,11 @@ export class MasterDataCompliance {
 
           this.masterDataComplianceService
             .createZoneClassification(payload)
-            .subscribe(() => {
+            .subscribe({ next: () => {
               this.loadZoneClassification();
               this.zoneClassificationForm.reset();
               this.activeModal = null;
-            });
+            }, error: (err) => this.showSaveError(err) });
 
         }
 

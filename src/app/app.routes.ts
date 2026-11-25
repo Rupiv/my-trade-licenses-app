@@ -184,16 +184,21 @@ export const routes: Routes = [
     },
     {
       path: 'approving-officer',
+      canActivate: [AuthGuard, RoleGuard],
+      data: { roles: ['approver', 'approvingofficer'] },
       loadComponent: () => import('./pages/approving-officer/approving-officer')
         .then(m => m.ApprovingOfficer)
     },
     {
       path: 'business-owner',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./pages/business-owner/business-owner')
         .then(m => m.BusinessOwner)
     },
     {
       path: 'new-licenses',
+      canActivate: [AuthGuard, RoleGuard],
+      data: { roles: ['trader', 'tradeowner'] },
       loadComponent: () => import('./pages/new-licenses/new-licenses')
         .then(m => m.NewLicenses)
     },
@@ -209,16 +214,20 @@ export const routes: Routes = [
     },
     {
       path: 'trader-licenses',
+      canActivate: [AuthGuard, RoleGuard],
+      data: { roles: ['trader', 'tradeowner'] },
       loadComponent: () => import('./pages/trader-licenses/trader-licenses')
         .then(m => m.TraderLicenses)
     },
     {
       path: 'dashboard',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./pages/dashboard/dashboard')
         .then(m => m.Dashboard)
     },
     {
       path: 'dashboard-layout',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./layout/dashboard-layout/dashboard-layout')
         .then(m => m.DashboardLayout)
     },
@@ -229,16 +238,20 @@ export const routes: Routes = [
     },
     {
       path: 'license-registration',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./pages/trade-license-registration/trade-license-registration')
         .then(m => m.TradeLicenseRegistration)
     },
     {
       path: 'senior-approving-officer',
+      canActivate: [AuthGuard, RoleGuard],
+      data: { roles: ['seniorapprover', 'seniorapprovingofficer'] },
       loadComponent: () => import('./pages/senior-approving-officer/senior-approving-officer')
         .then(m => m.SeniorApprovingOfficer)
     },
     {
       path: 'approver-renewal-list',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./pages/approver-renewal-list/approver-renewal-list')
         .then(m => m.ApproverRenewalList)
     },
@@ -249,6 +262,7 @@ export const routes: Routes = [
     // },
     {
       path: 'renewal-status',
+      canActivate: [AuthGuard],
       loadComponent: () => import('./pages/renewal-status/renewal-status')
         .then(m => m.RenewalStatus)
     },

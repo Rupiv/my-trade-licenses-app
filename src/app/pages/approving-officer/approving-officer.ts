@@ -159,6 +159,7 @@ export class ApprovingOfficer implements OnDestroy {
           this.visibleStatuses = [];
           this.pages = [];
           this.isLoading = false;
+          this.notificationservice.show('Unable to load the applications. Please try again.', 'error');
           this.cdr.detectChanges();
         }
       });

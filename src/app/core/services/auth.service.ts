@@ -19,6 +19,7 @@ export class AuthService {
       tap(res => {
         if (res.success && res.accessToken) {
           this.tokenService.setToken(res.accessToken);
+          this.tokenService.startTokenTimer(); // auto-logout at expiry for this session too
         }
       })
     );
@@ -29,6 +30,7 @@ export class AuthService {
       tap(res => {
         if (res.success && res.accessToken) {
           this.tokenService.setToken(res.accessToken);
+          this.tokenService.startTokenTimer(); // auto-logout at expiry for this session too
         }
       })
     );
@@ -52,6 +54,8 @@ export class AuthService {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
+    // draft id is not per user: the next trader on this browser must not get it
+    localStorage.removeItem('draftLicenceApplicationId');
     sessionStorage.clear();
   }
 

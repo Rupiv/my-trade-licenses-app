@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
+import { NotificationService } from '../../shared/components/notification/notification.service';
+import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminApplicationFiltersComponent, AdminApplicationFilterState } from './components/admin-application-filters/admin-application-filters';
@@ -37,6 +38,7 @@ export class AdminLicenceApplications implements OnDestroy {
   private filterTimer: ReturnType<typeof setTimeout> | null = null;
   private requestId = 0;
   private readonly subscriptions = new Subscription();
+  private readonly notifier = inject(NotificationService);
 
   constructor(
     private readonly adminApplicationsService: AdminApplicationsService,
@@ -181,7 +183,12 @@ export class AdminLicenceApplications implements OnDestroy {
         if (currentRequest !== this.requestId) {
           return;
         }
-        //console.error('Failed to load admin applications', error);
+        if (error?.status === 403 || error?.status >= 500 || error?.status === 0) {
+          this.notifier.show(
+            error?.error?.message || error?.error?.Message ||
+              (error?.status === 403 ? 'You are not allowed to view these applications.' : 'Unable to load applications. Please try again.'),
+            error?.status === 403 ? 'warning' : 'error');
+        }
         this.applications = [];
         this.statusOptions = [];
         this.totalRecords = 0;

@@ -54,22 +54,22 @@
 
     <div class="summary-card total">
       <h4>Total Demand</h4>
-      <span class="amount">₹ {{summary.TotalDemand | number}}</span>
+      <span class="amount">₹ {{summary?.TotalDemand | number}}</span>
     </div>
 
     <div class="summary-card collected">
       <h4>Total Collected</h4>
-      <span class="amount">₹ {{summary.TotalCollected | number}}</span>
+      <span class="amount">₹ {{summary?.TotalCollected | number}}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending Amount</h4>
-      <span class="amount">₹ {{summary.PendingAmount | number}}</span>
+      <span class="amount">₹ {{summary?.PendingAmount | number}}</span>
     </div>
 
     <div class="summary-card transactions">
       <h4>Total Transactions</h4>
-      <span class="count">{{summary.TotalTransactions | number}}</span>
+      <span class="count">{{summary?.TotalTransactions | number}}</span>
     </div>
 
   </div>

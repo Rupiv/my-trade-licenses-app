@@ -23,6 +23,22 @@ SET XACT_ABORT ON;
 GO
 
 /* ---------------------------------------------------------------------------------------------
+   0) SAFETY GUARD (added during the security review, 2026-11-24)
+   The API stores certificates in dbo.GeneratedLicenceCertificate (EF Core: Id, FileHash, ...).
+   This script targets dbo.LicenceGeneratedCertificate, which the API does not use. Running it on a
+   database that has the API's table would create a second, unused certificate table and leave the
+   real one without the template columns. Stop here until the script is re-targeted to the
+   schema confirmed on staging (Database/Staging_Validation_ReadOnly.sql, section 3).
+   ------------------------------------------------------------------------------------------- */
+IF OBJECT_ID('dbo.GeneratedLicenceCertificate', 'U') IS NOT NULL
+   AND OBJECT_ID('dbo.LicenceGeneratedCertificate', 'U') IS NULL
+BEGIN
+  RAISERROR('Stopped: this database uses dbo.GeneratedLicenceCertificate (API). Re-target this migration before running it.', 16, 1);
+  SET NOEXEC ON; -- nothing below runs in this session
+END;
+GO
+
+/* ---------------------------------------------------------------------------------------------
    1) Acknowledgement table
    ------------------------------------------------------------------------------------------- */
 IF OBJECT_ID('dbo.LicenceGeneratedAcknowledgement', 'U') IS NULL

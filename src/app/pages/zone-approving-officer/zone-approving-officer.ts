@@ -171,6 +171,7 @@ export class ZoneApprovingOfficer implements OnDestroy {
           this.statusOptions = [];
           this.pages = [];
           this.isLoading = false;
+          this.notificationService.show('Unable to load the applications. Please try again.', 'error');
           this.cdr.detectChanges();
         }
       });

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { NotificationService } from '../../notification/notification.service';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -17,6 +18,14 @@ import { LoaderService } from '../../loader/loader.service';
   styleUrl: './control-sheet.css',
 })
 export class ControlSheet implements OnInit {
+  // Shows why a report could not load (e.g. 403: reports are limited to administrators)
+  private readonly reportNotifier = inject(NotificationService);
+  private showReportError(err: any): void {
+    const msg = err?.error?.message || err?.error?.Message ||
+      (err?.status === 403 ? 'This report is not available for your role.' : 'Unable to load the report. Please try again.');
+    this.reportNotifier.show(msg, err?.status === 403 ? 'warning' : 'error');
+  }
+
   // Reports are shared by admin / approver / senior-approver / zone-approver:
   // go back to the reports page of the section this one is open in.
   private readonly sectionRouter = inject(Router);
@@ -50,8 +59,8 @@ export class ControlSheet implements OnInit {
         this.loaderservice.hide();
       },
       error: (err) => {
-        //console.error(err);
         this.loaderservice.hide();
+        this.showReportError(err);
       }
     });
   }

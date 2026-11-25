@@ -58,22 +58,22 @@
 
     <div class="summary-card approved">
       <h4>Approved</h4>
-      <span class="count">{{ totals.Approved | number }}</span>
+      <span class="count">{{ totals?.Approved | number }}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending</h4>
-      <span class="count">{{ totals.Pending | number }}</span>
+      <span class="count">{{ totals?.Pending | number }}</span>
     </div>
 
     <div class="summary-card rejected">
       <h4>Rejected</h4>
-      <span class="count">{{ totals.Rejected | number }}</span>
+      <span class="count">{{ totals?.Rejected | number }}</span>
     </div>
 
     <div class="summary-card total">
       <h4>Total Applications</h4>
-      <span class="count">{{ totals.TotalApplications | number }}</span>
+      <span class="count">{{ totals?.TotalApplications | number }}</span>
     </div>
 
   </div>

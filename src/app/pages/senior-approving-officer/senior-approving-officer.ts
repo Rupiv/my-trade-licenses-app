@@ -146,7 +146,7 @@ export class SeniorApprovingOfficer {
       },
       error: (error) => {
         this.isLoading = false;
-        //console.error('Error fetching submitted inspection applications:', error);
+        this.notificationservice.show('Unable to load the applications. Please try again.', 'error');
         this.cdr.detectChanges();
       }
     });

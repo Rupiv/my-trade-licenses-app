@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { WardWiseLicenses } from './ward-wise-licenses';
 
@@ -8,7 +11,8 @@ describe('WardWiseLicenses', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WardWiseLicenses]
+      imports: [WardWiseLicenses],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
     })
     .compileComponents();
 

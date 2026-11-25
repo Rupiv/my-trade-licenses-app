@@ -483,7 +483,10 @@ autoDetectCurrentLocation() {
       jathaStatus: this.tradeLicenseApplications.jathaStatus || '',
       docsSubmitted: !!this.tradeLicenseApplications.docsSubmitted,
       challanNo: this.tradeLicenseApplications.challanNo || '',
-      noOfYearsApplied: this.tradeLicenseApplications.noOfYearsApplied || 0
+      noOfYearsApplied: this.tradeLicenseApplications.noOfYearsApplied || 0,
+      // Stored with the draft so the API can recompute the payable amount (power fee)
+      powerHP: Number(this.powerHP) || 0,
+      generatorHP: Number(this.generatorHP) || 0
     };
   }
 
@@ -1682,6 +1685,12 @@ fetchRoadWidth(lng: number, lat: number) {
         tradeSubID: Number(t.tradeSubID),
         rate: Number(t.tradeFee ?? 0),
       }));
+      // Declared HP saved with the draft (absent for drafts saved before it was stored)
+      const power = full?.powerDetails ?? full?.PowerDetails;
+      if (power) {
+        this.powerHP = Number(power.powerHP ?? power.PowerHP ?? 0);
+        this.generatorHP = Number(power.generatorHP ?? power.GeneratorHP ?? 0);
+      }
       this.calculateFee();
 
       // Documents already uploaded (applicant does not have to upload them again)
