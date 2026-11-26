@@ -357,12 +357,6 @@
     <button *ngIf="!isSeniorApprover" class="btn btn-warning text-dark" [disabled]="isSubmitting" (click)="submitProcessAction(6)">
       Forward To Higher Authority
     </button>
-    <button *ngIf="!isSeniorApprover" class="btn btn-danger" [disabled]="isSubmitting" (click)="submitProcessAction(4)">
-      Rejected
-    </button>
-    <button *ngIf="!isSeniorApprover" class="btn btn-outline-secondary" [disabled]="isSubmitting" (click)="submitProcessAction(5)">
-      Objection
-    </button>
 
     <button *ngIf="isSeniorApprover" class="btn btn-success" [disabled]="isSubmitting" (click)="submitProcessAction(3)">
       Approved

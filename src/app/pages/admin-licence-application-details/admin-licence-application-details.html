@@ -176,6 +176,7 @@
         Forward To Higher Authority
       </button>
       <button
+        *ngIf="!isZoneApproverRole"
         class="btn btn-outline-secondary"
         type="button"
         [disabled]="isSubmitting"
@@ -184,6 +185,7 @@
         Objection
       </button>
       <button
+        *ngIf="!isZoneApproverRole"
         class="btn btn-danger"
         type="button"
         [disabled]="isSubmitting"
