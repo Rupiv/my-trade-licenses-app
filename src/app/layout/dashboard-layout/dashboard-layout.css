@@ -118,8 +118,14 @@
   transition: all 0.2s ease;
 }
 
+.menu-item i {
+  flex-shrink: 0;
+}
+
 .menu-item span {
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.3;
+  min-width: 0;
 }
 
 .sidebar.collapsed .menu-item span {

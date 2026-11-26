@@ -4,7 +4,7 @@
     <div class="hero-orb orb-b" [style.transform]="layerTransform(-14)"></div>
     <div class="hero-grid" [style.transform]="layerTransform(6)"></div>
     <div class="hero-title-wrap">
-      <p class="hero-eyebrow mb-1">Senior Approval Workflow</p>
+      <p class="hero-eyebrow mb-1">Health Officer Workflow</p>
       <h2 class="hero-title mb-1">Final Decision Queue</h2>
       <p class="hero-subtitle mb-0">Review forwarded files and complete final status decisions.</p>
     </div>
@@ -20,8 +20,9 @@
     </div>
   </section>
 
-  <div class="alert alert-warning">
-    Application <strong>TL-2026-0102</strong> pending final decision beyond SLA
+  <div class="alert alert-warning" *ngIf="overdueCount > 0">
+    {{ overdueCount }} application{{ overdueCount > 1 ? 's' : '' }} pending final decision beyond {{ pendingReminderDays }} days
+    &mdash; please review.
   </div>
 
   <div class="card filter-card mb-3">
@@ -111,6 +112,9 @@
               <td>{{ app.tradeName }}</td>
               <td>
                 <span class="badge bg-info text-dark">{{ app.licenceApplicationStatusName }}</span>
+                <span class="badge bg-danger ms-1" *ngIf="isOverdue(app)" title="Pending beyond the {{ pendingReminderDays }}-day reminder">
+                  &#9888; Pending {{ daysPending(app) }}d
+                </span>
               </td>
             </tr>
           </ng-container>

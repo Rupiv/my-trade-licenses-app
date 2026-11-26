@@ -333,7 +333,7 @@ export class AdminLicenceApplicationDetails {
 
   get isZoneApproverRole(): boolean {
     const normalized = this.normalizeRole(this.role);
-    return normalized === 'zoneapprover' || normalized === 'zonalapprover';
+    return normalized === 'zoneapprover' || normalized === 'zonalapprover' || normalized === 'medicalofficerofhealth';
   }
 
   get canShowReviewActions(): boolean {

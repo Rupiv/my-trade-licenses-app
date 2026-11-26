@@ -355,7 +355,7 @@
     <!-- Inspector may forward directly to the higher authority (senior approver can approve it:
          GBA_SeniorApprovalRule_Fix.sql accepts INSPECTED or FORWARD before approval). -->
     <button *ngIf="!isSeniorApprover" class="btn btn-warning text-dark" [disabled]="isSubmitting" (click)="submitProcessAction(6)">
-      Forward To Higher Authority
+      Recommend
     </button>
 
     <button *ngIf="isSeniorApprover" class="btn btn-success" [disabled]="isSubmitting" (click)="submitProcessAction(3)">

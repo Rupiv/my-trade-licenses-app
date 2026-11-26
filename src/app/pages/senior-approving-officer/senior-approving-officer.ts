@@ -58,6 +58,25 @@ export class SeniorApprovingOfficer {
     this.loadSubmittedInspectionApplications();
   }
 
+  // Health Officer reminder: flag applications still pending past day 45 of the
+  // escalation ladder (15 / 30 / 45 days shared across Health Supervisor, Medical Officer
+  // of Health and Health Officer, all measured from applicationSubmitDate).
+  readonly pendingReminderDays = 45;
+
+  daysPending(app: InspectionSubmittedApplication): number {
+    const submitted = new Date(app?.applicationSubmitDate as any).getTime();
+    if (Number.isNaN(submitted)) return 0;
+    return Math.max(0, Math.floor((Date.now() - submitted) / 86400000));
+  }
+
+  isOverdue(app: InspectionSubmittedApplication): boolean {
+    return this.daysPending(app) > this.pendingReminderDays;
+  }
+
+  get overdueCount(): number {
+    return this.submittedInspectionApplications.filter(app => this.isOverdue(app)).length;
+  }
+
   private loadLookup(): void {
     const loginId = this.resolveLoginId();
     if (!loginId) {

@@ -52,15 +52,15 @@ export class DashboardLayout {
   }
 
   get isSeniorApproverRole(): boolean {
-    return this.normalizedRole === 'seniorapprover' || this.normalizedRole === 'seniorapprovingofficer';
+    return this.normalizedRole === 'seniorapprover' || this.normalizedRole === 'seniorapprovingofficer' || this.normalizedRole === 'healthofficer';
   }
 
   get isApproverRole(): boolean {
-    return this.normalizedRole === 'approver' || this.normalizedRole === 'approvingofficer';
+    return this.normalizedRole === 'approver' || this.normalizedRole === 'approvingofficer' || this.normalizedRole === 'healthsupervisor';
   }
 
   get isZoneApproverRole(): boolean {
-    return this.normalizedRole === 'zoneapprover' || this.normalizedRole === 'zonalapprover';
+    return this.normalizedRole === 'zoneapprover' || this.normalizedRole === 'zonalapprover' || this.normalizedRole === 'medicalofficerofhealth';
   }
 
   get isTradeOwnerRole(): boolean {

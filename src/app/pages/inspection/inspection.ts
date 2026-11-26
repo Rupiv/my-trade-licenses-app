@@ -32,7 +32,7 @@ export class Inspection {
   role = '';
   get isSeniorApprover(): boolean {
     const normalized = this.normalizeRole(this.role);
-    return normalized === 'seniorapprover' || normalized === 'seniorapprovingofficer';
+    return normalized === 'seniorapprover' || normalized === 'seniorapprovingofficer' || normalized === 'healthofficer';
   }
 
   // Mock inspection data (later replace with API)
