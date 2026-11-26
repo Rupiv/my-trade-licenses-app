@@ -13,10 +13,12 @@
  *
  * To add or change a corporation, edit only this file (and drop its seal into public/templates/gba/).
  *
- * Assets in public/templates/gba/ were extracted unchanged from the reference PDFs (PyMuPDF):
- *   gba-logo.png   - GBA emblem (JPEG + its soft mask -> PNG with transparency), identical in all 5 PDFs
- *   watermark.jpg  - temple watermark, original JPEG bytes, identical in all 5 PDFs (already faded)
- *   seal-<code>.jpg - corporation seal, original JPEG bytes, one per PDF
+ * Assets in public/templates/gba/:
+ *   gba-logo.png   - GBA emblem from the official "GBA Final Logo" file (2026-11-26), cropped to the
+ *                    circle, 600 x 600, transparent outside the outer ring
+ *   seal-<code>.jpg - corporation seal from the official "<CODE> Final Logo" file (2026-11-26), cropped
+ *                    to the circle, 600 x 600, white background
+ *   watermark.jpg  - temple watermark, original JPEG bytes from the reference PDFs (already faded)
  * The sample QR code embedded in the PDFs is deliberately NOT used: it is template filler, not a
  * verification code for any real licence.
  */
