@@ -58,9 +58,9 @@ export interface CorporationTemplate {
 /** Assets shared by all five GBA designs. */
 export const GBA_TEMPLATE_ASSETS = {
   /** Greater Bengaluru Authority emblem, top left of both documents. */
-  gbaLogoUrl: '/templates/gba/gba-logo.png',
+  gbaLogoUrl: 'templates/gba/gba-logo.png',
   /** Faded temple watermark behind the body of both documents. */
-  watermarkUrl: '/templates/gba/watermark.jpg',
+  watermarkUrl: 'templates/gba/watermark.jpg',
   authorityName: 'GREATER BENGALURU AUTHORITY',
   departmentName: 'PUBLIC HEALTH DEPARTMENT',
 } as const;
@@ -73,7 +73,7 @@ export const CORPORATION_TEMPLATES: readonly CorporationTemplate[] = [
     fullName: 'BENGALURU CENTRAL CITY CORPORATION',
     certificateTemplateId: 'GBA-CERT-BCCC-V1',
     acknowledgementTemplateId: 'GBA-ACK-BCCC-V1',
-    sealUrl: '/templates/gba/seal-bccc.jpg',
+    sealUrl: 'templates/gba/seal-bccc.jpg',
     certificatePlacement: { seal: [485.5, 45.4, 552.4, 112.0], watermark: [188.9, 260.6, 417.0, 631.2] },
     acknowledgementPlacement: { seal: [478.3, 45.4, 545.2, 112.0], watermark: [200.9, 272.6, 429.0, 643.2] },
     referencePdf: 'docs/templates/Shivajingar.pdf',
@@ -85,7 +85,7 @@ export const CORPORATION_TEMPLATES: readonly CorporationTemplate[] = [
     fullName: 'BENGALURU NORTH CITY CORPORATION',
     certificateTemplateId: 'GBA-CERT-BNCC-V1',
     acknowledgementTemplateId: 'GBA-ACK-BNCC-V1',
-    sealUrl: '/templates/gba/seal-bncc.jpg',
+    sealUrl: 'templates/gba/seal-bncc.jpg',
     certificatePlacement: { seal: [485.5, 45.4, 552.5, 112.6], watermark: [200.9, 272.6, 429.0, 643.2] },
     acknowledgementPlacement: { seal: [480.6, 45.4, 547.6, 112.6], watermark: [188.9, 260.6, 417.0, 631.3] },
     referencePdf: 'docs/templates/Yelahanka.pdf',
@@ -97,7 +97,7 @@ export const CORPORATION_TEMPLATES: readonly CorporationTemplate[] = [
     fullName: 'BENGALURU SOUTH CITY CORPORATION',
     certificateTemplateId: 'GBA-CERT-BSCC-V1',
     acknowledgementTemplateId: 'GBA-ACK-BSCC-V1',
-    sealUrl: '/templates/gba/seal-bscc.jpg',
+    sealUrl: 'templates/gba/seal-bscc.jpg',
     certificatePlacement: { seal: [485.5, 45.4, 552.5, 112.6], watermark: [200.9, 272.6, 429.0, 643.3] },
     acknowledgementPlacement: { seal: [475.3, 49.8, 542.3, 117.0], watermark: [188.9, 260.6, 417.0, 631.3] },
     referencePdf: 'docs/templates/Jayanagar.pdf',
@@ -109,7 +109,7 @@ export const CORPORATION_TEMPLATES: readonly CorporationTemplate[] = [
     fullName: 'BENGALURU EAST CITY CORPORATION',
     certificateTemplateId: 'GBA-CERT-BECC-V1',
     acknowledgementTemplateId: 'GBA-ACK-BECC-V1',
-    sealUrl: '/templates/gba/seal-becc.jpg',
+    sealUrl: 'templates/gba/seal-becc.jpg',
     certificatePlacement: { seal: [485.5, 45.4, 552.5, 112.6], watermark: [180.7, 245.6, 408.8, 616.8] },
     acknowledgementPlacement: { seal: [478.1, 45.4, 545.0, 112.6], watermark: [188.5, 260.9, 417.0, 632.0] },
     referencePdf: 'docs/templates/Mahadevapura.pdf',
@@ -121,7 +121,7 @@ export const CORPORATION_TEMPLATES: readonly CorporationTemplate[] = [
     fullName: 'BENGALURU WEST CITY CORPORATION',
     certificateTemplateId: 'GBA-CERT-BWCC-V1',
     acknowledgementTemplateId: 'GBA-ACK-BWCC-V1',
-    sealUrl: '/templates/gba/seal-bwcc.jpg',
+    sealUrl: 'templates/gba/seal-bwcc.jpg',
     certificatePlacement: { seal: [485.8, 45.4, 550.7, 109.8], watermark: [188.9, 260.6, 417.0, 631.2] },
     acknowledgementPlacement: { seal: [478.6, 45.4, 543.5, 109.8], watermark: [200.9, 272.6, 429.0, 643.2] },
     referencePdf: 'docs/templates/Sadashivanag.pdf',

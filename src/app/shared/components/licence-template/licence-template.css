@@ -213,7 +213,7 @@ table th {
     page-break-inside: avoid;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    background-image: url("/WATERMARK.png");
+    background-image: url("../../../../../public/WATERMARK.png");
     background-repeat: no-repeat;
     background-position: center 25%;
     background-size: 300mm auto;
