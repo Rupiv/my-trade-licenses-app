@@ -270,6 +270,7 @@
           <th>Office</th>
           <th>Designation</th>
           <th>Corporation / Ward (GBA)</th>
+          <th class="center">Status</th>
           <th class="center">Actions</th>
         </tr>
       </thead>
@@ -279,6 +280,7 @@
         <!-- LOADING SKELETON -->
         <ng-container *ngIf="isLoading">
           <tr *ngFor="let i of [1,2,3,4,5]" class="skeleton-row">
+            <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
             <td><div class="skeleton"></div></td>
@@ -305,6 +307,19 @@
               <span class="badge">{{ getDesignationName(u.userDesignationID) }}</span>
             </td>
             <td class="gba-cell">{{ getJurisdictionLabel(u) }}</td>
+            <td class="center">
+              <button
+                class="toggle-btn"
+                [class.toggle-btn--active]="u.isActive === 'Y'"
+                [class.toggle-btn--inactive]="u.isActive !== 'Y'"
+                [disabled]="isToggling[u.loginID]"
+                (click)="toggleUserStatus(u)"
+                [title]="u.isActive === 'Y' ? 'Click to deactivate' : 'Click to activate'"
+              >
+                <span class="toggle-btn__dot"></span>
+                <span class="toggle-btn__label">{{ u.isActive === 'Y' ? 'Active' : 'Inactive' }}</span>
+              </button>
+            </td>
             <td class="center actions-cell">
               <button
                 class="icon-btn icon-btn--edit"
@@ -328,7 +343,7 @@
 
         <!-- NO DATA -->
         <tr *ngIf="!isLoading && users.length === 0">
-          <td colspan="7" class="no-data">
+          <td colspan="8" class="no-data">
             <i class="bi bi-inbox"></i>
             <span>{{ searchText ? 'No users match your search.' : 'No users found.' }}</span>
             <button *ngIf="searchText" class="btn-link" (click)="clearSearch()">Clear search</button>

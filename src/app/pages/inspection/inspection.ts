@@ -340,6 +340,7 @@ export class Inspection {
       next: (items) => {
         this.timeline = items || [];
         this.timelineLoading = false;
+        this.restoreChecklistFromTimeline();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -348,6 +349,20 @@ export class Inspection {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private restoreChecklistFromTimeline(): void {
+    for (let i = this.timeline.length - 1; i >= 0; i--) {
+      const entry = this.timeline[i];
+      const ids = entry.actionReasonIds || entry.ActionReasonIds || '';
+      const parts = ids.split(',').map(s => s.trim());
+      if (parts.length === this.inspectionChecklist.length && parts.every(p => p === '0' || p === '1')) {
+        this.inspectionChecklist.forEach((item, idx) => {
+          item.checked = parts[idx] === '1';
+        });
+        break;
+      }
+    }
   }
 
   submitProcessAction(licenceProcessID: number, currentStatusID?: number) {
@@ -384,13 +399,14 @@ export class Inspection {
     // 👇 Upload photos first, then submit the process action
     this.uploadPhotos()
       .then(() => {
+        const checklistEncoded = this.inspectionChecklist.map(item => item.checked ? '1' : '0').join(',');
         const payload = {
           licenceApplicationID,
           loginID: loginId,
           licenceProcessID,
           currentStatus: resolvedCurrentStatusID,
           remarks,
-          actionReasonIds: ''
+          actionReasonIds: checklistEncoded
         };
 
         //console.log('[Inspection] submitProcessAction payload:', payload);

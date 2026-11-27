@@ -1,0 +1,250 @@
+<div class="master-container">
+  <h4 class="mb-4">Office & Designation Master</h4>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'designation'" (click)="switchTab('designation')">
+        Designation
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'officeType'" (click)="switchTab('officeType')">
+        Office Type
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'officeDetail'" (click)="switchTab('officeDetail')">
+        Office Details
+      </a>
+    </li>
+  </ul>
+
+  <!-- ═══════════ DESIGNATION TAB ═══════════ -->
+  <div *ngIf="activeTab === 'designation'">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Designations</h5>
+      <button class="btn btn-primary btn-sm" (click)="openDesigModal()">
+        <i class="bi bi-plus-circle me-1"></i> Add Designation
+      </button>
+    </div>
+
+    <div *ngIf="desigLoading" class="text-muted">Loading...</div>
+    <table class="table table-bordered table-hover" *ngIf="!desigLoading && designations.length > 0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:60px">ID</th>
+          <th>Designation Name</th>
+          <th style="width:80px">Active</th>
+          <th style="width:140px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of designations">
+          <td>{{ d.userDesignationID }}</td>
+          <td>{{ d.userDesignationName }}</td>
+          <td>
+            <span class="badge" [ngClass]="d.isActive === 'Y' ? 'bg-success' : 'bg-secondary'">
+              {{ d.isActive === 'Y' ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-outline-primary btn-sm me-1" (click)="openDesigModal(d)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteDesignation(d)" *ngIf="d.isActive === 'Y'">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="!desigLoading && designations.length === 0" class="text-muted">No designations found.</div>
+  </div>
+
+  <!-- ═══════════ OFFICE TYPE TAB ═══════════ -->
+  <div *ngIf="activeTab === 'officeType'">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Office Types</h5>
+      <button class="btn btn-primary btn-sm" (click)="openOtModal()">
+        <i class="bi bi-plus-circle me-1"></i> Add Office Type
+      </button>
+    </div>
+
+    <div *ngIf="otLoading" class="text-muted">Loading...</div>
+    <table class="table table-bordered table-hover" *ngIf="!otLoading && officeTypes.length > 0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:60px">ID</th>
+          <th>Office Type Name</th>
+          <th style="width:80px">Active</th>
+          <th style="width:140px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of officeTypes">
+          <td>{{ t.officeTypeID }}</td>
+          <td>{{ t.officeTypeName }}</td>
+          <td>
+            <span class="badge" [ngClass]="t.isActive === 'Y' ? 'bg-success' : 'bg-secondary'">
+              {{ t.isActive === 'Y' ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-outline-primary btn-sm me-1" (click)="openOtModal(t)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteOfficeType(t)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="!otLoading && officeTypes.length === 0" class="text-muted">No office types found.</div>
+  </div>
+
+  <!-- ═══════════ OFFICE DETAIL TAB ═══════════ -->
+  <div *ngIf="activeTab === 'officeDetail'">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Office Details</h5>
+      <button class="btn btn-primary btn-sm" (click)="openOdModal()">
+        <i class="bi bi-plus-circle me-1"></i> Add Office
+      </button>
+    </div>
+
+    <div *ngIf="odLoading" class="text-muted">Loading...</div>
+    <div class="table-responsive" *ngIf="!odLoading && officeDetails.length > 0">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th style="width:60px">ID</th>
+            <th>Office Name</th>
+            <th>Office Type</th>
+            <th>Contact Person</th>
+            <th>Contact No</th>
+            <th>Email</th>
+            <th style="width:140px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of officeDetails">
+            <td>{{ o.officeDetailsID }}</td>
+            <td>{{ o.officeName }}</td>
+            <td>{{ getOfficeTypeName(o.officeTypeID) }}</td>
+            <td>{{ o.contactPerson || '-' }}</td>
+            <td>{{ o.contactNO || '-' }}</td>
+            <td>{{ o.emailID || '-' }}</td>
+            <td>
+              <button class="btn btn-outline-primary btn-sm me-1" (click)="openOdModal(o)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm" (click)="deleteOfficeDetail(o)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="!odLoading && officeDetails.length === 0" class="text-muted">No office details found.</div>
+  </div>
+
+  <!-- ═══════════ DESIGNATION MODAL ═══════════ -->
+  <div class="modal-backdrop" *ngIf="desigModalOpen" (click)="desigModalOpen = false"></div>
+  <div class="modal-dialog-centered custom-modal" *ngIf="desigModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ desigEditMode ? 'Edit' : 'Add' }} Designation</h5>
+        <button type="button" class="btn-close" (click)="desigModalOpen = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Designation Name</label>
+          <input type="text" class="form-control" [(ngModel)]="desigForm.name" placeholder="Enter designation name" />
+        </div>
+        <div class="form-check" *ngIf="desigEditMode">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="desigForm.isActive" id="desigActive" />
+          <label class="form-check-label" for="desigActive">Active</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="desigModalOpen = false">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="saveDesignation()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ OFFICE TYPE MODAL ═══════════ -->
+  <div class="modal-backdrop" *ngIf="otModalOpen" (click)="otModalOpen = false"></div>
+  <div class="modal-dialog-centered custom-modal" *ngIf="otModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ otEditMode ? 'Edit' : 'Add' }} Office Type</h5>
+        <button type="button" class="btn-close" (click)="otModalOpen = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Office Type Name</label>
+          <input type="text" class="form-control" [(ngModel)]="otForm.name" placeholder="Enter office type name" />
+        </div>
+        <div class="form-check" *ngIf="otEditMode">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="otForm.isActive" id="otActive" />
+          <label class="form-check-label" for="otActive">Active</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="otModalOpen = false">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="saveOfficeType()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ OFFICE DETAIL MODAL ═══════════ -->
+  <div class="modal-backdrop" *ngIf="odModalOpen" (click)="odModalOpen = false"></div>
+  <div class="modal-dialog-centered custom-modal" *ngIf="odModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ odEditMode ? 'Edit' : 'Add' }} Office</h5>
+        <button type="button" class="btn-close" (click)="odModalOpen = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Office Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="odForm.officeName" placeholder="Enter office name" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Office Type <span class="text-danger">*</span></label>
+          <select class="form-select" [(ngModel)]="odForm.officeTypeID">
+            <option [ngValue]="0">-- Select Office Type --</option>
+            <option *ngFor="let t of officeTypes" [ngValue]="t.officeTypeID">
+              {{ t.officeTypeName }}
+            </option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Branch Address</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="odForm.branchAddress" placeholder="Branch address"></textarea>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Contact Person</label>
+            <input type="text" class="form-control" [(ngModel)]="odForm.contactPerson" placeholder="Contact person" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contact Number</label>
+            <input type="text" class="form-control" [(ngModel)]="odForm.contactNO" placeholder="Phone number" />
+          </div>
+        </div>
+        <div class="mb-3 mt-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" [(ngModel)]="odForm.emailID" placeholder="Email address" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="odModalOpen = false">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="saveOfficeDetail()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

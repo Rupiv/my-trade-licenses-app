@@ -168,6 +168,12 @@ getDraftByLogin(loginId: number) {
     );
   }
 
+  deleteDocument(applicationDocumentID: number, loginID: number): Observable<any> {
+    return this.http.delete<any>(
+      `${this.baseUrl}/licence-documents/${applicationDocumentID}?loginID=${loginID}`
+    );
+  }
+
   saveLocationDetails(payload: any){
     return this.http.post<any>(`${this.baseUrl}/geolocation/confirm-save`, payload);
   }

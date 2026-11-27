@@ -587,6 +587,37 @@ export class UsersRoles implements OnInit, OnDestroy {
   }
 
   /* ══════════════════════════════════════════
+     TOGGLE ACTIVE STATUS
+  ══════════════════════════════════════════ */
+
+  isToggling: Record<number, boolean> = {};
+
+  toggleUserStatus(user: LoginMaster): void {
+    const userId = this.resolveUserId(user);
+    if (!userId || this.isToggling[userId]) return;
+
+    this.isToggling[userId] = true;
+    this.cdr.markForCheck();
+
+    this.usersRolesService
+      .toggleUserStatus(userId, this.getLoggedInUserId())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          user.isActive = res.isActive;
+          this.isToggling[userId] = false;
+          this.showToast('success', `User ${res.isActive === 'Y' ? 'activated' : 'deactivated'} successfully.`);
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.isToggling[userId] = false;
+          this.showToast('error', this.getApiErrorMessage(err, 'Failed to toggle user status.'));
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  /* ══════════════════════════════════════════
      DELETE  ✅ uses modal, not browser confirm
   ══════════════════════════════════════════ */
 

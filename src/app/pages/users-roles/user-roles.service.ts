@@ -190,4 +190,9 @@ export class UsersRolesService {
   saveUserJurisdiction(loginId: number, req: UserJurisdictionRequest): Observable<any> {
     return this.http.put<any>(`${this.gbaUrl}/user-jurisdiction/${loginId}`, req);
   }
+
+  toggleUserStatus(id: number, updatedBy: number): Observable<{ loginID: number; isActive: string }> {
+    const params = new HttpParams().set('updatedBy', updatedBy);
+    return this.http.patch<{ loginID: number; isActive: string }>(`${this.loginMasterUrl}/${id}/toggle-status`, null, { params });
+  }
 }

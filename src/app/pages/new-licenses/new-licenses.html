@@ -620,7 +620,7 @@
               <small class="d-block text-success" *ngIf="!documents['electricityBill'] && documentFileName('electricityBill')">✔ Already uploaded: {{ documentFileName('electricityBill') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
-            <td>Occupancy Certificate</td>
+            <td class="required">Occupancy Certificate</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'oc', 8)">
               <small class="d-block text-success" *ngIf="!documents['oc'] && documentFileName('oc')">✔ Already uploaded: {{ documentFileName('oc') }} (choose a file only to replace it)</small></td>
@@ -651,36 +651,74 @@
             </td>
           </tr>
           <tr>
-            <td>Details of no objections and other sanctions</td>
+            <td class="required">Details of no objections and other sanctions</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'noc', 7)">
               <small class="d-block text-success" *ngIf="!documents['noc'] && documentFileName('noc')">✔ Already uploaded: {{ documentFileName('noc') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
-            <td>Plan sanction details</td>
+            <td class="required">Plan sanction details</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'psd', 6)">
               <small class="d-block text-success" *ngIf="!documents['psd'] && documentFileName('psd')">✔ Already uploaded: {{ documentFileName('psd') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
-            <td>Commencement certificate details</td>
+            <td class="required">Commencement certificate details</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'ccd', 5)">
               <small class="d-block text-success" *ngIf="!documents['ccd'] && documentFileName('ccd')">✔ Already uploaded: {{ documentFileName('ccd') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
-            <td>Tax paid receipt</td>
+            <td class="required">Tax paid receipt</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'taxReceipt', 4)">
               <small class="d-block text-success" *ngIf="!documents['taxReceipt'] && documentFileName('taxReceipt')">✔ Already uploaded: {{ documentFileName('taxReceipt') }} (choose a file only to replace it)</small></td>
           </tr>
           <tr>
-            <td>Khata receipt</td>
+            <td class="required">Khata receipt</td>
             <td><input type="file" accept="application/pdf"
                       (change)="onFileChange($event,'khataReceipt', 3)">
               <small class="d-block text-success" *ngIf="!documents['khataReceipt'] && documentFileName('khataReceipt')">✔ Already uploaded: {{ documentFileName('khataReceipt') }} (choose a file only to replace it)</small></td>
           </tr>
         </table>
+
+        <!-- OTHER DOCUMENTS GRID -->
+        <h5 class="section-title mt-4">Other Supporting Documents</h5>
+        <table class="table table-bordered table-sm">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px">#</th>
+              <th>Document Name</th>
+              <th style="width: 280px">Upload (PDF only)</th>
+              <th style="width: 80px">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let od of otherDocuments; let i = index">
+              <td class="text-center align-middle">{{ i + 1 }}</td>
+              <td>
+                <input type="text" class="form-control form-control-sm"
+                       [(ngModel)]="od.description" placeholder="Enter document name">
+              </td>
+              <td>
+                <input type="file" accept="application/pdf" class="form-control form-control-sm"
+                       (change)="onOtherDocFileChange($event, i)">
+                <small class="d-block text-success" *ngIf="!od.file && od.fileName">✔ Already uploaded: {{ od.fileName }}</small>
+              </td>
+              <td class="text-center align-middle">
+                <button class="btn btn-outline-danger btn-sm" (click)="removeOtherDocument(i)" title="Remove">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!otherDocuments.length">
+              <td colspan="4" class="text-center text-muted">No other documents added</td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-outline-primary btn-sm mb-3" (click)="addOtherDocument()">
+          <i class="bi bi-plus-circle"></i> Add Document
+        </button>
 
         <h5 class="section-title mt-4">Power / Generator Details</h5>
 
@@ -855,6 +893,25 @@
             </tr>
           </tbody>
         </table>
+
+        <div *ngIf="otherDocuments.length">
+          <h5 class="section-title mt-3">Other Supporting Documents</h5>
+          <table class="table table-bordered table-sm">
+            <thead class="table-light">
+              <tr><th>#</th><th>Document Name</th><th>File</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let od of otherDocuments; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ od.description || 'Other Document' }}</td>
+                <td>
+                  <span *ngIf="od.fileName" class="text-success">✔ {{ od.fileName }}</span>
+                  <span *ngIf="!od.fileName" class="text-muted">Not uploaded</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <h5 class="section-title mt-4">Trade & Fee Summary</h5>
 

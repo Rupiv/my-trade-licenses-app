@@ -31,6 +31,7 @@ import { PaymentFailed } from './shared/components/payment-failed/payment-failed
 import { ZoneApprovingOfficer } from './pages/zone-approving-officer/zone-approving-officer';
 import { ZoneapproverDashboard } from './layout/zoneapprover-dashboard/zoneapprover-dashboard';
 import { ApplicationWiseLicenses } from './shared/components/reports/application-wise-licenses/application-wise-licenses';
+import { MasterOfficeDesignation } from './pages/master-office-designation/master-office-designation';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/auth.roleguard';
 
@@ -70,6 +71,7 @@ export const routes: Routes = [
       { path: 'user-roles', component: UsersRoles },
       { path: 'system-settings', component: SystemSettings },
       { path: 'master-data-compliance', component: MasterDataCompliance },
+      { path: 'master-office-designation', component: MasterOfficeDesignation },
       { path: 'licence-certificate-lookup', component: LicenceCertificateLookup },
       { path: 'licence-certificate/:licensesApplicationId', component: LicenceCertificate },
       { path: 'licence-acknowledgement/:licenceApplicationId', component: LicenceAcknowledgement },

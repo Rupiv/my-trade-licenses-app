@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { GoogleMapsModule } from '@angular/google-maps';
@@ -78,13 +79,27 @@ export class AdminLicenceApplicationDetails {
     draggable: false
   };
 
+  // GBA mapping
+  private readonly gbaUrl = '/api/api/gba';
+  gbaLocation: any = null;
+  gbaCandidates: any[] = [];
+  gbaCorporations: any[] = [];
+  gbaZones: any[] = [];
+  gbaWards: any[] = [];
+  selectedCorporationId: number | null = null;
+  selectedZoneId: number | null = null;
+  selectedWardId: number | null = null;
+  gbaLoading = false;
+  gbaSaving = false;
+
   constructor(
     private route: ActivatedRoute,
     private portalAdminService: PortalAdminService,
     private inspectionService: InspectionService,
     private tokenService: TokenService,
     private notificationService: NotificationService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -115,6 +130,9 @@ export class AdminLicenceApplicationDetails {
             this.errorMessage = 'Application not found.';
           } else {
             this.loadDocumentDetails(this.details.licenceApplicationID);
+            if (this.normalizeRole(this.role) === 'admin') {
+              this.loadGbaLocation(this.details.tradeLicenceID);
+            }
           }
           this.cdr.detectChanges();
         },
@@ -146,6 +164,7 @@ export class AdminLicenceApplicationDetails {
       next: (items) => {
         this.timeline = items || [];
         this.timelineLoading = false;
+        this.restoreChecklistFromTimeline();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -154,6 +173,20 @@ export class AdminLicenceApplicationDetails {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private restoreChecklistFromTimeline(): void {
+    for (let i = this.timeline.length - 1; i >= 0; i--) {
+      const entry = this.timeline[i];
+      const ids = (entry as any).actionReasonIds || (entry as any).ActionReasonIds || '';
+      const parts = ids.split(',').map((s: string) => s.trim());
+      if (parts.length === this.inspectionChecklist.length && parts.every((p: string) => p === '0' || p === '1')) {
+        this.inspectionChecklist.forEach((item, idx) => {
+          item.checked = parts[idx] === '1';
+        });
+        break;
+      }
+    }
   }
 
   downloadDocument(): void {
@@ -327,7 +360,7 @@ export class AdminLicenceApplicationDetails {
     return status.includes('INSPECT');
   }
 
-  private normalizeRole(role: string | null | undefined): string {
+  normalizeRole(role: string | null | undefined): string {
     return (role ?? '').toLowerCase().replace(/[\s_-]+/g, '');
   }
 
@@ -341,5 +374,105 @@ export class AdminLicenceApplicationDetails {
       return true;
     }
     return this.canForwardToSenior;
+  }
+
+  // ─── GBA Location Mapping ───────────────────────────
+  loadGbaLocation(tradeLicenceId: number): void {
+    this.gbaLoading = true;
+    this.http.get<any>(`${this.gbaUrl}/licence/${tradeLicenceId}`).subscribe({
+      next: (res) => {
+        this.gbaLocation = res?.location ?? null;
+        this.gbaCandidates = res?.candidates ?? [];
+        this.gbaLoading = false;
+        if (this.gbaLocation) {
+          this.selectedCorporationId = this.gbaLocation.corporationID ?? null;
+          const wardId = this.gbaLocation.gbaWardID ?? this.gbaLocation.suggestedGbaWardID;
+          this.selectedWardId = wardId ?? null;
+        }
+        this.loadGbaCorporations();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.gbaLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadGbaCorporations(): void {
+    this.http.get<any[]>(`${this.gbaUrl}/corporations`).subscribe({
+      next: (data) => {
+        this.gbaCorporations = data ?? [];
+        if (this.selectedCorporationId) {
+          this.onCorporationChange(false);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  onCorporationChange(resetWard = true): void {
+    this.gbaZones = [];
+    this.gbaWards = [];
+    if (resetWard) {
+      this.selectedZoneId = null;
+      this.selectedWardId = null;
+    }
+    if (!this.selectedCorporationId) return;
+
+    this.http.get<any[]>(`${this.gbaUrl}/corporations/${this.selectedCorporationId}/zones`).subscribe({
+      next: (data) => {
+        this.gbaZones = data ?? [];
+        if (this.selectedZoneId || !resetWard) {
+          this.onZoneChange(resetWard);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  onZoneChange(resetWard = true): void {
+    this.gbaWards = [];
+    if (resetWard) {
+      this.selectedWardId = null;
+    }
+    if (!this.selectedCorporationId) return;
+
+    let params = new HttpParams().set('corporationId', this.selectedCorporationId);
+    if (this.selectedZoneId) {
+      params = params.set('zoneId', this.selectedZoneId);
+    }
+    this.http.get<any[]>(`${this.gbaUrl}/wards`, { params }).subscribe({
+      next: (data) => {
+        this.gbaWards = data ?? [];
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  saveGbaMapping(): void {
+    if (!this.selectedWardId || !this.details?.tradeLicenceID) {
+      this.notificationService.show('Please select a ward before saving', 'warning');
+      return;
+    }
+    this.gbaSaving = true;
+    this.http.put<any>(`${this.gbaUrl}/licence/${this.details.tradeLicenceID}/assign`, {
+      gbaWardID: this.selectedWardId
+    }).subscribe({
+      next: () => {
+        this.gbaSaving = false;
+        this.notificationService.show('GBA location mapped successfully', 'success');
+        this.loadGbaLocation(this.details!.tradeLicenceID);
+      },
+      error: (err) => {
+        this.gbaSaving = false;
+        const msg = err?.error?.message || err?.error?.Message || 'Failed to save GBA mapping';
+        this.notificationService.show(msg, 'error');
+        this.cdr.detectChanges();
+      }
+    });
   }
 }
