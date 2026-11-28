@@ -300,6 +300,25 @@ export class ZoneApprovingOfficer implements OnDestroy {
     return 'badge text-bg-secondary';
   }
 
+  // Medical Officer of Health reminder: flag applications still pending past day 30 of the
+  // escalation ladder (15 / 30 / 45 days shared across Health Supervisor, Medical Officer
+  // of Health and Health Officer, all measured from applicationSubmitDate).
+  readonly pendingReminderDays = 30;
+
+  daysPending(app: ZoneApproverApplication): number {
+    const submitted = new Date(app?.applicationSubmitDate as any).getTime();
+    if (Number.isNaN(submitted)) return 0;
+    return Math.max(0, Math.floor((Date.now() - submitted) / 86400000));
+  }
+
+  isOverdue(app: ZoneApproverApplication): boolean {
+    return this.daysPending(app) > this.pendingReminderDays;
+  }
+
+  get overdueCount(): number {
+    return this.pageApplications.filter(app => this.isOverdue(app)).length;
+  }
+
   get showingFrom(): number {
     if (!this.displayTotalRecords) {
       return 0;

@@ -5,7 +5,7 @@
       <div class="hero-orb orb-b" [style.transform]="layerTransform(-12)"></div>
       <div class="hero-grid" [style.transform]="layerTransform(5)"></div>
       <div class="hero-title-wrap">
-        <p class="hero-eyebrow mb-1">Approver Workflow</p>
+        <p class="hero-eyebrow mb-1">Health Supervisor Workflow</p>
         <h2 class="hero-title mb-1">Application Review Queue</h2>
         <p class="hero-subtitle mb-0">
           Filter applications, review details, and open inspection from the grid.
@@ -69,6 +69,11 @@
       </div>
     </section>
 
+    <div class="alert alert-warning" *ngIf="overdueCount > 0">
+      {{ overdueCount }} application{{ overdueCount > 1 ? 's' : '' }} pending beyond {{ pendingReminderDays }} days
+      &mdash; please review.
+    </div>
+
     <div class="visible-statuses mb-3" *ngIf="visibleStatuses.length > 0">
       <small class="d-block mb-2">Visible Statuses</small>
       <div class="d-flex gap-2 flex-wrap">
@@ -122,6 +127,9 @@
                 <td>
                   <span [class]="getStatusBadgeClass(app.licenceApplicationStatusName)">
                     {{ app.licenceApplicationStatusName }}
+                  </span>
+                  <span class="badge bg-danger ms-1" *ngIf="isOverdue(app)" title="Pending beyond the {{ pendingReminderDays }}-day reminder">
+                    &#9888; Pending {{ daysPending(app) }}d
                   </span>
                 </td>
               </tr>

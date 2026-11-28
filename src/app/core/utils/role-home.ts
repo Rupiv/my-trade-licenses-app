@@ -16,12 +16,15 @@ export function getRoleHomeRoute(role: string | null | undefined): string | null
       return '/trader';
     case 'approver':
     case 'approvingofficer':
+    case 'healthsupervisor':
       return '/approver';
     case 'seniorapprover':
     case 'seniorapprovingofficer':
+    case 'healthofficer':
       return '/senior-approver';
     case 'zoneapprover':
     case 'zonalapprover':
+    case 'medicalofficerofhealth':
       return '/zone-approver';
     default:
       return null;

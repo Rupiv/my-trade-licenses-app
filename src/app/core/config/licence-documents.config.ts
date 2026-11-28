@@ -4,6 +4,9 @@
  * Single source of truth for the "Documents" step of the new-licence form (pages/new-licenses) and
  * the public "Required Documents" list on the Help & Support page. `documentId` is the DocumentID of
  * the document master (usp_MasterDocument_CRUD) that the upload is saved against.
+ *
+ * All nine are mandatory (changed from three in upstream commit 22a2389); the Documents step
+ * enforces every `required` entry.
  */
 export interface LicenceDocumentDefinition {
   readonly key: string;
@@ -15,13 +18,13 @@ export interface LicenceDocumentDefinition {
 export const LICENCE_DOCUMENTS: readonly LicenceDocumentDefinition[] = [
   { key: 'ownerConsent', documentId: 1, label: 'Owner Consent / Lease Agreement', required: true },
   { key: 'electricityBill', documentId: 9, label: 'Electricity Bill', required: true },
-  { key: 'oc', documentId: 8, label: 'Occupancy Certificate', required: false },
+  { key: 'oc', documentId: 8, label: 'Occupancy Certificate', required: true },
   { key: 'neighbour', documentId: 2, label: 'Neighbour Consent', required: true },
-  { key: 'noc', documentId: 7, label: 'Details of no objections and other sanctions', required: false },
-  { key: 'psd', documentId: 6, label: 'Plan sanction details', required: false },
-  { key: 'ccd', documentId: 5, label: 'Commencement certificate details', required: false },
-  { key: 'taxReceipt', documentId: 4, label: 'Tax paid receipt', required: false },
-  { key: 'khataReceipt', documentId: 3, label: 'Khata receipt', required: false },
+  { key: 'noc', documentId: 7, label: 'Details of no objections and other sanctions', required: true },
+  { key: 'psd', documentId: 6, label: 'Plan sanction details', required: true },
+  { key: 'ccd', documentId: 5, label: 'Commencement certificate details', required: true },
+  { key: 'taxReceipt', documentId: 4, label: 'Tax paid receipt', required: true },
+  { key: 'khataReceipt', documentId: 3, label: 'Khata receipt', required: true },
 ];
 
 /** Steps of the new-licence form, in the order of its stepper (pages/new-licenses). */

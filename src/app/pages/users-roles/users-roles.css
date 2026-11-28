@@ -673,6 +673,67 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 /* ═══════════════════════════════════════════════════
+   TOGGLE BUTTON (Activate / Deactivate)
+══════════════════════════════════════════════════ */
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.35rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 999px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.toggle-btn:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-btn__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.25s;
+}
+
+.toggle-btn--active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.toggle-btn--active .toggle-btn__dot {
+  background: #22c55e;
+}
+
+.toggle-btn--inactive {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.toggle-btn--inactive .toggle-btn__dot {
+  background: #ef4444;
+}
+
+/* Inactive user row styling */
+:host ::ng-deep tr:has(.toggle-btn--inactive) {
+  opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════ */
 

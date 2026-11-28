@@ -12,9 +12,9 @@ const MOBILE_BREAKPOINT_PX = 992;
 
 const PORTAL_SUBTITLES: Record<string, string> = {
   admin: 'Admin Portal',
-  approver: 'Approving Officer Portal',
-  seniorapprover: 'Senior Approving Officer Portal',
-  zoneapprover: 'Zone Approver Portal',
+  approver: 'Health Supervisor Portal',
+  seniorapprover: 'Health Officer Portal',
+  zoneapprover: 'Medical Officer of Health Portal',
   trader: 'Trader Portal',
 };
 
@@ -71,15 +71,15 @@ export class DashboardLayout {
   }
 
   get isSeniorApproverRole(): boolean {
-    return this.normalizedRole === 'seniorapprover' || this.normalizedRole === 'seniorapprovingofficer';
+    return this.normalizedRole === 'seniorapprover' || this.normalizedRole === 'seniorapprovingofficer' || this.normalizedRole === 'healthofficer';
   }
 
   get isApproverRole(): boolean {
-    return this.normalizedRole === 'approver' || this.normalizedRole === 'approvingofficer';
+    return this.normalizedRole === 'approver' || this.normalizedRole === 'approvingofficer' || this.normalizedRole === 'healthsupervisor';
   }
 
   get isZoneApproverRole(): boolean {
-    return this.normalizedRole === 'zoneapprover' || this.normalizedRole === 'zonalapprover';
+    return this.normalizedRole === 'zoneapprover' || this.normalizedRole === 'zonalapprover' || this.normalizedRole === 'medicalofficerofhealth';
   }
 
   get isTradeOwnerRole(): boolean {

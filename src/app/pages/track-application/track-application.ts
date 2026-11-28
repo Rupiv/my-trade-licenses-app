@@ -144,16 +144,24 @@ export class TrackApplication {
     );
   }
 
+  get canViewAcknowledgement(): boolean {
+    if (!this.selectedApplication?.applicationNumber) return false;
+    const status = this.normalizedStatus;
+    return status !== '' && status !== 'DRAFT' && status !== 'PAYMENT PENDING' && status !== 'SAVED';
+  }
+
   get canDownloadCertificate(): boolean {
-    const status = (
+    return this.normalizedStatus === 'APPROVED';
+  }
+
+  private get normalizedStatus(): string {
+    return (
       this.selectedApplication?.licenceApplicationStatusName ||
       this.selectedApplication?.currentStatusDescription ||
       ''
     )
       .trim()
       .toUpperCase();
-
-    return status === 'APPROVED';
   }
 
   /**
@@ -163,7 +171,7 @@ export class TrackApplication {
   openAcknowledgement(): void {
     const app = this.selectedApplication;
     if (!app?.licenceApplicationID || !app.applicationNumber) {
-      this.notificationService.show('The acknowledgement is available once the application is submitted.', 'warning');
+      this.notificationService.show('The acknowledgement is available only after payment is successfully done.', 'warning');
       return;
     }
     this.router.navigate(['/trader/licence-acknowledgement', app.licenceApplicationID]);

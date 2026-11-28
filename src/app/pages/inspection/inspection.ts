@@ -51,8 +51,19 @@ export class Inspection implements OnDestroy {
   role = '';
   get isSeniorApprover(): boolean {
     const normalized = this.normalizeRole(this.role);
-    return normalized === 'seniorapprover' || normalized === 'seniorapprovingofficer';
+    return normalized === 'seniorapprover' || normalized === 'seniorapprovingofficer' || normalized === 'healthofficer';
   }
+
+  /**
+   * Inspection checklist. Saved with the workflow action as actionReasonIds "1,0,1,1" (one flag
+   * per item, in this order) and restored from the timeline; keep the order stable.
+   */
+  inspectionChecklist = [
+    { label: 'Trade name board displayed', checked: false },
+    { label: 'Fire safety compliance', checked: false },
+    { label: 'Waste disposal arrangement', checked: false },
+    { label: 'Health & hygiene maintained', checked: false }
+  ];
 
   readonly remarksMaxLength = REMARKS_MAX_LENGTH;
   remarks: string = '';
@@ -322,6 +333,7 @@ export class Inspection implements OnDestroy {
       next: (items) => {
         this.timeline = items || [];
         this.timelineLoading = false;
+        this.restoreChecklistFromTimeline();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -330,6 +342,20 @@ export class Inspection implements OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private restoreChecklistFromTimeline(): void {
+    for (let i = this.timeline.length - 1; i >= 0; i--) {
+      const entry = this.timeline[i];
+      const ids = entry.actionReasonIds || entry.ActionReasonIds || '';
+      const parts = ids.split(',').map(s => s.trim());
+      if (parts.length === this.inspectionChecklist.length && parts.every(p => p === '0' || p === '1')) {
+        this.inspectionChecklist.forEach((item, idx) => {
+          item.checked = parts[idx] === '1';
+        });
+        break;
+      }
+    }
   }
 
   submitProcessAction(licenceProcessID: number, currentStatusID?: number) {
@@ -372,13 +398,15 @@ export class Inspection implements OnDestroy {
           this.inspectionPhotos = [];
           this.loadSavedInspectionPhotos();
         }
+        // Checklist is stored with the action as "1,0,1,1" (one flag per item, in order)
+        const checklistEncoded = this.inspectionChecklist.map(item => item.checked ? '1' : '0').join(',');
         const payload = {
           licenceApplicationID,
           loginID: loginId,
           licenceProcessID,
           currentStatus: resolvedCurrentStatusID,
           remarks,
-          actionReasonIds: ''
+          actionReasonIds: checklistEncoded
         };
 
         //console.log('[Inspection] submitProcessAction payload:', payload);

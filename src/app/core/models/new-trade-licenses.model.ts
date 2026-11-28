@@ -191,6 +191,7 @@ export interface LicenseDocuments{
   FileExtension: string;
   FileSizeKB: number;
   EntryDate: string;
+  DocumentDescription?: string;
 }
 
 export interface RoadWidthDetails{

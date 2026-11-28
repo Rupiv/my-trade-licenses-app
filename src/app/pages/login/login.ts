@@ -209,11 +209,11 @@ export class Login {
           this.router.navigate(['/admin']);
         } else if (role === 'trader' || role === 'tradeowner') {
           this.goToTrader();
-        } else if (role === 'approver' || role === 'approvingofficer') {
+        } else if (role === 'approver' || role === 'approvingofficer' || role === 'healthsupervisor') {
           this.router.navigate(['/approver']);
-        } else if (role === 'seniorapprover' || role === 'seniorapprovingofficer') {
+        } else if (role === 'seniorapprover' || role === 'seniorapprovingofficer' || role === 'healthofficer') {
           this.router.navigate(['/senior-approver']);
-        } else if (role === 'zoneapprover' || role === 'zonalapprover') {
+        } else if (role === 'zoneapprover' || role === 'zonalapprover' || role === 'medicalofficerofhealth') {
           this.router.navigate(['/zone-approver']);
         } else {
           this.notificationService.show(

@@ -81,9 +81,16 @@ export class ApplicationFullDetails implements OnChanges {
 
   viewCertificate(): void {
     if (!this.licenceApplicationId) return;
-    this.router.navigate([`${this.sectionPrefix}/licence-certificate`, this.licenceApplicationId], {
-      queryParams: { from: this.sectionPrefix.slice(1) },
-    });
+    const appNo = this.view?.final?.applicationNumber;
+    if (appNo) {
+      this.router.navigate([`${this.sectionPrefix}/licence-certificate`, appNo], {
+        queryParams: { from: this.sectionPrefix.slice(1), licenceApplicationId: this.licenceApplicationId },
+      });
+    } else {
+      this.router.navigate([`${this.sectionPrefix}/licence-certificate`, this.licenceApplicationId], {
+        queryParams: { from: this.sectionPrefix.slice(1) },
+      });
+    }
   }
 
   /** Submitted, gateway-confirmed payment, configured GBA corporation (see acknowledgementBlocker). */

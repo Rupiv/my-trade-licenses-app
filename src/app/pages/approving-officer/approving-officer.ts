@@ -254,6 +254,25 @@ export class ApprovingOfficer implements OnDestroy {
     return 'status-badge neutral';
   }
 
+  // Health Supervisor reminder: flag applications still pending past day 15 of the
+  // escalation ladder (15 / 30 / 45 days shared across Health Supervisor, Medical Officer
+  // of Health and Health Officer, all measured from applicationSubmitDate).
+  readonly pendingReminderDays = 15;
+
+  daysPending(app: AllApprovedApplication): number {
+    const submitted = new Date(app?.applicationSubmitDate as any).getTime();
+    if (Number.isNaN(submitted)) return 0;
+    return Math.max(0, Math.floor((Date.now() - submitted) / 86400000));
+  }
+
+  isOverdue(app: AllApprovedApplication): boolean {
+    return this.daysPending(app) > this.pendingReminderDays;
+  }
+
+  get overdueCount(): number {
+    return this.pageApplications.filter(app => this.isOverdue(app)).length;
+  }
+
   get showingTo(): number {
     return Math.min(
       (this.pageNumber - 1) * this.pageSize + this.pageApplications.length,

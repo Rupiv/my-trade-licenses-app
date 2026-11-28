@@ -82,11 +82,10 @@ describe('Inspection', () => {
     expect(component).toBeTruthy();
   });
 
-  it('has no mock checklist or no-op "Save Draft" button', () => {
+  it('has no no-op "Save Draft" button', () => {
     http.expectOne(APPROVER_LIST).flush({ totalRecords: 0, data: [] });
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).not.toContain('Inspection Checklist');
     expect(text).not.toContain('Save Draft');
   });
 
@@ -135,6 +134,21 @@ describe('Inspection', () => {
       reqs[0].flush('Invalid Remarks', { status: 400, statusText: 'Bad Request' });
       expect(component.isSubmitting).toBe(false);
       expect(notify).toHaveBeenCalledWith('Invalid Remarks', 'error');
+    });
+
+    // The checklist is persisted with the action as actionReasonIds (one flag per item, in order);
+    // the API accepts only [0-9,] there.
+    it('saves the inspection checklist with the action', async () => {
+      component.remarks = 'Site verified';
+      component.inspectionChecklist[0].checked = true;
+      component.inspectionChecklist[2].checked = true;
+      component.submitProcessAction(7);
+      await Promise.resolve();
+      await Promise.resolve();
+      const req = http.expectOne(SUBMIT);
+      expect(req.request.body.actionReasonIds).toBe('1,0,1,0');
+      expect(req.request.body.actionReasonIds).toMatch(/^[0-9,]*$/);
+      req.flush({});
     });
   });
 });

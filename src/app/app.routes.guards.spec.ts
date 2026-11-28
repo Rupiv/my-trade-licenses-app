@@ -9,11 +9,11 @@ describe('route guards', () => {
   it.each([
     ['admin', ['admin']],
     ['trader', ['trader', 'tradeowner']],
-    ['approver', ['approver', 'approvingofficer']],
-    ['senior-approver', ['seniorapprover', 'seniorapprovingofficer']],
-    ['zone-approver', ['zoneapprover', 'zonalapprover']],
-    ['approving-officer', ['approver', 'approvingofficer']],
-    ['senior-approving-officer', ['seniorapprover', 'seniorapprovingofficer']],
+    ['approver', ['approver', 'approvingofficer', 'healthsupervisor']],
+    ['senior-approver', ['seniorapprover', 'seniorapprovingofficer', 'healthofficer']],
+    ['zone-approver', ['zoneapprover', 'zonalapprover', 'medicalofficerofhealth']],
+    ['approving-officer', ['approver', 'approvingofficer', 'healthsupervisor']],
+    ['senior-approving-officer', ['seniorapprover', 'seniorapprovingofficer', 'healthofficer']],
     ['new-licenses', ['trader', 'tradeowner']],
     ['trader-licenses', ['trader', 'tradeowner']],
   ])('%s requires login and role %j', (path, roles) => {

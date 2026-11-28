@@ -402,13 +402,17 @@ autoDetectCurrentLocation() {
     });
     y = nextY();
 
+    const docRows: string[][] = this.documentLabels.map(dl => [
+      dl.label + (dl.required ? ' *' : ''),
+      this.documentFileName(dl.key) ?? 'Not uploaded',
+    ]);
+    for (const od of this.otherDocuments) {
+      docRows.push([od.description || 'Other Document', od.fileName || 'Not uploaded']);
+    }
     autoTable(doc, {
       startY: y,
       head: [['Documents Enclosed', 'File']],
-      body: this.documentLabels.map(dl => [
-        dl.label + (dl.required ? ' *' : ''),
-        this.documentFileName(dl.key) ?? 'Not uploaded',
-      ]),
+      body: docRows,
       theme: 'grid',
       headStyles: head,
       styles: { fontSize: 9, cellPadding: 1.8 },
@@ -495,7 +499,8 @@ autoDetectCurrentLocation() {
       noOfYearsApplied: this.tradeLicenseApplications.noOfYearsApplied || 0,
       // Stored with the draft so the API can recompute the payable amount (power fee)
       powerHP: Number(this.powerHP) || 0,
-      generatorHP: Number(this.generatorHP) || 0
+      generatorHP: Number(this.generatorHP) || 0,
+      isParkingAreaProvided: this.parkingProvided === 'yes' ? true : this.parkingProvided === 'no' ? false : null
     };
   }
 
@@ -503,6 +508,7 @@ autoDetectCurrentLocation() {
     return {
       applicantName: this.tradeLicenseApplicationDetails.applicantName,
       doorNumber: this.tradeLicenseApplicationDetails.doorNumber,
+      floorNumber: this.floorNumber || null,
       address1: this.tradeLicenseApplicationDetails.address1,
       address2: this.tradeLicenseApplicationDetails.address2,
       address3: this.tradeLicenseApplicationDetails.address3,
@@ -675,30 +681,20 @@ autoDetectCurrentLocation() {
   ========================= */
   if (this.currentStep === 2) {
 
-    // The trades that count are the ones in the grid (a restored draft has trades but no current
-    // selection). The pickers only need to be filled while nothing has been added yet.
     if (!this.tradeGrid || this.tradeGrid.length === 0) {
-      // 1. Major Trade
+      // No trades in grid — dropdowns must be filled before adding
       if (!this.selectedMajor) {
         this.notificationservice.show('Please select Major Trade', 'warning');
         return;
       }
-
-      // 2. Minor Trade
       if (!this.selectedMinor) {
         this.notificationservice.show('Please select Minor Trade', 'warning');
         return;
       }
-
-      // 3. Sub Trade
       if (!this.selectedSub) {
         this.notificationservice.show('Please select Sub Trade', 'warning');
         return;
       }
-    }
-
-    // 4. Trade Grid (at least one trade must be added)
-    if (!this.tradeGrid || this.tradeGrid.length === 0) {
       this.notificationservice.show('Please add at least one Trade using Add button', 'warning');
       return;
     }
@@ -766,25 +762,13 @@ autoDetectCurrentLocation() {
     ========================= */
     if (this.currentStep === 5) {
 
-      // 1. Owner Consent
-      if (!this.hasDocument('ownerConsent')) {
-        this.notificationservice.show('Please upload Owner Consent / Lease Agreement document', 'warning');
-        return;
+      for (const dl of this.documentLabels) {
+        if (dl.required && !this.hasDocument(dl.key)) {
+          this.notificationservice.show(`Please upload ${dl.label} document`, 'warning');
+          return;
+        }
       }
 
-      // 2. Electricity Bill
-      if (!this.hasDocument('electricityBill')) {
-        this.notificationservice.show('Please upload Electricity Bill document', 'warning');
-        return;
-      }
-
-      // 3. Neighbour Consent
-      if (!this.hasDocument('neighbour')) {
-        this.notificationservice.show('Please upload Neighbour Consent document', 'warning');
-        return;
-      }
-
-      // 4. Power / Generator check (optional but safe)
       if (
         (this.powerHP && this.powerHP < 0) ||
         (this.generatorHP && this.generatorHP < 0)
@@ -793,7 +777,6 @@ autoDetectCurrentLocation() {
         return;
       }
 
-      // Optional sanity check
       if (this.powerFee < 0) {
         this.notificationservice.show('Power fee calculation error', 'warning');
         return;
@@ -885,7 +868,6 @@ autoDetectCurrentLocation() {
 
   tradeGrid: TradeGridItem[] = [];
 
-  // Shown in Preview / application form PDF (no DB column for these two yet)
   floorNumber = '';
   parkingProvided: 'yes' | 'no' | '' = '';
 
@@ -1071,7 +1053,43 @@ autoDetectCurrentLocation() {
     };
   }
 
-  
+  /* =========================
+     OTHER DOCUMENTS GRID
+  ========================= */
+  otherDocuments: { description: string; file: File | null; applicationDocumentID?: number; fileName?: string }[] = [];
+
+  addOtherDocument() {
+    this.otherDocuments.push({ description: '', file: null });
+  }
+
+  removeOtherDocument(index: number) {
+    const item = this.otherDocuments[index];
+    if (item.applicationDocumentID) {
+      const loginId = Number(this.tokenservice.getUserId() ?? 0);
+      this.newLicensesService.deleteDocument(item.applicationDocumentID, loginId).subscribe();
+    }
+    this.otherDocuments.splice(index, 1);
+  }
+
+  onOtherDocFileChange(event: any, index: number) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      this.notificationservice.show('Only PDF files allowed', 'warning');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.notificationservice.show('File size must be less than 5MB', 'warning');
+      event.target.value = '';
+      return;
+    }
+
+    this.otherDocuments[index].file = file;
+    this.otherDocuments[index].fileName = file.name;
+  }
 
   /* =========================
      OTP LOGIC
@@ -1682,6 +1700,13 @@ fetchRoadWidth(lng: number, lat: number) {
         gisNumber: src.GISNumber ?? '',
       };
 
+      // Floor number (stored in Licence_Master_Temp)
+      this.floorNumber = src.floorNumber ?? '';
+
+      // Parking provided (stored as bit in Licence_Application_Temp)
+      const parking = app.IsParkingAreaProvided ?? app.isParkingAreaProvided;
+      this.parkingProvided = parking === true || parking === 1 ? 'yes' : parking === false || parking === 0 ? 'no' : '';
+
       // Proposed commencement is kept in licenceToDate (see bindCommencementDate); only reuse a future date
       const commencement = this.tradeLicenseApplications.licenceToDate;
       const today = new Date();
@@ -1712,9 +1737,19 @@ fetchRoadWidth(lng: number, lat: number) {
 
       // Documents already uploaded (applicant does not have to upload them again)
       this.savedDocuments = {};
+      this.otherDocuments = [];
       for (const d of (full?.documents ?? full?.Documents ?? []) as any[]) {
-        if (d.IsActive === false || d.IsActive === 'N') continue;
-        this.savedDocuments[Number(d.DocumentID)] = d.FileName ?? d.documentName ?? 'Uploaded';
+        if (d.IsActive === false || d.IsActive === 0 || d.IsActive === 'N') continue;
+        if (Number(d.DocumentID) === 11) {
+          this.otherDocuments.push({
+            description: d.DocumentDescription ?? d.FileName ?? 'Other Document',
+            file: null,
+            applicationDocumentID: Number(d.ApplicationDocumentID),
+            fileName: d.FileName ?? 'Uploaded'
+          });
+        } else {
+          this.savedDocuments[Number(d.DocumentID)] = d.FileName ?? d.documentName ?? 'Uploaded';
+        }
       }
 
       // Location + road width (latest saved)
@@ -2104,18 +2139,16 @@ fetchRoadWidth(lng: number, lat: number) {
     draftPayload.tradeLicenceID = tradeLicenceID;
     await firstValueFrom(this.newLicensesService.updateLicenceApplicationDraft(licenceApplicationID, draftPayload));
 
-    // Replace trades: insert the current grid first, then remove the previously saved rows
+    // Replace trades: delete previously saved rows first, then insert the current grid
     const before: any = await firstValueFrom(this.newLicensesService.getDraftFullDetails(licenceApplicationID));
     const oldTradeIds: number[] = (before?.tradeDetails ?? before?.TradeDetails ?? [])
-      .map((t: any) => Number(t.licenceTradeDetailsID))
+      .map((t: any) => Number(t.licenceTradeDetailsID ?? t.LicenceTradeDetailsID))
       .filter((id: number) => id > 0);
 
-    await this.saveTradeDetailsTemp(licenceApplicationID);
-    if (this.tradeGrid.length) {
-      for (const id of oldTradeIds) {
-        await firstValueFrom(this.newLicensesService.deleteTempTradeDetail(id));
-      }
+    for (const id of oldTradeIds) {
+      await firstValueFrom(this.newLicensesService.deleteTempTradeDetail(id));
     }
+    await this.saveTradeDetailsTemp(licenceApplicationID);
 
     await this.saveUserLocationDetails(licenceApplicationID);
     await this.saveOrUpdateDocuments(licenceApplicationID);
@@ -2289,17 +2322,29 @@ fetchRoadWidth(lng: number, lat: number) {
 
             const existingDocsMap = this.buildExistingDocsMap(existingDocs);
             const keys = Object.keys(this.documents);
+            const otherDocsToUpload = this.otherDocuments.filter(od => od.file && od.description.trim());
 
-            if (!keys.length) {
+            if (!keys.length && !otherDocsToUpload.length) {
               resolve(); // nothing to upload
               return;
             }
 
             let completed = 0;
-            const total = keys.length;
+            const total = keys.length + otherDocsToUpload.length;
+
+            const loginId = this.tokenservice.getUserId();
+            if (!loginId) {
+              this.notificationservice.show('Invalid user session');
+              reject('Invalid user session');
+              return;
+            }
+
+            const onDone = () => {
+              completed++;
+              if (completed === total) resolve();
+            };
 
             keys.forEach(key => {
-
               const doc = this.documents[key];
               const existing = existingDocsMap[doc.documentId];
 
@@ -2307,13 +2352,6 @@ fetchRoadWidth(lng: number, lat: number) {
               formData.append('File', doc.file);
               formData.append('LicenceApplicationID', licenceAppId.toString());
               formData.append('DocumentID', doc.documentId.toString());
-
-              const loginId = this.tokenservice.getUserId();
-              if (!loginId) {
-                this.notificationservice.show('Invalid user session');
-                reject('Invalid user session');
-                return;
-              }
               formData.append('LoginID', loginId.toString());
 
               if (existing) {
@@ -2325,30 +2363,24 @@ fetchRoadWidth(lng: number, lat: number) {
 
               this.newLicensesService
                 .saveOrUpdateDocument(formData)
-                .subscribe({
-                  next: () => {
-                    completed++;
-                    // console.log(
-                    //   `${existing ? 'Updated' : 'Inserted'} document`,
-                    //   doc.documentId
-                    // );
+                .subscribe({ next: onDone, error: onDone });
+            });
 
-                    if (completed === total) {
-                      resolve(); // 🔥 all uploads finished
-                    }
-                  },
-                  error: (err) => {
-                    //console.error('Upload failed', err);
+            otherDocsToUpload.forEach(od => {
+              const formData = new FormData();
+              formData.append('File', od.file!);
+              formData.append('LicenceApplicationID', licenceAppId.toString());
+              formData.append('DocumentID', '11');
+              formData.append('LoginID', loginId.toString());
+              formData.append('DocumentDescription', od.description.trim());
 
-                    // ❌ reject(err);
-                    // ✅ allow flow to continue
-                    completed++;
+              if (od.applicationDocumentID) {
+                formData.append('ApplicationDocumentID', od.applicationDocumentID.toString());
+              }
 
-                    if (completed === total) {
-                      resolve(); // continue even if some uploads failed
-                    }
-                  }
-                });
+              this.newLicensesService
+                .saveOrUpdateDocument(formData)
+                .subscribe({ next: onDone, error: onDone });
             });
 
           },
@@ -2500,10 +2532,11 @@ fetchRoadWidth(lng: number, lat: number) {
       next: res => this.redirectToPayment(res?.paymentUrl),
       error: err => {
         this.loaderservice.hide();
+        const body = err?.error;
         const msg =
-          err?.error?.message ||
-          err?.error?.Message ||
-          (typeof err?.error === 'string' ? err.error : '') ||
+          body?.message ||
+          body?.Message ||
+          (typeof body === 'string' && !body.trim().startsWith('<') ? body : '') ||
           'Unable to start payment. Please try again.';
         this.notificationservice.show(msg, 'error');
       }

@@ -9,6 +9,9 @@ describe('getRoleHomeRoute', () => {
     ['Approving Officer', '/approver'],
     ['senior-approver', '/senior-approver'],
     ['zonalapprover', '/zone-approver'],
+    ['Health Supervisor', '/approver'],
+    ['HEALTH_OFFICER', '/senior-approver'],
+    ['Medical Officer of Health', '/zone-approver'],
   ])('%s -> %s', (role, route) => {
     expect(getRoleHomeRoute(role)).toBe(route);
   });

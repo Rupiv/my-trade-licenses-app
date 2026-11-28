@@ -193,23 +193,46 @@
 
 
 
+  <!-- Checklist -->
+  <div class="card section-card">
+    <div class="card-header">Inspection Checklist</div>
+    <div class="card-body">
+      <div
+        class="form-check checklist-item"
+        *ngFor="let item of inspectionChecklist"
+      >
+        <input
+          class="form-check-input"
+          type="checkbox"
+          [(ngModel)]="item.checked"
+          [disabled]="isSeniorApprover"
+        />
+        <label class="form-check-label">
+          {{ item.label }}
+        </label>
+      </div>
+    </div>
+  </div>
+
   <!-- On-Site Inspection Photos -->
   <div class="card section-card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <span>On-Site Inspection Photos</span>
 
-      <input
-        type="file"
-        #cameraInput
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        hidden
-        (change)="onPhotosSelected($event)"
-      />
+      <ng-container *ngIf="!isSeniorApprover">
+        <input
+          type="file"
+          #cameraInput
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          hidden
+          (change)="onPhotosSelected($event)"
+        />
 
-      <button class="btn btn-outline-primary btn-sm" (click)="cameraInput.click()">
-        <i class="bi bi-plus-lg"></i> Add Photo
-      </button>
+        <button class="btn btn-outline-primary btn-sm" (click)="cameraInput.click()">
+          <i class="bi bi-plus-lg"></i> Add Photo
+        </button>
+      </ng-container>
     </div>
 
     <div class="card-body">
@@ -219,7 +242,7 @@
         class="text-muted mb-3"
         *ngIf="savedInspectionPhotoUrls.length === 0 && inspectionPhotos.length === 0"
       >
-        No inspection photos yet. Tap <strong>+ Add Photo</strong> to upload.
+        {{ isSeniorApprover ? 'No inspection photos uploaded by Health Supervisor.' : 'No inspection photos yet. Tap + Add Photo to upload.' }}
       </p>
 
       <div class="row g-3">
@@ -244,41 +267,41 @@
           </div>
         </div>
 
-        <!-- Newly added photos (not yet uploaded) -->
-        <div
-          class="col-md-3 col-sm-4 col-6"
-          *ngFor="let photo of inspectionPhotos; let i = index"
-        >
-          <div class="photo-card position-relative">
-            <img
-              [src]="photo.preview"
-              class="img-fluid rounded photo-preview"
-              alt="New Inspection Photo"
-              style="width:100%; height:160px; object-fit:cover;"
-            />
-            <!-- New badge -->
-            <span
-              class="badge bg-success position-absolute"
-              style="top:6px; left:6px; font-size:10px;"
-            >
-              New
-            </span>
-            <!-- Remove button -->
-            <button
-              class="btn btn-sm btn-danger position-absolute"
-              style="top:4px; right:4px; padding: 2px 6px;"
-              (click)="removePhoto(i)"
-              title="Remove"
-            >
-              <i class="bi bi-x-lg"></i>
-            </button>
-            <div class="text-center mt-1">
-              <small class="text-muted" style="font-size:11px; word-break:break-all;">
-                {{ photo.file.name }}
-              </small>
+        <!-- Newly added photos (not yet uploaded) — Health Supervisor only -->
+        <ng-container *ngIf="!isSeniorApprover">
+          <div
+            class="col-md-3 col-sm-4 col-6"
+            *ngFor="let photo of inspectionPhotos; let i = index"
+          >
+            <div class="photo-card position-relative">
+              <img
+                [src]="photo.preview"
+                class="img-fluid rounded photo-preview"
+                alt="New Inspection Photo"
+                style="width:100%; height:160px; object-fit:cover;"
+              />
+              <span
+                class="badge bg-success position-absolute"
+                style="top:6px; left:6px; font-size:10px;"
+              >
+                New
+              </span>
+              <button
+                class="btn btn-sm btn-danger position-absolute"
+                style="top:4px; right:4px; padding: 2px 6px;"
+                (click)="removePhoto(i)"
+                title="Remove"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+              <div class="text-center mt-1">
+                <small class="text-muted" style="font-size:11px; word-break:break-all;">
+                  {{ photo.file.name }}
+                </small>
+              </div>
             </div>
           </div>
-        </div>
+        </ng-container>
 
       </div>
     </div>
@@ -346,7 +369,7 @@
     <!-- Inspector may forward directly to the higher authority (senior approver can approve it:
          GBA_SeniorApprovalRule_Fix.sql accepts INSPECTED or FORWARD before approval). -->
     <button *ngIf="!isSeniorApprover" class="btn btn-warning text-dark" [disabled]="isSubmitting" (click)="submitProcessAction(6)">
-      Forward To Higher Authority
+      Recommend
     </button>
 
     <button *ngIf="isSeniorApprover" class="btn btn-success" [disabled]="isSubmitting" (click)="submitProcessAction(3)">

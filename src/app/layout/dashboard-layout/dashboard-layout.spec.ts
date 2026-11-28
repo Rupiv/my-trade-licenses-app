@@ -38,9 +38,12 @@ describe('DashboardLayout', () => {
 
   it.each([
     ['admin', 'Admin Portal'],
-    ['approver', 'Approving Officer Portal'],
-    ['seniorapprover', 'Senior Approving Officer Portal'],
-    ['zoneapprover', 'Zone Approver Portal'],
+    ['approver', 'Health Supervisor Portal'],
+    ['seniorapprover', 'Health Officer Portal'],
+    ['zoneapprover', 'Medical Officer of Health Portal'],
+    ['healthsupervisor', 'Health Supervisor Portal'],
+    ['healthofficer', 'Health Officer Portal'],
+    ['medicalofficerofhealth', 'Medical Officer of Health Portal'],
     ['TRADE_OWNER', 'Trader Portal'],
   ])('shows the portal name for %s', async (role, subtitle) => {
     await render(role);

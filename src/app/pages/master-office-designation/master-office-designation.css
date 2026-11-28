@@ -1,0 +1,74 @@
+.master-container {
+  padding: 1.5rem;
+  max-width: 1100px;
+}
+
+.nav-tabs .nav-link {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+  font-weight: 600;
+  border-bottom: 2px solid #0d6efd;
+}
+
+.table th {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+/* Modal backdrop + dialog */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1040;
+}
+
+.custom-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1050;
+  width: 95%;
+  max-width: 520px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header .modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 1.25rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #dee2e6;
+}

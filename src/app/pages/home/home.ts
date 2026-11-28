@@ -58,8 +58,8 @@ export class Home {
         ...portal(['/trader'], { link: '/login', queryParams: { mode: 'user' } }),
       },
       {
-        title: 'Approving Officers',
-        description: 'Approving, Zone and Senior Approving Officers: review, inspect and approve applications',
+        title: 'Health Officials',
+        description: 'Health Supervisors, Medical Officers of Health and Health Officers: review, inspect and approve applications',
         icon: 'bi-people',
         color: 'bg-success',
         ...portal(['/approver', '/zone-approver', '/senior-approver'], { link: '/login' }),

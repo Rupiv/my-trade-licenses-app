@@ -32,6 +32,93 @@
     <!-- Full details (read-only): applicant, address, GBA ward, trades, payments, progress -->
     <app-application-full-details [licenceApplicationId]="details.licenceApplicationID"></app-application-full-details>
 
+    <!-- GBA Location Mapping (Admin only) -->
+    <div class="card section-card" *ngIf="normalizeRole(role) === 'admin'">
+      <div class="card-header">
+        GBA Corporation / Ward Mapping
+        <span class="badge ms-2"
+          [ngClass]="{
+            'bg-success': gbaLocation?.locationStatus === 'CONFIRMED',
+            'bg-info': gbaLocation?.locationStatus === 'DERIVED',
+            'bg-warning text-dark': gbaLocation?.locationStatus === 'UNMAPPED' || !gbaLocation?.locationStatus
+          }">
+          {{ gbaLocation?.locationStatus || 'Loading...' }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div *ngIf="gbaLoading" class="text-muted">Loading GBA location...</div>
+
+        <div *ngIf="!gbaLoading && gbaLocation">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Current Corporation</label>
+              <p class="mb-0">{{ gbaLocation.corporationName || 'Not mapped' }}</p>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Legacy Ward</label>
+              <p class="mb-0">{{ gbaLocation.legacyWardName || '-' }} (ID: {{ gbaLocation.legacyWardID }})</p>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Status</label>
+              <p class="mb-0">{{ gbaLocation.locationStatus }}</p>
+            </div>
+          </div>
+
+          <hr />
+          <h6 class="mb-3">Assign / Change GBA Location</h6>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Corporation</label>
+              <select class="form-select" [(ngModel)]="selectedCorporationId" (ngModelChange)="onCorporationChange()">
+                <option [ngValue]="null">-- Select Corporation --</option>
+                <option *ngFor="let c of gbaCorporations" [ngValue]="c.corporationID">
+                  {{ c.corporationName }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Zone</label>
+              <select class="form-select" [(ngModel)]="selectedZoneId" (ngModelChange)="onZoneChange()">
+                <option [ngValue]="null">-- All Zones --</option>
+                <option *ngFor="let z of gbaZones" [ngValue]="z.gbaZoneID">
+                  {{ z.zoneName }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Ward</label>
+              <select class="form-select" [(ngModel)]="selectedWardId">
+                <option [ngValue]="null">-- Select Ward --</option>
+                <option *ngFor="let w of gbaWards" [ngValue]="w.gbaWardID">
+                  {{ w.wardNo }} - {{ w.wardName }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-3" *ngIf="gbaCandidates.length > 0">
+            <small class="text-muted">
+              Suggested wards (from legacy mapping):
+              <span *ngFor="let c of gbaCandidates; let last = last">
+                {{ c.wardNo }} - {{ c.wardName }} ({{ c.corporationName }}){{ last ? '' : ', ' }}
+              </span>
+            </small>
+          </div>
+
+          <div class="mt-3">
+            <button class="btn btn-primary" [disabled]="gbaSaving || !selectedWardId" (click)="saveGbaMapping()">
+              {{ gbaSaving ? 'Saving...' : 'Save GBA Mapping' }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!gbaLoading && !gbaLocation" class="text-muted">
+          GBA location data not available for this application.
+        </div>
+      </div>
+    </div>
+
     <!-- Map Details -->
     <div class="card section-card">
       <div class="card-header">Map Details</div>
@@ -114,6 +201,18 @@
     </div>
 
     <div class="card section-card">
+      <div class="card-header">Inspection Checklist</div>
+      <div class="card-body">
+        <div class="form-check checklist-item" *ngFor="let item of inspectionChecklist">
+          <input class="form-check-input" type="checkbox" [checked]="item.checked" disabled />
+          <label class="form-check-label">
+            {{ item.label }}
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section-card">
       <div class="card-header">On-Site Inspection Photos</div>
       <div class="card-body">
         <div *ngIf="inspectionPhotosLoading" class="text-muted">Loading inspection photos...</div>
@@ -165,7 +264,16 @@
         [disabled]="isSubmitting"
         (click)="submitAdminAction(6, 'Application forwarded to higher authority')"
       >
-        Forward To Higher Authority
+        Recommend
+      </button>
+      <button
+        *ngIf="isZoneApproverRole"
+        class="btn btn-outline-danger"
+        type="button"
+        [disabled]="isSubmitting"
+        (click)="submitAdminAction(5, 'Application sent back to Health Supervisor')"
+      >
+        Send Back
       </button>
       <button
         *ngIf="!isZoneApproverRole"
