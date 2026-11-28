@@ -3,12 +3,12 @@
     <button class="btn btn-outline-secondary" (click)="goBack()">
       Back to Application
     </button>
-    <button class="btn btn-secondary" [disabled]="loading || resolvingTemplate" (click)="printCertificate()">Print</button>
-    <button class="btn btn-primary" [disabled]="loading || resolvingTemplate" (click)="downloadPdf()">Download</button>
+    <button class="btn btn-secondary" [disabled]="loading || resolvingTemplate || !!errorMessage" (click)="printCertificate()">Print</button>
+    <button class="btn btn-primary" [disabled]="loading || resolvingTemplate || !!errorMessage" (click)="downloadPdf()">Download</button>
     <button
       *ngIf="showSaveButton"
       class="btn btn-success"
-      [disabled]="isSaving || loading || resolvingTemplate"
+      [disabled]="isSaving || loading || resolvingTemplate || !!errorMessage"
       (click)="saveGeneratedCertificate()"
     >
       {{ isSaving ? 'Saving...' : 'Save Licence' }}

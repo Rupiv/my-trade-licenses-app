@@ -38,8 +38,7 @@ export class Home {
   readonly quickLinks = computed<(PortalLink & { label: string })[]>(() => [
     { label: 'Apply for License', ...this.session.applyLink() },
     { label: 'Track Application', ...this.session.trackLink() },
-    { label: 'Renew License', ...this.session.renewLink() },
-    { label: 'Renewal Status', ...this.session.renewalStatusLink() },
+    { label: 'My Licenses', ...this.session.myLicencesLink() },
   ]);
 
   /** Portal cards: a user already signed in with that role goes straight to the dashboard. */
@@ -53,7 +52,7 @@ export class Home {
     return [
       {
         title: 'Trader / Business Owner',
-        description: 'Apply, renew, and manage your trade licenses online',
+        description: 'Apply for, pay for, track and download your trade licenses online',
         icon: 'bi-building',
         color: 'bg-primary',
         ...portal(['/trader'], { link: '/login', queryParams: { mode: 'user' } }),
@@ -82,9 +81,9 @@ export class Home {
       description: 'Submit applications online with document upload and instant acknowledgement'
     },
     {
-      icon: 'bi-clock',
-      title: 'Quick Renewal',
-      description: 'Renew your existing licenses online from your dashboard and follow the renewal status'
+      icon: 'bi-patch-check',
+      title: 'Licence Certificate',
+      description: 'Download your licence certificate as a PDF as soon as the application is approved'
     },
     {
       icon: 'bi-geo-alt',

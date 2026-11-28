@@ -16,6 +16,11 @@
       (searchChange)="onSearchChanged($event)"
     ></app-admin-application-filters>
 
+    <div class="alert alert-info py-2 small mb-3" role="status" *ngIf="isStatusFilterPageOnly">
+      <i class="bi bi-info-circle me-1"></i>
+      Status filter applies to the {{ pageSize }} records loaded on this page only; page totals are for all statuses.
+    </div>
+
     <app-admin-application-table
       [applications]="applications"
       [isLoading]="isLoadingApplications"

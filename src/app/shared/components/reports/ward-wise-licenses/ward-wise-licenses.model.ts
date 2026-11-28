@@ -14,7 +14,8 @@ export interface WardLicenseTable {
   Total: number;
 }
 
+/** Raw API shape: Dapper rows (keys keep the SQL column casing); summary may be null. */
 export interface WardWiseLicenseResponse {
-  summary: WardLicenseSummary;
-  table: WardLicenseTable[];
+  summary: Record<string, any> | null;
+  table: Record<string, any>[] | null;
 }

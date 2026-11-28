@@ -6,6 +6,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { NewLicenses } from './new-licenses';
+import { GoogleMapsService } from '../../core/services/google-maps.service';
 
 // The Google Maps JS API is loaded at runtime by GoogleMapsService and is not
 // available under jsdom, so swap <google-map> for an inert stub.
@@ -15,7 +16,7 @@ class GoogleMapStub {
   @Input() width?: string;
   @Input() center?: unknown;
   @Input() zoom?: number;
-  @Output() mapReady = new EventEmitter<void>();
+  @Output() mapInitialized = new EventEmitter<unknown>();
   @Output() mapClick = new EventEmitter<unknown>();
 }
 
@@ -65,6 +66,25 @@ describe('NewLicenses', () => {
     expect(component).toBeTruthy();
   });
 
+  // <google-map> reads google.maps on init, so it must wait for the Maps script.
+  it('shows a loading placeholder until the Maps script has loaded, then renders the map', () => {
+    const maps = TestBed.inject(GoogleMapsService);
+    const el: HTMLElement = fixture.nativeElement;
+    fixture.detectChanges();
+    expect(el.querySelector('google-map')).toBeNull();
+    expect(el.textContent).toContain('Loading map...');
+
+    maps.loaded.set(true);
+    fixture.detectChanges();
+    expect(el.querySelector('google-map')).not.toBeNull();
+  });
+
+  it('explains when the Maps script could not be loaded', () => {
+    TestBed.inject(GoogleMapsService).failed.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('The map could not be loaded');
+  });
+
   // Existing fee rule (must match LicenceFeeCalculator on the API):
   // trade fees + max(power HP, generator HP) x 100 + 500
   it('calculates the licence fee with the existing formula', () => {
@@ -93,5 +113,33 @@ describe('NewLicenses', () => {
     const payload = (component as any).buildDraftPayloadForUpdate();
     expect(payload.powerHP).toBe(0);
     expect(payload.generatorHP).toBe(0);
+  });
+
+  it('lets a restored draft with trades leave the Trade step without re-picking a trade', async () => {
+    component.currentStep = 2;
+    component.selectedMajor = null as any;
+    component.selectedMinor = null as any;
+    component.selectedSub = null as any;
+    component.tradeGrid = [
+      { major: 'M', majorID: 1, minor: 'm', minorID: 1, sub: 's', tradeSubID: 1, rate: 100 },
+    ] as any;
+    await component.nextStep();
+    expect(component.currentStep).toBe(3);
+  });
+
+  it('still asks for a trade when none has been added', async () => {
+    component.currentStep = 2;
+    component.tradeGrid = [];
+    component.selectedMajor = null as any;
+    await component.nextStep();
+    expect(component.currentStep).toBe(2);
+  });
+
+  it('names the real payment gateway and shows no placeholder rate', () => {
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).not.toContain('BillDesk');
+    expect(text).toContain('Easebuzz');
+    expect(text).not.toContain('Rate: --');
   });
 });

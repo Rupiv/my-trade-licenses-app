@@ -69,7 +69,8 @@ describe('Home', () => {
   it('sends visitors to the OTP login for trader pages, returning them afterwards', async () => {
     await render();
     expect(hrefs()).toContain('/login?mode=user&returnUrl=%2Ftrader%2Ftrack-application');
-    expect(hrefs()).toContain('/login?mode=user&returnUrl=%2Ftrader%2Frenew-license');
+    expect(hrefs()).toContain('/login?mode=user&returnUrl=%2Ftrader%2Ftrader-licenses');
+    expect(hrefs().some((h) => h.includes('renew'))).toBe(false); // no renewal API exists
     expect(hrefs()).toContain('/create-account');
     expect(el.textContent).toContain('Sign In');
     expect(el.textContent).not.toContain('My Dashboard');
@@ -87,7 +88,7 @@ describe('Home', () => {
     await render();
     expect(hrefs()).toContain('/trader/track-application');
     expect(hrefs()).toContain('/trader/new-licenses');
-    expect(hrefs()).toContain('/trader/renew-license');
+    expect(hrefs()).toContain('/trader/trader-licenses');
     expect(el.textContent).toContain('My Dashboard');
     expect(el.textContent).toContain('Open Dashboard');
   });

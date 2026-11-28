@@ -1,37 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { PortalAdmin } from './portal-admin';
-
-// Node >= 25 ships an experimental global `localStorage` that is undefined unless
-// --localstorage-file is passed, shadowing jsdom's Storage; give the test an in-memory one.
-function createMemoryStorage(): Storage {
-  const data = new Map<string, string>();
-  return {
-    get length() { return data.size; },
-    clear: () => data.clear(),
-    getItem: (k: string) => (data.has(k) ? data.get(k)! : null),
-    key: (i: number) => Array.from(data.keys())[i] ?? null,
-    removeItem: (k: string) => { data.delete(k); },
-    setItem: (k: string, v: string) => { data.set(k, String(v)); },
-  };
-}
+import { ensureWebStorage, signInAs, signOutAll } from '../../testing/portal-test-utils';
 
 describe('PortalAdmin', () => {
   let component: PortalAdmin;
   let fixture: ComponentFixture<PortalAdmin>;
-
-  beforeEach(() => {
-    vi.stubGlobal('localStorage', createMemoryStorage());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
+  let http: HttpTestingController;
 
   beforeEach(async () => {
+    ensureWebStorage();
+    signInAs('admin');
     await TestBed.configureTestingModule({
       imports: [PortalAdmin],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
@@ -40,10 +22,36 @@ describe('PortalAdmin', () => {
 
     fixture = TestBed.createComponent(PortalAdmin);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
   });
+
+  afterEach(() => signOutAll());
 
   it('should create', () => {
     expect(component).toBeTruthy();
+    http.match(() => true);
+  });
+
+  it('shows a dash (not a fake 0) until the dashboard API answers, then the real counts', () => {
+    const req = http.expectOne((r) => r.url === '/api/api/trade-licence/admin/dashboard');
+    fixture.detectChanges();
+    expect(component.formatNumber(component.dashboard.Approved)).toBe('—');
+    expect(component.lastUpdated).toBeNull();
+
+    req.flush({ role: 'Admin', dashboard: { Entered: 1, Applied: 2, Approved: 1234, Rejected: 0, Objection: 0, Forwarded: 0, Inspected: 0, GrandTotal: 1237 } });
+    fixture.detectChanges();
+
+    expect(component.hasLoaded).toBe(true);
+    expect(component.formatNumber(component.dashboard.Approved)).toBe('1,234');
+    expect(component.lastUpdated).not.toBeNull();
+  });
+
+  it('shows the error state when the dashboard fails', () => {
+    http.expectOne((r) => r.url === '/api/api/trade-licence/admin/dashboard')
+      .flush({ message: 'x' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(component.loadError).toContain('unavailable');
+    expect(component.hasLoaded).toBe(false);
   });
 });

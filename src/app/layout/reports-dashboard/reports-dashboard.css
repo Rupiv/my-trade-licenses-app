@@ -54,3 +54,10 @@
 .report-card button:hover {
   background: #125ea5;
 }
+
+.report-card .admin-note {
+  display: block;
+  font-size: 12px;
+  color: #92400e;
+  margin-bottom: 8px;
+}

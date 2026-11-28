@@ -16,11 +16,11 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn secondary" (click)="exportToPDF()">
+      <button class="btn secondary" (click)="exportToPDF()" [disabled]="loading || !filteredStatusSummary.length">
         Export PDF
       </button>
 
-      <button class="btn primary" (click)="exportToExcel()">
+      <button class="btn primary" (click)="exportToExcel()" [disabled]="loading || !filteredStatusSummary.length">
         Export Excel
       </button>
 
@@ -29,24 +29,20 @@
 
   <!-- FILTER -->
   <div class="filters-card">
-    <div class="filter-group"> 
-      <label>Financial Year</label> 
-        <select> <option>2025–2026</option> </select> 
-      </div> <div class="filter-group"> 
-
-        <label>Zone</label> <select> 
-          <option>All Zones</option> 
-        </select> 
-      </div>
     <div class="filter-group">
-      <label>Status</label>
-      <select (change)="onStatusChange($event)">
+      <label for="cs-fy">Financial Year</label>
+      <select id="cs-fy" [(ngModel)]="selectedFinancialYearId" (ngModelChange)="onFinancialYearChange()"
+              [disabled]="loading || !financialYears.length">
+        <option *ngIf="!financialYears.length" [ngValue]="null">Not available</option>
+        <option *ngFor="let fy of financialYears" [ngValue]="fy.id">{{ fy.label }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="cs-status">Status</label>
+      <select id="cs-status" [(ngModel)]="selectedStatus" (ngModelChange)="onStatusChange()">
         <option value="All">All</option>
-        <option value="APPROVED">Approved</option>
-        <option value="REJECTED">Rejected</option>
-        <option value="ENTERED">Entered</option>
-        <option value="APPLIED">Applied</option>
-        <option value="OBJECTION">Objection</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
       </select>
     </div>
 
@@ -58,22 +54,22 @@
 
     <div class="summary-card approved">
       <h4>Approved</h4>
-      <span class="count">{{ totals?.Approved | number }}</span>
+      <span class="count">{{ totals ? (totals.Approved | number) : '-' }}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending</h4>
-      <span class="count">{{ totals?.Pending | number }}</span>
+      <span class="count">{{ totals ? (totals.Pending | number) : '-' }}</span>
     </div>
 
     <div class="summary-card rejected">
       <h4>Rejected</h4>
-      <span class="count">{{ totals?.Rejected | number }}</span>
+      <span class="count">{{ totals ? (totals.Rejected | number) : '-' }}</span>
     </div>
 
     <div class="summary-card total">
       <h4>Total Applications</h4>
-      <span class="count">{{ totals?.TotalApplications | number }}</span>
+      <span class="count">{{ totals ? (totals.TotalApplications | number) : '-' }}</span>
     </div>
 
   </div>
@@ -81,27 +77,37 @@
   <!-- TABLE -->
 
   <div class="table-card">
-    <table>
+    <div class="table-scroll">
+      <table>
 
-      <thead>
-        <tr>
-          <th>Status</th>
-          <th>No. of Applications</th>
-          <th>Percentage</th>
-        </tr>
-      </thead>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>No. of Applications</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let item of filteredStatusSummary">
-          <td>{{ item.Status }}</td>
-          <td>{{ item.ApplicationCount | number }}</td>
-          <td>{{ item.Percentage }}%</td>
-        </tr>
+          <tr *ngFor="let item of filteredStatusSummary">
+            <td>{{ item.Status }}</td>
+            <td>{{ item.ApplicationCount | number }}</td>
+            <td>{{ item.Percentage }}%</td>
+          </tr>
 
-      </tbody>
+          <tr *ngIf="loading">
+            <td colspan="3" class="no-data">Loading report...</td>
+          </tr>
 
-    </table>
+          <tr *ngIf="!loading && loaded && !filteredStatusSummary.length">
+            <td colspan="3" class="no-data">No records found</td>
+          </tr>
+
+        </tbody>
+
+      </table>
+    </div>
   </div>
 
 </div>

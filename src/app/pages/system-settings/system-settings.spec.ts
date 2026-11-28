@@ -4,34 +4,14 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { SystemSettings } from './system-settings';
-
-// Node >= 25 ships an experimental global `localStorage` that is undefined unless
-// --localstorage-file is passed, shadowing jsdom's Storage; give the test an in-memory one.
-function createMemoryStorage(): Storage {
-  const data = new Map<string, string>();
-  return {
-    get length() { return data.size; },
-    clear: () => data.clear(),
-    getItem: (k: string) => (data.has(k) ? data.get(k)! : null),
-    key: (i: number) => Array.from(data.keys())[i] ?? null,
-    removeItem: (k: string) => { data.delete(k); },
-    setItem: (k: string, v: string) => { data.set(k, String(v)); },
-  };
-}
+import { ensureWebStorage } from '../../testing/portal-test-utils';
 
 describe('SystemSettings', () => {
   let component: SystemSettings;
   let fixture: ComponentFixture<SystemSettings>;
 
-  beforeEach(() => {
-    vi.stubGlobal('localStorage', createMemoryStorage());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   beforeEach(async () => {
+    ensureWebStorage();
     await TestBed.configureTestingModule({
       imports: [SystemSettings],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
@@ -45,5 +25,13 @@ describe('SystemSettings', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('does not offer a Save that only writes to the browser (no settings API exists)', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const buttons = Array.from(el.querySelectorAll('button')).map((b) => b.textContent?.trim());
+    expect(buttons).not.toContain('Save Settings');
+    expect(el.querySelector('.alert-warning')?.textContent).toContain('Not available yet');
+    expect((el.querySelector('fieldset') as HTMLFieldSetElement).disabled).toBe(true);
   });
 });

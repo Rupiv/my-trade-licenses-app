@@ -43,13 +43,20 @@ export class TraderLicenses {
   pendingPaymentApplication: TradeLicenseApplication[] = [];
   allLicensesApplications : LicenceApplicationDetails[] = [];
   showAll = false;
+  loading = true;
+  loadFailed = false;
 
+  /** Approved applications = the trader's licences (certificate downloadable). */
+  get approvedLicences(): LicenceApplicationDetails[] {
+    return this.allLicensesApplications.filter((a) => this.isApproved(a.applicationStatus));
+  }
 
   loadAppliedLicensesApplicationByLoginId() {
-    this.loaderservice.show();
     const loginId = this.tokenservice.getUserId();
 
     if (!loginId) {
+      this.loading = false;
+      this.loadFailed = true;
       this.notificationservice.show(
         'Previous applied applications cannot be loaded!',
         'warning'
@@ -57,15 +64,20 @@ export class TraderLicenses {
       return;
     }
 
+    this.loading = true;
+    this.loadFailed = false;
+    this.loaderservice.show();
     this.tradelicensesservice
       .getAppliedLicensesApplications(loginId)
       .subscribe({
         next: (res: AppliedLicensesResponse) => {
-          //console.log(res);
-          this.allLicensesApplications = res.applications;
+          this.allLicensesApplications = res?.applications ?? [];
+          this.loading = false;
           this.loaderservice.hide();
         },
         error: (err) => {
+          this.loading = false;
+          this.loadFailed = true;
           this.loaderservice.hide();
           this.notificationservice.show(
             'Problem with loading application details',
@@ -182,54 +194,6 @@ export class TraderLicenses {
           this.notificationservice.show('Generated licence not found. Please contact admin.', 'warning');
         }
       });
-  }
-
-  licenses = [
-    {
-      id: 'TL-2024-001234',
-      tradeName: 'Sharma Electronics',
-      type: 'Retail - Electronics',
-      status: 'active',
-      validUntil: '31 Mar 2025',
-      address: '123, MG Road, Bengaluru - 560001',
-    },
-    {
-      id: 'TL-2024-001235',
-      tradeName: 'Sharma Food Corner',
-      type: 'Restaurant',
-      status: 'renewal_due',
-      validUntil: '15 Jan 2024',
-      address: '45, Brigade Road, Bengaluru - 560025',
-    },
-  ];
-
-  applications = [
-    {
-      id: 'APP-2024-005678',
-      tradeName: 'Sharma Textiles',
-      type: 'Retail - Clothing',
-      status: 'under_review',
-      submittedOn: '05 Dec 2024',
-      currentStep: 'Inspection Scheduled',
-      progress: 60,
-    },
-  ];
-
-  notifications = [
-    { message: 'License renewal due in 30 days for Sharma Food Corner', type: 'warning' },
-    { message: 'Inspection scheduled for Sharma Textiles on 15 Dec 2024', type: 'info' },
-  ];
-  
-  logout() {
-    this.router.navigate(['/']);
-  }
-
-  badgeClass(status: string) {
-    return {
-      active: 'badge bg-success-subtle text-success',
-      renewal_due: 'badge bg-warning-subtle text-warning',
-      under_review: 'badge bg-primary-subtle text-primary',
-    }[status];
   }
 
   dismissInspectionDisclaimer(): void {

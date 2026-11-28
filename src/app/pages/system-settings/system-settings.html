@@ -1,3 +1,4 @@
+
 <div class="page-header">
   <div>
     <h2>System Settings</h2>
@@ -5,78 +6,73 @@
   </div>
 </div>
 
-<div class="settings-toolbar">
-  <div class="settings-status" [class.settings-status--dirty]="hasUnsavedChanges">
-    {{ saveMessage || (hasUnsavedChanges ? 'Unsaved changes' : 'Working form ready') }}
-  </div>
-  <button class="btn-ghost" type="button" (click)="restoreDefaults()">Restore Defaults</button>
-</div>
-
-<div class="card">
-  <h3>Approval Workflow Configuration</h3>
-
-  <div class="form-row">
-    <label>Default Approval Flow</label>
-    <select [(ngModel)]="settings.approvalFlow">
-      <option value="approver-senior">Approver -> Senior Approver</option>
-      <option value="direct-senior">Direct Senior Approver (High Risk Trades)</option>
-    </select>
-  </div>
-
-  <div class="form-row">
-    <label>High-Risk Trade Threshold (Rs)</label>
-    <input type="number" placeholder="e.g. 500000" [(ngModel)]="settings.highRiskThreshold" />
-  </div>
-
-  <div class="form-row">
-    <label>Require Inspection Before Approval</label>
-    <select [(ngModel)]="settings.requireInspection">
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
+<div class="alert alert-warning d-flex gap-2 align-items-start" role="status" *ngIf="!isConfigurable">
+  <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+  <div>
+    <strong>Not available yet.</strong>
+    These settings are not connected to the server, so they cannot be viewed or changed here.
+    The current approval workflow, renewal reminders and escalations are controlled by the server configuration.
   </div>
 </div>
 
-<div class="card">
-  <h3>Automated Reminder Settings</h3>
+<fieldset [disabled]="!isConfigurable" class="settings-disabled">
+  <div class="card">
+    <h3>Approval Workflow Configuration</h3>
 
-  <div class="form-grid">
     <div class="form-row">
-      <label>Renewal Reminder - First Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 30)" [(ngModel)]="settings.firstAlertDays" />
+      <label for="approvalFlow">Default Approval Flow</label>
+      <select id="approvalFlow">
+        <option value="">Not configurable</option>
+      </select>
     </div>
 
     <div class="form-row">
-      <label>Renewal Reminder - Second Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 15)" [(ngModel)]="settings.secondAlertDays" />
+      <label for="highRiskThreshold">High-Risk Trade Threshold (Rs)</label>
+      <input id="highRiskThreshold" type="number" placeholder="Not configurable" />
     </div>
 
     <div class="form-row">
-      <label>Renewal Reminder - Final Alert</label>
-      <input type="number" placeholder="Days before expiry (e.g. 5)" [(ngModel)]="settings.finalAlertDays" />
+      <label for="requireInspection">Require Inspection Before Approval</label>
+      <select id="requireInspection">
+        <option value="">Not configurable</option>
+      </select>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <h3>Escalation Rules</h3>
+  <div class="card">
+    <h3>Automated Reminder Settings</h3>
 
-  <div class="form-row">
-    <label>Escalate to Senior Approver if Approver does not act within</label>
-    <input type="number" placeholder="Number of days (e.g. 7)" [(ngModel)]="settings.escalationDays" />
+    <div class="form-grid">
+      <div class="form-row">
+        <label for="firstAlert">Renewal Reminder - First Alert</label>
+        <input id="firstAlert" type="number" placeholder="Not configurable" />
+      </div>
+
+      <div class="form-row">
+        <label for="secondAlert">Renewal Reminder - Second Alert</label>
+        <input id="secondAlert" type="number" placeholder="Not configurable" />
+      </div>
+
+      <div class="form-row">
+        <label for="finalAlert">Renewal Reminder - Final Alert</label>
+        <input id="finalAlert" type="number" placeholder="Not configurable" />
+      </div>
+    </div>
   </div>
 
-  <div class="form-row">
-    <label>Escalation Notification</label>
-    <select [(ngModel)]="settings.escalationNotification">
-      <option value="email-sms">Email + SMS</option>
-      <option value="email">Email Only</option>
-      <option value="sms">SMS Only</option>
-    </select>
-  </div>
-</div>
+  <div class="card">
+    <h3>Escalation Rules</h3>
 
-<div class="action-bar">
-  <button class="btn-secondary" type="button" (click)="resetSettings()">Reset</button>
-  <button class="btn-primary" type="button" (click)="saveSettings()">Save Settings</button>
-</div>
+    <div class="form-row">
+      <label for="escalationDays">Escalate to Senior Approver if Approver does not act within</label>
+      <input id="escalationDays" type="number" placeholder="Not configurable" />
+    </div>
+
+    <div class="form-row">
+      <label for="escalationNotification">Escalation Notification</label>
+      <select id="escalationNotification">
+        <option value="">Not configurable</option>
+      </select>
+    </div>
+  </div>
+</fieldset>

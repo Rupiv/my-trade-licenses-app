@@ -24,4 +24,14 @@ describe('LicenceCertificate', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('does not offer Print / Download / Save when the certificate could not be loaded', () => {
+    component.ngOnInit(); // no route param -> invalid id
+    fixture.detectChanges();
+    expect(component.errorMessage).toBe('Invalid application id.');
+    const buttons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.page-actions button'))
+      .filter((b) => /Print|Download/.test(b.textContent ?? '')) as HTMLButtonElement[];
+    expect(buttons.length).toBe(2);
+    expect(buttons.every((b) => b.disabled)).toBe(true);
+  });
 });

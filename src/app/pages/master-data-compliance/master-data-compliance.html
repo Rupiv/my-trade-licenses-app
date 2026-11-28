@@ -21,6 +21,7 @@
           </button>
           <button
             class="icon-btn warning"
+            [disabled]="!selectedtradeTypes"
             (click)="openModal('TRADE_CATEGORY', true)"
             title="Edit Trade Categories"
           >
@@ -38,8 +39,9 @@
           {{ tradeType.tradeTypeName }}
         </option>
       </select>
+      <small class="text-danger" *ngIf="loadErrors.tradeTypes">Unable to load trade types.</small>
     </div>
-  
+
 </div>
 
 <!-- JURISDICTION MASTER -->
@@ -81,6 +83,7 @@
           {{ mla.mohName }}
         </option>
       </select>
+      <small class="text-danger" *ngIf="loadErrors.mla">Unable to load MLA constituencies.</small>
     </div>
 
     <!-- WARD SECTION -->
@@ -107,12 +110,13 @@
         </div>
       </div>
 
-      <select class="form-select" [(ngModel)]="selectedWard">
-        <option [ngValue]="null">Select Ward</option>
+      <select class="form-select" [(ngModel)]="selectedWard" [disabled]="!selectedMLAConstituency">
+        <option [ngValue]="null">{{ selectedMLAConstituency ? 'Select Ward' : 'Select an MLA constituency first' }}</option>
         <option *ngFor="let ward of wards" [ngValue]="ward">
           {{ ward.wardName }}
         </option>
       </select>
+      <small class="text-danger" *ngIf="loadErrors.wards">Unable to load wards.</small>
     </div>
 
   </div>
@@ -135,7 +139,8 @@
               <button class="icon-btn primary" (click)="openModal('MAJOR_TRADE')" title="Add Major Trade">
                 <i class="bi bi-plus-lg"></i>
               </button>
-              <button class="icon-btn warning" 
+              <button class="icon-btn warning"
+                [disabled]="!selectedMajor"
                 (click)="openModal('MAJOR_TRADE', true)"
                 title="Edit Major Trade">
                 <i class="bi bi-pencil"></i>
@@ -149,6 +154,7 @@
               {{ majorTrade.tradeMajorName }}
             </option>
           </select>
+          <small class="text-danger" *ngIf="loadErrors.majors">Unable to load major trades.</small>
         </div>
 
         <!-- MINOR TRADE -->
@@ -166,7 +172,7 @@
               </button>
               <button
                 class="icon-btn warning"
-                [disabled]="!tradeMajors"
+                [disabled]="!selectedMinor"
                 (click)="openModal('MINOR_TRADE', true)"
                 title="Edit Minor Trade"
               >
@@ -175,12 +181,13 @@
             </div>
           </div>
 
-          <select class="form-select" [(ngModel)]="selectedMinor" (change)="onMinorChange()">
+          <select class="form-select" [(ngModel)]="selectedMinor" (change)="onMinorChange()" [disabled]="!selectedMajor">
             <option [ngValue]="null">Select Minor Trade</option>
             <option *ngFor="let minorTrade of tradeMinors" [ngValue]="minorTrade">
               {{ minorTrade.tradeMinorName }}
             </option>
           </select>
+          <small class="text-danger" *ngIf="loadErrors.minors">Unable to load minor trades.</small>
         </div>
 
         <!-- SUB TRADE -->
@@ -207,12 +214,13 @@
             </div>
           </div>
 
-          <select class="form-select" [(ngModel)]="selectedSub" (change)="onSubTradeChange()">
+          <select class="form-select" [(ngModel)]="selectedSub" (change)="onSubTradeChange()" [disabled]="!selectedMinor">
             <option [ngValue]="null">Select Sub Trade</option>
             <option *ngFor="let subTrade of tradeSubs" [ngValue]="subTrade">
               {{ subTrade.tradeSubName }}
             </option>
           </select>
+          <small class="text-danger" *ngIf="loadErrors.subs">Unable to load sub trades.</small>
         </div>
 
         <!-- Price -->
@@ -224,7 +232,7 @@
                 class="icon-btn primary"
                 title="Save Price"
                 (click)="saveTradePrice()"
-                [disabled]="isSavingTradePrice"
+                [disabled]="isSavingTradePrice || isLoadingTradeFee || !selectedSub"
               >
                 <i class="bi" [ngClass]="isSavingTradePrice ? 'bi-hourglass-split' : 'bi-check-lg'"></i>
               </button>
@@ -233,10 +241,13 @@
 
           <input
             type="number"
+            min="1"
             class="form-control"
-            placeholder="Enter price (e.g. 500)"
+            [placeholder]="selectedSub ? (isLoadingTradeFee ? 'Loading current fee...' : 'Enter price (e.g. 500)') : 'Select a sub trade first'"
+            [disabled]="!selectedSub || isLoadingTradeFee"
             [(ngModel)]="tradePrice"
           />
+          <small class="text-muted" *ngIf="selectedSub && !isLoadingTradeFee && !currentTradeFee">No fee configured yet for this sub trade.</small>
         </div>
       </div>
     </div>
@@ -258,6 +269,7 @@
             </button>
             <button
               class="icon-btn warning"
+              [disabled]="!selectedZone"
               (click)="openModal('ZONE', true)"
               title="Edit Health Officer"
             >
@@ -275,8 +287,9 @@
             {{ zone.zoneName }}
           </option>
         </select>
+        <small class="text-danger" *ngIf="loadErrors.zones">Unable to load zones.</small>
       </div>
-    
+
   </div>
 
 <!-- Zone Classification -->
@@ -299,8 +312,9 @@
           </button>
           <button
             class="icon-btn warning"
+            [disabled]="!selectedZoneClassification"
             (click)="openModal('ZONE_CLASSIFICATION', true)"
-            title="Edit Health Officer"
+            title="Edit Zone Classification"
           >
             <i class="bi bi-pencil"></i>
           </button>
@@ -309,112 +323,119 @@
 
       <select
         class="form-select"
-        [(ngModel)]="selectedZone"
+        [(ngModel)]="selectedZoneClassification"
       >
         <option [ngValue]="null">Select Zone Classification</option>
         <option *ngFor="let zoneClassification of zoneClassifications" [ngValue]="zoneClassification">
           {{ zoneClassification.zonalClassificationName }}
         </option>
       </select>
+      <small class="text-danger" *ngIf="loadErrors.zoneClassifications">Unable to load zone classifications.</small>
     </div>
 
-    <!-- Price -->
-        <div class="field-block">
-          <div class="field-header">
-            <label>License Fee Prescribed</label>
-            <div class="action-buttons">
-              <button
-                class="icon-btn primary"
-                title="Save Price"
-                (click)="saveLicenseFeePrescribed()"
-              >
-                <i class="bi bi-check-lg"></i>
-              </button>
-            </div>
-          </div>
-
-          <input
-            type="number"
-            class="form-control"
-            placeholder="Enter price (e.g. 500)"
-            [(ngModel)]="licenseFeePrescribed"
-          />
-        </div>
   </div>
 </div>
 
   <!-- MODAL -->
-<div class="modal-backdrop" *ngIf="activeModal">
-  <div class="modal-container">
+<div class="modal-backdrop" *ngIf="activeModal" (click)="closeModal()">
+  <div class="modal-container" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
-    <h3>
-      {{ isEditMode ? 'Edit' : 'Add' }}
-      {{ activeModal.replace('_', ' ') }}
-    </h3>
+    <h3>{{ isEditMode ? 'Edit' : 'Add' }} {{ modalTitle }}</h3>
 
-    <!-- MLA -->
-    <form *ngIf="activeModal === 'MLA'" [formGroup]="mlaForm">
-      <label>MLA Name</label>
-      <input class="form-control" formControlName="mohName" />
+    <!-- MLA (MOH) -->
+    <form *ngIf="activeModal === 'MLA'" [formGroup]="mlaForm" (ngSubmit)="saveModal()">
+      <label for="mohName">MLA Name <span class="text-danger">*</span></label>
+      <input id="mohName" class="form-control" formControlName="mohName" [class.is-invalid]="isInvalid(mlaForm, 'mohName')" />
+      <div class="invalid-feedback">MLA name is required.</div>
+
+      <label for="mohZone" class="mt-2">Zone <span class="text-danger">*</span></label>
+      <select id="mohZone" class="form-select" formControlName="zoneID" [class.is-invalid]="isInvalid(mlaForm, 'zoneID')">
+        <option [ngValue]="null">Select Zone</option>
+        <option *ngFor="let zone of zones" [ngValue]="zone.zoneID">{{ zone.zoneName }}</option>
+      </select>
+      <div class="invalid-feedback">Zone is required.</div>
+
+      <label for="mohConstituency" class="mt-2">Assembly Constituency <span class="text-danger">*</span></label>
+      <select id="mohConstituency" class="form-select" formControlName="constituencyID" [class.is-invalid]="isInvalid(mlaForm, 'constituencyID')">
+        <option [ngValue]="null">{{ modalConstituenciesLoading ? 'Loading...' : (mlaForm.value.zoneID ? 'Select Constituency' : 'Select a zone first') }}</option>
+        <option *ngFor="let c of modalConstituencies" [ngValue]="c.constituencyID">{{ c.constituencyName }}</option>
+      </select>
+      <div class="invalid-feedback">Constituency is required.</div>
     </form>
 
     <!-- Ward -->
-    <form *ngIf="activeModal === 'WARD'" [formGroup]="wardForm">
-      <label>Ward Name</label>
-      <input class="form-control" formControlName="wardName" />
+    <form *ngIf="activeModal === 'WARD'" [formGroup]="wardForm" (ngSubmit)="saveModal()">
+      <label for="wardCode">Ward Code <span class="text-danger">*</span></label>
+      <input id="wardCode" class="form-control" formControlName="wardCode" [class.is-invalid]="isInvalid(wardForm, 'wardCode')" />
+      <div class="invalid-feedback">Ward code is required.</div>
+      <label for="wardName" class="mt-2">Ward Name <span class="text-danger">*</span></label>
+      <input id="wardName" class="form-control" formControlName="wardName" [class.is-invalid]="isInvalid(wardForm, 'wardName')" />
+      <div class="invalid-feedback">Ward name is required.</div>
     </form>
 
     <!-- Major Trade -->
-    <form *ngIf="activeModal === 'MAJOR_TRADE'" [formGroup]="majorTradeForm">
-      <label>Major Trade Name</label>
-      <input class="form-control" formControlName="tradeMajorName" />
-      <label>Major Trade Native Name</label>
-      <input class="form-control" formControlName="tradeMajorNativeName" />
+    <form *ngIf="activeModal === 'MAJOR_TRADE'" [formGroup]="majorTradeForm" (ngSubmit)="saveModal()">
+      <label for="majorName">Major Trade Name <span class="text-danger">*</span></label>
+      <input id="majorName" class="form-control" formControlName="tradeMajorName" [class.is-invalid]="isInvalid(majorTradeForm, 'tradeMajorName')" />
+      <div class="invalid-feedback">Major trade name is required.</div>
+      <label for="majorNative" class="mt-2">Major Trade Native Name <span class="text-danger">*</span></label>
+      <input id="majorNative" class="form-control" formControlName="tradeMajorNativeName" [class.is-invalid]="isInvalid(majorTradeForm, 'tradeMajorNativeName')" />
+      <div class="invalid-feedback">Native name is required.</div>
     </form>
 
     <!-- Minor Trade -->
-    <form *ngIf="activeModal === 'MINOR_TRADE'" [formGroup]="minorTradeForm">
-      <label>Minor Trade Name</label>
-      <input class="form-control" formControlName="tradeMinorName" />
-      <label>Minor Trade Native Name</label>
-      <input class="form-control" formControlName="tradeMinorNativeName" />
+    <form *ngIf="activeModal === 'MINOR_TRADE'" [formGroup]="minorTradeForm" (ngSubmit)="saveModal()">
+      <label for="minorName">Minor Trade Name <span class="text-danger">*</span></label>
+      <input id="minorName" class="form-control" formControlName="tradeMinorName" [class.is-invalid]="isInvalid(minorTradeForm, 'tradeMinorName')" />
+      <div class="invalid-feedback">Minor trade name is required.</div>
+      <label for="minorNative" class="mt-2">Minor Trade Native Name</label>
+      <input id="minorNative" class="form-control" formControlName="tradeMinorNativeName" />
     </form>
 
     <!-- Sub Trade -->
-    <form *ngIf="activeModal === 'SUB_TRADE'" [formGroup]="subTradeForm">
-      <label>Sub Trade Name</label>
-      <input class="form-control" formControlName="tradeSubName" />
-      <label>Sub Trade Native Name</label>
-      <input class="form-control" formControlName="tradeSubNativeName" />
-      <label>Block Period ID</label>
-      <input class="form-control" type="number" min="1" formControlName="blockPeriodID" />
+    <form *ngIf="activeModal === 'SUB_TRADE'" [formGroup]="subTradeForm" (ngSubmit)="saveModal()">
+      <label for="subName">Sub Trade Name <span class="text-danger">*</span></label>
+      <input id="subName" class="form-control" formControlName="tradeSubName" [class.is-invalid]="isInvalid(subTradeForm, 'tradeSubName')" />
+      <div class="invalid-feedback">Sub trade name is required.</div>
+      <label for="subNative" class="mt-2">Sub Trade Native Name</label>
+      <input id="subNative" class="form-control" formControlName="tradeSubNativeName" />
+      <label for="subBlock" class="mt-2">Block Period ID <span class="text-danger">*</span></label>
+      <input id="subBlock" class="form-control" type="number" min="1" formControlName="blockPeriodID" [class.is-invalid]="isInvalid(subTradeForm, 'blockPeriodID')" />
+      <div class="invalid-feedback">Block period must be 1 or more.</div>
     </form>
 
     <!-- Zone -->
-    <form *ngIf="activeModal === 'ZONE'" [formGroup]="zoneForm">
-      <label>Zone Name</label>
-      <input class="form-control" formControlName="zoneName" />
+    <form *ngIf="activeModal === 'ZONE'" [formGroup]="zoneForm" (ngSubmit)="saveModal()">
+      <label for="zoneName">Zone Name <span class="text-danger">*</span></label>
+      <input id="zoneName" class="form-control" formControlName="zoneName" [class.is-invalid]="isInvalid(zoneForm, 'zoneName')" />
+      <div class="invalid-feedback">Zone name is required.</div>
     </form>
 
     <!-- Zone Classification -->
-    <form *ngIf="activeModal === 'ZONE_CLASSIFICATION'" [formGroup]="zoneClassificationForm">
-      <label>Zone Classification Name</label>
-      <input class="form-control" formControlName="zonalClassificationName" />
+    <form *ngIf="activeModal === 'ZONE_CLASSIFICATION'" [formGroup]="zoneClassificationForm" (ngSubmit)="saveModal()">
+      <label for="zcName">Zone Classification Name <span class="text-danger">*</span></label>
+      <input id="zcName" class="form-control" formControlName="zonalClassificationName" [class.is-invalid]="isInvalid(zoneClassificationForm, 'zonalClassificationName')" />
+      <div class="invalid-feedback">Zone classification name is required.</div>
     </form>
 
-    <!-- Trade Category Name -->
-    <form *ngIf="activeModal === 'TRADE_CATEGORY'" [formGroup]="tradeCategoryForm">
-      <label>Trade Category Name</label>
-      <input class="form-control" formControlName="tradeTypeName" />
+    <!-- Trade Type -->
+    <form *ngIf="activeModal === 'TRADE_CATEGORY'" [formGroup]="tradeCategoryForm" (ngSubmit)="saveModal()">
+      <label for="ttCode">Trade Type Code <span class="text-danger">*</span></label>
+      <input id="ttCode" class="form-control" formControlName="tradeTypeCode" [class.is-invalid]="isInvalid(tradeCategoryForm, 'tradeTypeCode')" />
+      <div class="invalid-feedback">Trade type code is required.</div>
+      <label for="ttName" class="mt-2">Trade Type Name <span class="text-danger">*</span></label>
+      <input id="ttName" class="form-control" formControlName="tradeTypeName" [class.is-invalid]="isInvalid(tradeCategoryForm, 'tradeTypeName')" />
+      <div class="invalid-feedback">Trade type name is required.</div>
     </form>
 
     <!-- Actions -->
     <div class="modal-actions">
-      <button class="btn-secondary" (click)="activeModal = null">
+      <button type="button" class="btn-secondary" [disabled]="isSaving" (click)="closeModal()">
         Cancel
       </button>
-      <button type="button" class="btn-primary" (click)="saveModal()">
-        {{ isEditMode ? 'Update' : 'Save' }}
+      <button type="button" class="btn-primary" [disabled]="isSaving" (click)="saveModal()">
+        <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+        {{ isSaving ? 'Saving...' : (isEditMode ? 'Update' : 'Save') }}
       </button>
     </div>
 

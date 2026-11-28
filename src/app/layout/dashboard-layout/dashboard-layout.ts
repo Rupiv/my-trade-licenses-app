@@ -1,50 +1,69 @@
-import { Component } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Component, DestroyRef, HostListener, afterNextRender, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
-import { HostListener, ElementRef, ViewChild } from '@angular/core';
+import { normalizeRole } from '../../core/utils/role-home';
 
-interface AppNotification {
-  id: number;
-  title: string;
-  message: string;
-  time: string;
-  type: 'success' | 'warning' | 'danger' | 'info';
-  read: boolean;
-  route?: string;
-}
+/** Below this width (Bootstrap `lg`) the sidebar becomes an off-canvas drawer. */
+const MOBILE_BREAKPOINT_PX = 992;
+
+const PORTAL_SUBTITLES: Record<string, string> = {
+  admin: 'Admin Portal',
+  approver: 'Approving Officer Portal',
+  seniorapprover: 'Senior Approving Officer Portal',
+  zoneapprover: 'Zone Approver Portal',
+  trader: 'Trader Portal',
+};
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [CommonModule, FormsModule, RouterModule],  //PortalAdmin, BusinessOwner,ApprovingOfficer
+  imports: [CommonModule, RouterModule],
   templateUrl: './dashboard-layout.html',
   styleUrl: './dashboard-layout.css',
 })
 export class DashboardLayout {
-  //workflowOpen = false;
-  sidebarOpen = false;
-  isWorkflowMenuOpen = false;
-  isSidebarCollapsed = false;
-  userFullName : string = '';
-  userEmailID : string = '';
-  constructor(private router: Router, private authService: AuthService, private tokenService: TokenService) {}
-  role = ''; // Admin | Trader | Approver | SeniorApprover
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly tokenService = inject(TokenService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  
+  /** Desktop: narrow icon-only sidebar. */
+  readonly isSidebarCollapsed = signal(false);
+  /** Mobile: drawer open over the content. */
+  readonly isMobileMenuOpen = signal(false);
+  readonly isMobile = signal(false);
+  readonly isWorkflowMenuOpen = signal(false);
 
-  ngOnInit() { 
-    this.role = this.tokenService.getUserRole();
-    this.getUserDetails();
+  role = '';
+  userFullName = '';
+  userEmailID = '';
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((e) => {
+        this.isMobileMenuOpen.set(false);
+        this.syncWorkflowMenu(e.urlAfterRedirects);
+      });
+
+    afterNextRender(() => this.updateViewport());
   }
 
-  private normalizeRole(role: string | null | undefined): string {
-    return (role ?? '').toLowerCase().replace(/[\s_-]+/g, '');
+  ngOnInit() {
+    this.role = this.tokenService.getUserRole();
+    this.userEmailID = this.tokenService.getUserEmail();
+    this.userFullName = this.tokenService.getUserFullName();
+    this.syncWorkflowMenu(this.router.url);
   }
 
   get normalizedRole(): string {
-    return this.normalizeRole(this.role);
+    return normalizeRole(this.role);
   }
 
   get isAdminRole(): boolean {
@@ -67,164 +86,57 @@ export class DashboardLayout {
     return this.normalizedRole === 'tradeowner' || this.normalizedRole === 'trader';
   }
 
-
-  getUserDetails(){
-    this.userEmailID = this.tokenService.getUserEmail();
-    this.userFullName = this.tokenService.getUserFullName();
-  }
-  // isAdmin() {
-  //   return this.role === 'admin';
-  // }
-
-  // isTrader() {
-  //   return this.role === 'Trader';
-  // }
-
-  // isApprover() {
-  //   return this.role === 'approver';
-  // }
-
-  // isSeniorApprover() {
-  //   return this.role === 'seniorapprover';
-  // }
-
-  // licenses = [
-  //   {
-  //     id: 'TL-2024-001234',
-  //     tradeName: 'Sharma Electronics',
-  //     type: 'Retail - Electronics',
-  //     status: 'active',
-  //     validUntil: '31 Mar 2025',
-  //     address: '123, MG Road, Bengaluru - 560001',
-  //   },
-  //   {
-  //     id: 'TL-2024-001235',
-  //     tradeName: 'Sharma Food Corner',
-  //     type: 'Restaurant',
-  //     status: 'renewal_due',
-  //     validUntil: '15 Jan 2024',
-  //     address: '45, Brigade Road, Bengaluru - 560025',
-  //   },
-  // ];
-
-  // applications = [
-  //   {
-  //     id: 'APP-2024-005678',
-  //     tradeName: 'Sharma Textiles',
-  //     type: 'Retail - Clothing',
-  //     status: 'under_review',
-  //     submittedOn: '05 Dec 2024',
-  //     currentStep: 'Inspection Scheduled',
-  //     progress: 60,
-  //   },
-  // ];
-
-  // notifications = [
-  //   { message: 'License renewal due in 30 days for Sharma Food Corner', type: 'warning' },
-  //   { message: 'Inspection scheduled for Sharma Textiles on 15 Dec 2024', type: 'info' },
-  // ];
-  
-    toggleSidebar() {
-    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  get portalSubtitle(): string {
+    if (this.isAdminRole) return PORTAL_SUBTITLES['admin'];
+    if (this.isSeniorApproverRole) return PORTAL_SUBTITLES['seniorapprover'];
+    if (this.isApproverRole) return PORTAL_SUBTITLES['approver'];
+    if (this.isZoneApproverRole) return PORTAL_SUBTITLES['zoneapprover'];
+    return PORTAL_SUBTITLES['trader'];
   }
 
-  badgeClass(status: string) {
-    return {
-      active: 'badge bg-success-subtle text-success',
-      renewal_due: 'badge bg-warning-subtle text-warning',
-      under_review: 'badge bg-primary-subtle text-primary',
+  /** Hamburger: collapses the sidebar on desktop, opens / closes the drawer on mobile. */
+  toggleSidebar(): void {
+    if (this.isMobile()) {
+      this.isMobileMenuOpen.update((open) => !open);
+    } else {
+      this.isSidebarCollapsed.update((collapsed) => !collapsed);
     }
-    [status];
   }
 
-  // toggleWorkflowMenu() {
-  //   this.workflowOpen = !this.workflowOpen;
-  // }
-  toggleWorkflowMenu() {
-    this.isWorkflowMenuOpen = !this.isWorkflowMenuOpen;
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen.set(false);
   }
 
-  logout() {
+  toggleWorkflowMenu(): void {
+    this.isWorkflowMenuOpen.update((open) => !open);
+  }
+
+  logout(): void {
     this.authService.logout();
-    this.router.navigate(['/login'], {
-      replaceUrl: true
-    });
+    this.router.navigate(['/login'], { replaceUrl: true });
   }
 
-  // Inside your component class:
-
-  @ViewChild('notifWrapper') notifWrapper!: ElementRef;
-
-  showNotifications = false;
-
-  notifications: AppNotification[] = [
-    {
-      id: 1,
-      title: 'Application Approved',
-      message: 'Application #1141184 has been approved successfully.',
-      time: '5 min ago',
-      type: 'success',
-      read: false,
-      route: '/approver/approving-officer'
-    },
-    {
-      id: 2,
-      title: 'New Application Submitted',
-      message: 'A new trade license application has been submitted for review.',
-      time: '20 min ago',
-      type: 'info',
-      read: false,
-      route: '/approver/approving-officer'
-    },
-    {
-      id: 3,
-      title: 'Inspection Pending',
-      message: 'Application #248735 is pending inspection since 2 days.',
-      time: '2 hours ago',
-      type: 'warning',
-      read: true,
-      route: '/approver/inspection/248735'
-    },
-    {
-      id: 4,
-      title: 'Application Rejected',
-      message: 'Application #112233 was rejected due to incomplete documents.',
-      time: '1 day ago',
-      type: 'danger',
-      read: true
+  @HostListener('window:resize')
+  updateViewport(): void {
+    if (typeof window === 'undefined') {
+      return;
     }
-  ];
-
-  get unreadCount(): number {
-    return this.notifications.filter(n => !n.read).length;
-  }
-
-  toggleNotifications() {
-    this.showNotifications = !this.showNotifications;
-  }
-
-  markAllAsRead() {
-    this.notifications = this.notifications.map(n => ({ ...n, read: true }));
-  }
-
-  onNotificationClick(n: AppNotification) {
-    n.read = true;
-    if (n.route) {
-      this.router.navigate([n.route]);
+    const mobile = window.innerWidth < MOBILE_BREAKPOINT_PX;
+    this.isMobile.set(mobile);
+    if (!mobile) {
+      this.isMobileMenuOpen.set(false);
     }
-    this.showNotifications = false;
   }
 
-  clearAll() {
-    this.notifications = [];
-    this.showNotifications = false;
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.isMobileMenuOpen.set(false);
   }
 
-  // Close dropdown when clicking outside
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    if (this.notifWrapper && !this.notifWrapper.nativeElement.contains(event.target)) {
-      this.showNotifications = false;
+  /** Keeps the admin "Approval Workflows" group open while one of its pages is shown. */
+  private syncWorkflowMenu(url: string): void {
+    if (url.startsWith('/admin/workflows')) {
+      this.isWorkflowMenuOpen.set(true);
     }
   }
 }

@@ -20,8 +20,16 @@
 <!-- ─── Success State ─── -->
 <div *ngIf="!isLoading && !decryptError" class="payment-container success">
 
-  <div class="alert alert-success fw-bold text-center">
+  <!-- Only claim the submission once the API confirmed it -->
+  <div *ngIf="submissionComplete" class="alert alert-success fw-bold text-center">
     ✔ APPLICATION SUBMITTED SUCCESSFULLY
+  </div>
+  <div *ngIf="!submissionComplete && !submissionError" class="alert alert-info text-center" role="status">
+    Submitting your application, please wait...
+  </div>
+  <div *ngIf="submissionError" class="alert alert-warning text-center" role="alert">
+    Payment received, but the application could not be submitted automatically.
+    Use "Complete Submission" on your dashboard (no new payment is needed).
   </div>
 
   <h2>✅ Payment Successful</h2>

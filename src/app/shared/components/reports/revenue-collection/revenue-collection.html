@@ -14,62 +14,60 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn secondary" (click)="exportPDF()">Export PDF</button>
-      <button class="btn primary" (click)="exportExcel()">Export Excel</button>
+      <button class="btn secondary" (click)="exportPDF()" [disabled]="loading || !table.length">Export PDF</button>
+      <button class="btn primary" (click)="exportExcel()" [disabled]="loading || !table.length">Export Excel</button>
     </div>
   </div>
 
-  <!-- FILTERS -->
-  <div class="filters-card">
+  <!-- FILTERS (sent to the API: corporationId, fromDate, toDate) -->
+  <form class="filters-card" (ngSubmit)="applyFilter()">
     <div class="filter-group">
-      <label>Financial Year</label>
-      <select>
-        <option>2025–2026</option>
+      <label for="rc-corporation">Corporation</label>
+      <select id="rc-corporation" name="corporation" [(ngModel)]="selectedCorporationId">
+        <option [ngValue]="null">All Corporations</option>
+        <option *ngFor="let c of corporations" [ngValue]="c.id">{{ c.name }}</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label>Zone</label>
-      <select [(ngModel)]="selectedZone" (change)="applyFilter()">
-        <option value="All">All Zones</option>
-        <option *ngFor="let row of table" [value]="row.CorporationId">
-          {{row.CorporationId}}
-        </option>
-      </select>
+      <label for="rc-from">From Date</label>
+      <input id="rc-from" type="date" name="fromDate" [(ngModel)]="fromDate" [max]="toDate || null" />
     </div>
 
-    <!-- <div class="filter-group">
-      <label>Payment Mode</label>
-      <select>
-        <option>All</option>
-        <option>Online</option>
-        <option>Cash</option>
-        <option>Cheque</option>
-      </select>
-    </div> -->
-  </div>
+    <div class="filter-group">
+      <label for="rc-to">To Date</label>
+      <input id="rc-to" type="date" name="toDate" [(ngModel)]="toDate" [min]="fromDate || null" />
+    </div>
+
+    <div class="filter-group filter-actions">
+      <button type="submit" class="btn primary" [disabled]="loading">Apply</button>
+      <button type="button" class="btn secondary" (click)="resetFilters()" [disabled]="loading || !isFiltered">Reset</button>
+    </div>
+
+    <div class="filter-error" *ngIf="filterError" role="alert">{{ filterError }}</div>
+  </form>
 
   <!-- SUMMARY CARDS -->
   <div class="summary-grid">
 
     <div class="summary-card total">
       <h4>Total Demand</h4>
-      <span class="amount">₹ {{summary?.TotalDemand | number}}</span>
+      <span class="amount">{{ summary ? '₹ ' + (summary.TotalDemand | number) : '-' }}</span>
     </div>
 
     <div class="summary-card collected">
       <h4>Total Collected</h4>
-      <span class="amount">₹ {{summary?.TotalCollected | number}}</span>
+      <span class="amount">{{ summary ? '₹ ' + (summary.TotalCollected | number) : '-' }}</span>
     </div>
 
     <div class="summary-card pending">
       <h4>Pending Amount</h4>
-      <span class="amount">₹ {{summary?.PendingAmount | number}}</span>
+      <span class="amount">{{ summary ? '₹ ' + (summary.PendingAmount | number) : '-' }}</span>
     </div>
 
     <div class="summary-card transactions">
       <h4>Total Transactions</h4>
-      <span class="count">{{summary?.TotalTransactions | number}}</span>
+      <span class="count">{{ summary ? (summary.TotalTransactions | number) : '-' }}</span>
     </div>
 
   </div>
@@ -78,59 +76,34 @@
   <div class="table-card">
     <h3 class="section-title">Collection Summary</h3>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Zone</th>
-          <th>Demand (₹)</th>
-          <th>Collected (₹)</th>
-          <th>Pending (₹)</th>
-          <th>Collection %</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of filteredTable">
-          <td>{{row.CorporationId}}</td>
-          <td>{{row.Demand | number}}</td>
-          <td>{{row.Collected | number}}</td>
-          <td>{{row.Pending | number}}</td>
-          <td>{{row.CollectionPercent}}%</td>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Corporation</th>
+            <th>Demand (₹)</th>
+            <th>Collected (₹)</th>
+            <th>Pending (₹)</th>
+            <th>Collection %</th>
           </tr>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of table">
+            <td>{{ corporationName(row.CorporationId) }}</td>
+            <td>{{row.Demand | number}}</td>
+            <td>{{row.Collected | number}}</td>
+            <td>{{row.Pending | number}}</td>
+            <td>{{row.CollectionPercent}}%</td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="5" class="no-data">Loading report...</td>
+          </tr>
+          <tr *ngIf="!loading && loaded && !table.length">
+            <td colspan="5" class="no-data">No records found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- PAYMENT MODE SUMMARY -->
-  <!-- <div class="table-card">
-    <h3 class="section-title">Payment Mode-wise Collection</h3>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Payment Mode</th>
-          <th>Transactions</th>
-          <th>Amount Collected (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Online</td>
-          <td>12,840</td>
-          <td>7,45,30,000</td>
-        </tr>
-        <tr>
-          <td>Cash</td>
-          <td>4,210</td>
-          <td>1,85,60,000</td>
-        </tr>
-        <tr>
-          <td>Cheque</td>
-          <td>1,402</td>
-          <td>55,50,000</td>
-        </tr>
-      </tbody>
-    </table>
-  </div> -->
-
 </div>
-

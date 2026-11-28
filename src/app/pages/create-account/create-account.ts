@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, ViewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RecaptchaComponent, RecaptchaModule } from 'ng-recaptcha';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -12,6 +13,7 @@ import { signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { environment } from '../../../environments/environment';
+import { normalizeRole } from '../../core/utils/role-home';
 
 
 @Component({
@@ -33,6 +35,8 @@ export class CreateAccount {
   };
   
   otp: string = '';
+  /** True while registration (and the login after it) is in flight. */
+  isRegistering = false;
   isVerifyingOtp = false;
   isotpSent = false;
   isOtpLoading = signal(false);
@@ -60,32 +64,29 @@ export class CreateAccount {
     this.isotpSent = false;
     this.isVerifyingOtp = false;
     this.otp = '';
+    this.otpToken = ''; // a verification belongs to the previous number
   }
-  onClicksendOTP() {
-    //if (isOtpLoading) return;
 
-    // validations
-    if (!this.registerModel.fullName) {
-      this.notificationService.show('Please enter full name', 'warning');
-      return;
-    }
-    if (!this.registerModel.emailID) {
-      this.notificationService.show('Please enter email', 'warning');
-      return;
-    }
-    if (!this.registerModel.mobileNumber) {
-      this.notificationService.show('Please enter phone number', 'warning');
-      return;
-    }
-    if (!this.isValidPhone()) {
-      this.notificationService.show('Please enter a valid 10-digit mobile number', 'warning');
+  /** Field checks shared by Send OTP and Create Account; returns the first problem, or ''. */
+  validateDetails(): string {
+    const { fullName, emailID, mobileNumber } = this.registerModel;
+    if (!fullName.trim()) return 'Please enter full name';
+    if (!emailID.trim()) return 'Please enter email';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailID.trim())) return 'Please enter a valid email address';
+    if (!mobileNumber) return 'Please enter phone number';
+    if (!this.isValidPhone()) return 'Please enter a valid 10-digit mobile number';
+    return '';
+  }
+
+  onClicksendOTP() {
+    const problem = this.validateDetails();
+    if (problem) {
+      this.notificationService.show(problem, 'warning');
       return;
     }
 
     //start 20 sec cooldown
     this.startOtpCooldown();
-
-    //this.isOtpLoading = true;
 
     this.createAccountService.sendOtp(this.registerModel.mobileNumber).subscribe({
       next: (res) => {
@@ -95,30 +96,41 @@ export class CreateAccount {
           res?.Message || 'OTP sent successfully',
           'success'
         );
-        // console.log('OTP response:', res);
       },
-      error: () => {
-        this.notificationService.show(
-          'Failed to send OTP',
-          'error'
-        );
+      error: (err: HttpErrorResponse) => {
+        // let the user retry straight away instead of waiting out the cooldown
+        this.stopOtpCooldown();
+        this.notificationService.show(this.serverMessage(err) || 'Failed to send OTP', 'error');
       }
     });
   }
 
   /**20 second cooldown logic */
   startOtpCooldown() {
+    this.stopOtpCooldown();
     this.isOtpLoading.set(true);
     this.otpCooldown.set(20);
 
-    const timer = setInterval(() => {
+    this.otpTimer = setInterval(() => {
       this.otpCooldown.update(v => v - 1);
 
-      if (this.otpCooldown() === 0) {
-        clearInterval(timer);
-        this.isOtpLoading.set(false);
+      if (this.otpCooldown() <= 0) {
+        this.stopOtpCooldown();
       }
     }, 1000);
+  }
+
+  private stopOtpCooldown() {
+    if (this.otpTimer) {
+      clearInterval(this.otpTimer);
+      this.otpTimer = null;
+    }
+    this.isOtpLoading.set(false);
+  }
+
+  ngOnDestroy() {
+    this.stopOtpCooldown();
+    this.otpSub?.unsubscribe();
   }
 
   isValidPhone(): boolean {
@@ -128,6 +140,11 @@ export class CreateAccount {
 
   /** One-time proof from otp/verify; login-user requires it for this mobile number. */
   private otpToken = '';
+
+  /** True once otp/verify accepted the OTP for the current mobile number. */
+  get isOtpVerified(): boolean {
+    return !!this.otpToken;
+  }
 
   verifyOtpAutomatically() {
     this.createAccountService
@@ -150,22 +167,39 @@ export class CreateAccount {
           this.otp = '';
         }
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
+        this.otpToken = '';
         this.isVerifyingOtp = false;
-        alert('OTP verification failed');
+        this.otp = '';
+        this.notificationService.show(this.serverMessage(err) || 'OTP verification failed', 'error');
       }
     });
   }
 
   onRegister() {
-    if (!this.isVerifyingOtp) {
+    if (this.isRegistering) {
+      return;
+    }
+    const problem = this.validateDetails();
+    if (problem) {
+      this.notificationService.show(problem, 'warning');
+      return;
+    }
+    if (!this.isOtpVerified) {
       this.notificationService.show(
-        'Please verify OTP before registering.',
+        this.isVerifyingOtp ? 'Please wait while your OTP is verified.' : 'Please verify OTP before registering.',
         'warning'
       );
       return;
     }
-    this.createAccountService.post<any>('/Auth/register', this.registerModel).subscribe({
+
+    this.isRegistering = true;
+    const payload = {
+      fullName: this.registerModel.fullName.trim(),
+      emailID: this.registerModel.emailID.trim(),
+      mobileNumber: this.registerModel.mobileNumber,
+    };
+    this.createAccountService.post<any>('/Auth/register', payload).subscribe({
       next: (res) => {
         this.setUsrToken();
         this.notificationService.show(
@@ -173,35 +207,22 @@ export class CreateAccount {
           'success'
         );
       },
-      error: (err) => {
-        //Duplicate / SQL error comes here (API returns camelCase JSON: { message })
-        let message = 'Something went wrong. Please try again.';
-
-        if (err?.error) {
-          if (typeof err.error === 'string') {
-            message = err.error; // e.g. "Mobile number already registered"
-          } else if (err.error.message || err.error.Message) {
-            message = err.error.message || err.error.Message;
-          }
-        }
-
-        this.notificationService.show(message, 'error');
+      error: (err: HttpErrorResponse) => {
+        this.isRegistering = false;
+        // Duplicate mobile / email comes back as 409 { message }
+        this.notificationService.show(this.serverMessage(err) || 'Something went wrong. Please try again.', 'error');
       }
     });
   }
 
-  onOtpInput(event: any) { 
-    // Allow digits only 
-    this.otp = this.otp.replace(/\D/g, ''); 
+  onOtpInput(event: any) {
+    // Allow digits only
+    this.otp = this.otp.replace(/\D/g, '');
 
-    // Auto verify when 6 digits entered 
+    // Auto verify when 6 digits entered; verifyOtpAutomatically announces the result
     if (this.otp.length === 6 && !this.isVerifyingOtp) {
-      this.verifyOtpAutomatically(); 
       this.isVerifyingOtp = true;
-      this.notificationService.show(
-        'OTP is verified!',
-        'success'
-      );
+      this.verifyOtpAutomatically();
     }
   }
 
@@ -223,10 +244,13 @@ export class CreateAccount {
   }
 
   onCaptchaExpired() {
+    this.isRegistering = false;
     this.notificationService.show('Captcha expired. Please log in from the login page.', 'warning');
+    this.router.navigate(['/login']);
   }
 
   onCaptchaErrored() {
+    this.isRegistering = false;
     this.notificationService.show('Account created. Please log in from the login page.', 'warning');
     this.router.navigate(['/login']);
   }
@@ -241,20 +265,30 @@ export class CreateAccount {
 
     this.auth.userlogin(payload).subscribe({
       next: () => {
-        // login successful if we reach here
-        const role = (this.tokenService.getEffectiveRole() || this.tokenService.getUserRole() || this.tokenService.getRole())
-          .toLowerCase()
-          .replace(/[\s_-]+/g, '');
+        this.isRegistering = false;
+        const role = normalizeRole(
+          this.tokenService.getEffectiveRole() || this.tokenService.getUserRole() || this.tokenService.getRole()
+        );
         if (role === 'tradeowner' || role === 'trader') {
           this.router.navigate(['/trader']);
+          return;
         }
+        this.notificationService.show('Account created. Please log in from the login page.', 'warning');
+        this.router.navigate(['/login']);
       },
       error: () => {
-        this.notificationService.show(
-          'Unable to redirect to user trade',
-          'error'
-        );
+        // The account exists at this point; only the automatic sign-in failed.
+        this.isRegistering = false;
+        this.notificationService.show('Account created. Please sign in with your mobile number.', 'warning');
+        this.router.navigate(['/login'], { queryParams: { mode: 'user' } });
       }
     });
+  }
+
+  private serverMessage(err: HttpErrorResponse): string {
+    const body = err?.error;
+    if (typeof body === 'string') return body;
+    const msg = body?.message ?? body?.Message ?? body?.error ?? body?.Error;
+    return typeof msg === 'string' ? msg : '';
   }
 }

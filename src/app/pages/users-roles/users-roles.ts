@@ -8,7 +8,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, timer } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 
 import {
   UsersRolesService,
@@ -18,7 +18,7 @@ import {
   LoginMasterRequest,
   UserJurisdiction,
 } from './user-roles.service';
-import { GbaCorporation, GbaWard, GbaZone, Zones } from '../../core/models/new-trade-licenses.model';
+import { GbaCorporation, GbaWard, GbaZone } from '../../core/models/new-trade-licenses.model';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Observable, of } from 'rxjs';
 import { LoaderService } from '../../shared/components/loader/loader.service';
@@ -84,7 +84,6 @@ export class UsersRoles implements OnInit, OnDestroy {
   searchText = '';
 
   /* ─── Dropdowns ──────────────────────────── */
-  zones: Zones[] = [];
   officeList: OfficeDetail[] = [];
   designationList: UserDesignation[] = [];
 
@@ -107,6 +106,7 @@ export class UsersRoles implements OnInit, OnDestroy {
   /* ─── Delete modal ───────────────────────── */
   showDeleteModal = false;
   userToDeleteId: number | null = null;
+  userToDeleteLogin = '';
   isDeleting = false;
 
   /* ─── Toast notifications ────────────────── */
@@ -142,9 +142,10 @@ export class UsersRoles implements OnInit, OnDestroy {
 
   private initSearchStream(): void {
     this.searchInput$
+      // No distinctUntilChanged: Clear resets the list outside this stream, so typing the same
+      // term again after Clear must search again (ngModelChange only fires on real edits anyway)
       .pipe(
         debounceTime(400),
-        distinctUntilChanged(),
         takeUntil(this.destroy$),
       )
       .subscribe((term) => {
@@ -228,7 +229,6 @@ export class UsersRoles implements OnInit, OnDestroy {
   ══════════════════════════════════════════ */
 
   private loadDropdowns(): void {
-    this.loadZones();
     this.loadOffices();
     this.loadDesignations();
     this.loadCorporations();
@@ -243,7 +243,7 @@ export class UsersRoles implements OnInit, OnDestroy {
           this.corporations = res ?? [];
           this.cdr.markForCheck();
         },
-        error: () => {},
+        error: () => this.showToast('error', 'Failed to load the corporation list.'),
       });
   }
 
@@ -270,10 +270,17 @@ export class UsersRoles implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
-    this.usersRolesService.getGbaZones(this.gbaCorporationID)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((z) => { this.gbaZones = z ?? []; this.cdr.markForCheck(); });
+    this.loadGbaZones(this.gbaCorporationID);
     this.loadGbaWards();
+  }
+
+  private loadGbaZones(corporationId: number): void {
+    this.usersRolesService.getGbaZones(corporationId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (z) => { this.gbaZones = z ?? []; this.cdr.markForCheck(); },
+        error: () => this.showToast('error', 'Failed to load GBA zones.'),
+      });
   }
 
   onGbaZoneChange(zoneId: number | null): void {
@@ -286,13 +293,16 @@ export class UsersRoles implements OnInit, OnDestroy {
     if (!this.gbaCorporationID) return;
     this.usersRolesService.getGbaWards(this.gbaCorporationID, this.gbaZoneID)
       .pipe(takeUntil(this.destroy$))
-      .subscribe((w) => {
-        this.gbaWards = (w ?? []).map((x) => ({ ...x, label: `${x.wardNo} - ${x.wardName}` } as GbaWard & { label: string }));
-        if (pruneSelection) {
-          const allowed = new Set(this.gbaWards.map((x) => x.gbaWardID));
-          this.gbaWardIDs = this.gbaWardIDs.filter((id) => allowed.has(id));
-        }
-        this.cdr.markForCheck();
+      .subscribe({
+        next: (w) => {
+          this.gbaWards = (w ?? []).map((x) => ({ ...x, label: `${x.wardNo} - ${x.wardName}` } as GbaWard & { label: string }));
+          if (pruneSelection) {
+            const allowed = new Set(this.gbaWards.map((x) => x.gbaWardID));
+            this.gbaWardIDs = this.gbaWardIDs.filter((id) => allowed.has(id));
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => this.showToast('error', 'Failed to load GBA wards.'),
       });
   }
 
@@ -314,12 +324,11 @@ export class UsersRoles implements OnInit, OnDestroy {
             ? zoneIds[0]
             : null;
           this.gbaWardIDs = wardIds;
-          this.usersRolesService.getGbaZones(corporationId)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe((z) => { this.gbaZones = z ?? []; this.cdr.markForCheck(); });
+          this.loadGbaZones(corporationId);
           this.loadGbaWards();
+          this.cdr.markForCheck();
         },
-        error: () => {},
+        error: () => this.showToast('error', 'Failed to load the saved Corporation / Ward assignment.'),
       });
   }
 
@@ -367,32 +376,17 @@ export class UsersRoles implements OnInit, OnDestroy {
     return this.jurisdictionLabels[this.resolveUserId(user)] ?? '—';
   }
 
-  private loadZones(): void {
-    this.usersRolesService
-      .getZones()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res) => {
-          this.zones = res;
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          //console.error('Zone load failed:', err),
-        }
-      });
-  }
-
   private loadOffices(): void {
     this.usersRolesService
       .getOfficeDetails()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
-          this.officeList = res;
+          this.officeList = res ?? [];
           this.cdr.markForCheck();
         },
-        error: (err) => {
-          //console.error('Office load failed:', err),
+        error: () => {
+          this.showToast('error', 'Failed to load the office list.');
         }
       });
   }
@@ -403,11 +397,11 @@ export class UsersRoles implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
-          this.designationList = res.filter((d) => d.isActive === 'Y');
+          this.designationList = (res ?? []).filter((d) => d.isActive === 'Y');
           this.cdr.markForCheck();
         },
-        error: (err) => {
-          //console.error('Designation load failed:', err),
+        error: () => {
+          this.showToast('error', 'Failed to load the designation list.');
         }
       });
   }
@@ -590,8 +584,14 @@ export class UsersRoles implements OnInit, OnDestroy {
      DELETE  ✅ uses modal, not browser confirm
   ══════════════════════════════════════════ */
 
-  requestDeleteUser(loginID: number): void {
+  requestDeleteUser(user: LoginMaster): void {
+    const loginID = this.resolveUserId(user);
+    if (!loginID) {
+      this.showToast('error', 'This user has no ID and cannot be deleted.');
+      return;
+    }
     this.userToDeleteId = loginID;
+    this.userToDeleteLogin = user.login ?? '';
     this.showDeleteModal = true;
     this.cdr.markForCheck();
   }
@@ -781,7 +781,7 @@ export class UsersRoles implements OnInit, OnDestroy {
   }
 
   trackByToast(_: number, t: Toast): number { return t.id; }
-  trackByUser(_: number, u: LoginMaster): number { return u.loginID; }
+  trackByUser(_: number, u: LoginMaster): number { return this.resolveUserId(u); }
 
   private resolveUserId(user: Partial<LoginMaster> | null | undefined): number {
     return Number(user?.loginID ?? user?.loginId ?? user?.id ?? 0);

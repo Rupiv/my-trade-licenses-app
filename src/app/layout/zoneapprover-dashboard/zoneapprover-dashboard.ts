@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { Subscription, catchError, finalize, forkJoin, of, retry, timeout } from 'rxjs';
+import { Subscription, finalize, retry, timeout } from 'rxjs';
 import { TokenService } from '../../core/services/token.service';
 import { ZoneApprovingOfficerService } from '../../pages/zone-approving-officer/zone-approving-officer.service';
 import { ZoneApproverApplication } from '../../pages/zone-approving-officer/zone-approving-officer.service';
@@ -12,12 +12,16 @@ interface KpiCard {
   tone: 'primary' | 'warning' | 'success' | 'danger';
 }
 
-interface ZoneWorkloadRow {
+// One row per zone, counting the statuses the zone-approver queue holds (INSPECTED / OBJECTION / REJECTED)
+export interface ZoneWorkloadRow {
   zone: string;
-  pending: number;
-  forwarded: number;
+  inspected: number;
   objections: number;
+  rejected: number;
 }
+
+// The zone-workload table is built from one page of the queue (the API caps pageSize at 500)
+export const ZONE_SUMMARY_PAGE_SIZE = 500;
 
 @Component({
   selector: 'app-zoneapprover-dashboard',
@@ -29,6 +33,7 @@ export class ZoneapproverDashboard implements OnDestroy {
   isLoading = false;
   loadError = '';
   private requestSub: Subscription | null = null;
+  private summarySub: Subscription | null = null;
   private bootstrapTimer: ReturnType<typeof setTimeout> | null = null;
   private parallaxX = 0;
   private parallaxY = 0;
@@ -41,6 +46,11 @@ export class ZoneapproverDashboard implements OnDestroy {
   ];
 
   zoneSummary: ZoneWorkloadRow[] = [];
+  zoneSummaryLoading = false;
+  zoneSummaryError = '';
+  // How many queue rows the zone table covers, out of the queue total
+  zoneSummaryCovered = 0;
+  zoneSummaryTotal = 0;
 
   constructor(
     private readonly zoneApprovingOfficerService: ZoneApprovingOfficerService,
@@ -55,6 +65,8 @@ export class ZoneapproverDashboard implements OnDestroy {
   ngOnDestroy(): void {
     this.requestSub?.unsubscribe();
     this.requestSub = null;
+    this.summarySub?.unsubscribe();
+    this.summarySub = null;
     if (this.bootstrapTimer) {
       clearTimeout(this.bootstrapTimer);
       this.bootstrapTimer = null;
@@ -95,10 +107,21 @@ export class ZoneapproverDashboard implements OnDestroy {
     const total = this.kpis[3]?.value ?? 0;
 
     return [
-      `${inspected} inspected applications in queue`,
-      `${objections} applications currently in objection`,
-      `${rejected} rejected out of ${total} total applications`
+      `${this.formatNumber(inspected)} inspected applications in queue`,
+      `${this.formatNumber(objections)} applications currently in objection`,
+      `${this.formatNumber(rejected)} rejected out of ${this.formatNumber(total)} total applications`
     ];
+  }
+
+  get zoneSummaryIsPartial(): boolean {
+    return this.zoneSummaryTotal > this.zoneSummaryCovered;
+  }
+
+  refresh(): void {
+    const loginId = this.resolveLoginId();
+    if (loginId) {
+      this.loadDashboard(loginId);
+    }
   }
 
   private bootstrapDashboardLoad(attempt = 0): void {
@@ -124,12 +147,16 @@ export class ZoneapproverDashboard implements OnDestroy {
     this.isLoading = true;
     this.loadError = '';
 
+    // KPI counts (TradeLicenceZoneApproverController GET dashboard)
     this.requestSub = this.zoneApprovingOfficerService
       .getZoneApproverDashboard(loginId)
       .pipe(
         timeout(10000),
         retry({ count: 1, delay: 800 }),
-        catchError(() => of(null))
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
       )
       .subscribe({
         next: (dashboardResponse) => {
@@ -141,50 +168,6 @@ export class ZoneapproverDashboard implements OnDestroy {
             { label: 'Rejected', value: this.pickNumber(dashboard, ['TotalRejected', 'totalRejected', 'Rejected', 'rejected']), tone: 'danger' },
             { label: 'Grand Total', value: this.pickNumber(dashboard, ['GrandTotal', 'grandTotal', 'Total', 'total']), tone: 'success' }
           ];
-
-          const apiZoneSummary = this.extractZoneSummary(dashboard);
-          if (apiZoneSummary.length > 0) {
-            this.zoneSummary = apiZoneSummary;
-            this.loadError = '';
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return;
-          }
-
-          this.loadZoneSummaryFromApplications(loginId);
-        },
-        error: () => {
-          this.loadError = 'Dashboard service is unavailable. Please try again.';
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
-  }
-
-  private loadZoneSummaryFromApplications(loginId: number): void {
-    this.requestSub?.unsubscribe();
-    this.requestSub = forkJoin({
-      dashboard: this.zoneApprovingOfficerService.getZoneApproverDashboard(loginId).pipe(catchError(() => of(null))),
-      applications: this.zoneApprovingOfficerService.getZoneApproverApplications(loginId, 1, 500).pipe(catchError(() => of(null)))
-    })
-      .pipe(
-        timeout(10000),
-        retry({ count: 1, delay: 800 }),
-        finalize(() => {
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: ({ dashboard, applications }) => {
-          const dashboardData = dashboard?.dashboard ?? dashboard?.Dashboard ?? {};
-          const rowsFromDashboard = this.extractZoneSummary(dashboardData);
-          if (rowsFromDashboard.length > 0) {
-            this.zoneSummary = rowsFromDashboard;
-          } else {
-            const apps: ZoneApproverApplication[] = applications?.data ?? applications?.Data ?? [];
-            this.zoneSummary = this.aggregateZoneSummary(apps);
-          }
           this.loadError = '';
           this.cdr.detectChanges();
         },
@@ -193,44 +176,57 @@ export class ZoneapproverDashboard implements OnDestroy {
           this.cdr.detectChanges();
         }
       });
+
+    this.loadZoneSummary(loginId);
   }
 
-  private extractZoneSummary(dashboard: Record<string, any>): ZoneWorkloadRow[] {
-    const rows =
-      dashboard?.['zoneSummary'] ??
-      dashboard?.['ZoneSummary'] ??
-      dashboard?.['zones'] ??
-      dashboard?.['Zones'] ??
-      [];
+  // The dashboard API has no per-zone breakdown, so the zone table is counted from the queue itself.
+  private loadZoneSummary(loginId: number): void {
+    this.summarySub?.unsubscribe();
+    this.zoneSummaryLoading = true;
+    this.zoneSummaryError = '';
 
-    if (!Array.isArray(rows)) {
-      return [];
-    }
-
-    return rows
-      .map((row: any) => ({
-        zone: String(row?.zone ?? row?.Zone ?? row?.zoneName ?? row?.ZoneName ?? row?.mohName ?? row?.MohName ?? '').trim(),
-        pending: this.pickNumber(row, ['pending', 'Pending', 'pendingCrossCheck', 'PendingCrossCheck', 'totalPending', 'TotalPending', 'inspected', 'Inspected']),
-        forwarded: this.pickNumber(row, ['forwarded', 'Forwarded', 'forwardedToSenior', 'ForwardedToSenior', 'totalForwarded', 'TotalForwarded']),
-        objections: this.pickNumber(row, ['objections', 'Objections', 'objection', 'Objection', 'totalObjection', 'TotalObjection'])
-      }))
-      .filter((row) => !!row.zone);
+    this.summarySub = this.zoneApprovingOfficerService
+      .getZoneApproverApplications(loginId, 1, ZONE_SUMMARY_PAGE_SIZE)
+      .pipe(
+        timeout(15000),
+        finalize(() => {
+          this.zoneSummaryLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          const apps: ZoneApproverApplication[] = response?.data ?? response?.Data ?? [];
+          this.zoneSummary = this.aggregateZoneSummary(apps);
+          this.zoneSummaryCovered = apps.length;
+          this.zoneSummaryTotal = Number(response?.totalRecords ?? response?.TotalRecords ?? apps.length);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.zoneSummary = [];
+          this.zoneSummaryCovered = 0;
+          this.zoneSummaryTotal = 0;
+          this.zoneSummaryError = 'Unable to load the zone workload.';
+          this.cdr.detectChanges();
+        }
+      });
   }
 
-  private aggregateZoneSummary(apps: ZoneApproverApplication[]): ZoneWorkloadRow[] {
+  aggregateZoneSummary(apps: ZoneApproverApplication[]): ZoneWorkloadRow[] {
     const grouped = new Map<string, ZoneWorkloadRow>();
 
     for (const app of apps) {
       const zone = String(app?.mohName || 'Unknown Zone').trim();
       const status = String(app?.licenceApplicationStatusName || '').trim().toUpperCase();
-      const current = grouped.get(zone) ?? { zone, pending: 0, forwarded: 0, objections: 0 };
+      const current = grouped.get(zone) ?? { zone, inspected: 0, objections: 0, rejected: 0 };
 
       if (status.includes('OBJECTION')) {
         current.objections += 1;
-      } else if (status.includes('FORWARD')) {
-        current.forwarded += 1;
-      } else {
-        current.pending += 1;
+      } else if (status.includes('REJECT')) {
+        current.rejected += 1;
+      } else if (status.includes('INSPECT')) {
+        current.inspected += 1;
       }
 
       grouped.set(zone, current);

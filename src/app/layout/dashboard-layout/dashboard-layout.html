@@ -4,8 +4,15 @@
   <header class="topbar">
     <div class="topbar-left">
 
-      <button class="sidebar-toggle" (click)="toggleSidebar()">
-        <i class="bi bi-list"></i>
+      <button
+        type="button"
+        class="sidebar-toggle"
+        aria-label="Toggle navigation menu"
+        aria-controls="dashboardSidebar"
+        [attr.aria-expanded]="isMobile() ? isMobileMenuOpen() : !isSidebarCollapsed()"
+        (click)="toggleSidebar()"
+      >
+        <i class="bi" [class.bi-list]="!isMobileMenuOpen()" [class.bi-x-lg]="isMobileMenuOpen()"></i>
       </button>
 
       <div class="logo-box">
@@ -14,72 +21,11 @@
 
       <div class="brand-text">
         <div class="title">GBA Trade License</div>
-        <small class="subtitle">Trader Portal</small>
+        <small class="subtitle">{{ portalSubtitle }}</small>
       </div>
     </div>
 
     <div class="topbar-right">
-      <!-- Notification Bell -->
-      <div class="notification-wrapper" #notifWrapper>
-        <button class="icon-btn position-relative" (click)="toggleNotifications()">
-          <i class="bi bi-bell"></i>
-          <span class="badge bg-danger notification-count" *ngIf="unreadCount > 0">
-            {{ unreadCount }}
-          </span>
-        </button>
-
-        <!-- Dropdown Panel -->
-        <div class="notification-dropdown" *ngIf="showNotifications">
-
-          <!-- Header -->
-          <div class="notif-header">
-            <span>Notifications</span>
-            <button class="mark-all-btn" (click)="markAllAsRead()" *ngIf="unreadCount > 0">
-              Mark all as read
-            </button>
-          </div>
-
-          <!-- List -->
-          <div class="notif-list">
-
-            <div
-              class="notif-item"
-              *ngFor="let n of notifications"
-              [class.unread]="!n.read"
-              (click)="onNotificationClick(n)"
-            >
-              <div class="notif-icon" [ngClass]="n.type">
-                <i class="bi" [ngClass]="{
-                  'bi-check-circle-fill': n.type === 'success',
-                  'bi-exclamation-circle-fill': n.type === 'warning',
-                  'bi-x-circle-fill': n.type === 'danger',
-                  'bi-info-circle-fill': n.type === 'info'
-                }"></i>
-              </div>
-              <div class="notif-content">
-                <p class="notif-title">{{ n.title }}</p>
-                <p class="notif-message">{{ n.message }}</p>
-                <span class="notif-time">{{ n.time }}</span>
-              </div>
-              <span class="unread-dot" *ngIf="!n.read"></span>
-            </div>
-
-            <!-- Empty State -->
-            <div class="notif-empty" *ngIf="notifications.length === 0">
-              <i class="bi bi-bell-slash"></i>
-              <p>No notifications</p>
-            </div>
-
-          </div>
-
-          <!-- Footer -->
-          <div class="notif-footer" *ngIf="notifications.length > 0">
-            <button (click)="clearAll()">Clear All</button>
-          </div>
-
-        </div>
-      </div>
-
       <div class="user-info">
         <div class="name">{{ userFullName }}</div>
         <small class="email">{{ userEmailID }}</small>
@@ -90,11 +36,21 @@
   <!-- BODY -->
   <div class="dashboard-body">
 
+    <!-- Mobile drawer backdrop -->
+    @if (isMobileMenuOpen()) {
+      <div class="sidebar-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
+    }
+
     <!-- SIDEBAR -->
-    <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
+    <aside
+      id="dashboardSidebar"
+      class="sidebar"
+      [class.collapsed]="isSidebarCollapsed() && !isMobile()"
+      [class.mobile-open]="isMobileMenuOpen()"
+    >
 
       <nav class="menu" *ngIf="isAdminRole">
-        <a class="menu-item" routerLink="/admin" routerLinkActive="active">
+        <a class="menu-item" routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard</span>
         </a>
@@ -104,29 +60,24 @@
           <span>Users & Roles</span>
         </a>
 
-        <a class="menu-item" routerLink="/admin/system-settings" routerLinkActive="active">
-          <i class="bi bi-gear"></i>
-          <span>System Settings</span>
-        </a>
+        <!-- System Settings hidden: the backend has no settings API yet (the page explains this). -->
 
         <a class="menu-item" routerLink="/admin/licence-applications" routerLinkActive="active">
           <i class="bi bi-clipboard-check"></i>
           <span>Licence Applications</span>
         </a>
 
-        <!-- <a class="menu-item" routerLink="/admin/workflows" routerLinkActive="active">
-          <i class="bi bi-diagram-3"></i>
-          <span>Approval Workflows</span>
-        </a> -->
         <div class="menu-group">
-          <div class="menu-item"
+          <button type="button"
+              class="menu-item menu-toggle"
+              [attr.aria-expanded]="isWorkflowMenuOpen()"
               (click)="toggleWorkflowMenu()"
-              [class.active]="isWorkflowMenuOpen">
+              [class.active]="isWorkflowMenuOpen()">
             <i class="bi bi-diagram-3"></i>
             <span>Approval Workflows</span>
-            <i class="bi bi-chevron-down ms-auto small"></i>
-          </div>
-          <div class="submenu" *ngIf="isWorkflowMenuOpen">
+            <i class="bi ms-auto small" [class.bi-chevron-down]="!isWorkflowMenuOpen()" [class.bi-chevron-up]="isWorkflowMenuOpen()"></i>
+          </button>
+          <div class="submenu" *ngIf="isWorkflowMenuOpen()">
             <a class="menu-item submenu-item"
               routerLink="/admin/workflows/approving-officer"
               routerLinkActive="active">
@@ -148,30 +99,15 @@
           </div>
         </div>
 
-
-
         <a class="menu-item" routerLink="/admin/master-data-compliance" routerLinkActive="active">
           <i class="bi bi-database"></i>
           <span>Master Data</span>
         </a>
 
-        <!-- <a class="menu-item" routerLink="/admin/compliance" routerLinkActive="active">
-          <i class="bi bi-shield-check"></i>
-          <span>Compliance Rules</span>
-        </a> -->
-        <!-- <a
-          class="menu-item"
-          routerLink="/payments"
-          routerLinkActive="active"
-          >
-          <i class="bi bi-credit-card"></i>
-          Payments
-        </a> -->
-
-        <!-- <a class="menu-item" routerLink="/admin/monitoring" routerLinkActive="active">
-          <i class="bi bi-activity"></i>
-          <span>System Monitoring</span>
-        </a> -->
+        <a class="menu-item" routerLink="/admin/licence-certificate-lookup" routerLinkActive="active">
+          <i class="bi bi-patch-check"></i>
+          <span>Certificate Lookup</span>
+        </a>
 
         <a class="menu-item" routerLink="/admin/reports" routerLinkActive="active">
           <i class="bi bi-file-earmark-text"></i>
@@ -180,7 +116,7 @@
       </nav>
 
       <nav class="menu" *ngIf="isSeniorApproverRole">
-        <a class="menu-item" routerLink="/senior-approver" routerLinkActive="active">
+        <a class="menu-item" routerLink="/senior-approver" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard</span>
         </a>
@@ -197,11 +133,11 @@
       </nav>
 
       <nav class="menu" *ngIf="isApproverRole">
-        <a class="menu-item" routerLink="/approver" routerLinkActive="active">
+        <a class="menu-item" routerLink="/approver" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="bi bi-speedometer2"></i>
           <span>Dashboard</span>
         </a>
-        
+
         <a class="menu-item" routerLink="/approver/approving-officer" routerLinkActive="active">
           <i class="bi bi-diagram-3"></i>
           <span>Approval Workflows</span>
@@ -229,50 +165,34 @@
           <span>Reports</span>
         </a>
       </nav>
-  
 
       <nav class="menu" *ngIf="isTradeOwnerRole">
-
-        <a class="menu-item"
-          routerLink="/trader"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }">
+        <a class="menu-item" routerLink="/trader" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="bi bi-speedometer2"></i>
-          Dashboard
+          <span>Dashboard</span>
         </a>
 
-        <a class="menu-item"
-          routerLink="/trader/new-licenses"
-          routerLinkActive="active">
+        <a class="menu-item" routerLink="/trader/new-licenses" routerLinkActive="active">
           <i class="bi bi-plus-circle"></i>
-          New Application
+          <span>New Application</span>
         </a>
 
-        <!-- <a class="menu-item"
-          routerLink="/trader/trader-licenses"
-          routerLinkActive="active">
-          <i class="bi bi-check-circle"></i>
-          My Licenses
-        </a> -->
-
-        <a class="menu-item"
-          routerLink="/trader/renew-license"
-          routerLinkActive="active">
-          <i class="bi bi-credit-card"></i>
-          Renew License
+        <a class="menu-item" routerLink="/trader/track-application" routerLinkActive="active">
+          <i class="bi bi-geo-alt"></i>
+          <span>Track Application</span>
         </a>
 
-        <a class="menu-item"
-          routerLink="/trader/renewal-status"
-          routerLinkActive="active">
-          <i class="bi bi-credit-card"></i>
-          Renew Status
-        </a>
+        <!-- Renew License / Renewal Status are hidden until the backend provides a renewal API
+             (the /trader/renew-license and /trader/renewal-status routes explain this). -->
 
+        <a class="menu-item" routerLink="/support">
+          <i class="bi bi-question-circle"></i>
+          <span>Help & Support</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">
-        <button class="signout-btn" (click)="logout()">
+        <button type="button" class="signout-btn" (click)="logout()">
           <i class="bi bi-box-arrow-right"></i>
           <span>Sign Out</span>
         </button>

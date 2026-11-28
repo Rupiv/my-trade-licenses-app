@@ -13,6 +13,7 @@
     <div class="report-card">
       <h3>Control Sheet</h3>
       <p>Summary of applications by status</p>
+      <small class="admin-note" *ngIf="!isAdminSection">Available to administrators only.</small>
       <button (click)="onControlSheetClick()">View Report</button>
     </div>
 
@@ -27,13 +28,14 @@
     <div class="report-card">
       <h3>Ward-wise Licenses</h3>
       <p>Detailed report by ward / zone</p>
+      <small class="admin-note" *ngIf="!isAdminSection">Available to administrators only.</small>
       <button (click)="onWardWiseLicensesClick()">View Report</button>
     </div>
 
-    <!-- Compliance -->
+    <!-- Application-wise -->
     <div class="report-card">
       <h3>Application-wise Licenses</h3>
-      <p>Compliance and occupancy status</p>
+      <p>Licence applications by corporation / zone / ward</p>
       <button (click)="onApplicationWiseLicensesClick()">View Report</button>
     </div>
 
@@ -41,6 +43,7 @@
     <div class="report-card">
       <h3>Revenue & Collections</h3>
       <p>Payments and collection summary</p>
+      <small class="admin-note" *ngIf="!isAdminSection">Available to administrators only.</small>
       <button (click)="onRevenueCollectionClick()">View Report</button>
     </div>
   </div>

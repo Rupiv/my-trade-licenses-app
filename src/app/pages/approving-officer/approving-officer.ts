@@ -84,7 +84,38 @@ export class ApprovingOfficer implements OnDestroy {
   }
 
   onInspectionClick(applicationNo: number): void {
+    if (!applicationNo) {
+      return;
+    }
+    // Admin opens this queue from /admin/workflows; /approver/** is guarded to approvers,
+    // so admin uses the admin application view instead.
+    if (this.normalizeRole(this.tokenservice.getRole()) === 'admin') {
+      this.router.navigate(['/admin/licence-applications', applicationNo]);
+      return;
+    }
     this.router.navigate(['/approver/inspection', applicationNo]);
+  }
+
+  /**
+   * The approver API validates applicationNumber against ^[a-zA-Z0-9\-\/]*$ (max 50) and answers
+   * 400 otherwise, so only such text is sent; anything else (e.g. a name with a space) is
+   * matched on the loaded page.
+   */
+  get serverSearchText(): string {
+    const text = this.searchText.trim();
+    return text.length <= 50 && /^[a-zA-Z0-9\-\/]+$/.test(text) ? text : '';
+  }
+
+  /** Wards of the selected zone (GBA lookups carry ZoneID; others list one zone's wards only). */
+  get filteredWardOptions(): WardOption[] {
+    if (!this.selectedZoneId) {
+      return this.wardOptions;
+    }
+    return this.wardOptions.filter((w) => w.zoneId === null || w.zoneId === this.selectedZoneId);
+  }
+
+  private normalizeRole(role: string | null | undefined): string {
+    return (role ?? '').toLowerCase().replace(/[\s_-]+/g, '');
   }
 
   loadAppliedApproverApplications(): void {
@@ -96,6 +127,8 @@ export class ApprovingOfficer implements OnDestroy {
       return;
     }
 
+    // Also called from the debounced search timer: zoneless CD needs a nudge to show the spinner
+    this.cdr.markForCheck();
     const currentRequest = ++this.requestId;
     const requestBody: Record<string, unknown> = {
       loginId,
@@ -109,8 +142,8 @@ export class ApprovingOfficer implements OnDestroy {
     if (this.selectedWardId) {
       requestBody['wardId'] = this.selectedWardId;
     }
-    if (this.searchText.trim()) {
-      requestBody['applicationNumber'] = this.searchText.trim();
+    if (this.serverSearchText) {
+      requestBody['applicationNumber'] = this.serverSearchText;
     }
 
     const sub = this.approvingofficerService
@@ -170,7 +203,8 @@ export class ApprovingOfficer implements OnDestroy {
   onZoneChanged(): void {
     this.selectedWardId = null;
     this.pageNumber = 1;
-    this.applyLocalFilters();
+    // Zone is a server filter (mohId), like Ward; filtering only the loaded page missed rows
+    this.loadAppliedApproverApplications();
   }
 
   onWardChanged(): void {
@@ -235,13 +269,14 @@ export class ApprovingOfficer implements OnDestroy {
   }
 
   get displayTotalRecords(): number {
-    const hasLocalFilter = Boolean(
-      this.searchText.trim() ||
-      this.selectedZoneId ||
-      this.selectedWardId ||
-      this.selectedStatus.trim()
-    );
+    // Zone / Ward / application-number search are server-side (totalRecords reflects them);
+    // Status and free-text search are matched on the loaded page only.
+    const hasLocalFilter = Boolean(this.hasLocalSearch || this.selectedStatus.trim());
     return hasLocalFilter ? this.filteredApplications.length : this.totalRecords;
+  }
+
+  private get hasLocalSearch(): boolean {
+    return !!this.searchText.trim() && !this.serverSearchText;
   }
 
   onParallaxMove(event: MouseEvent): void {
@@ -299,6 +334,14 @@ export class ApprovingOfficer implements OnDestroy {
           this.selectedWardId = null;
         }
         this.cdr.detectChanges();
+      },
+      error: () => {
+        // Without this handler the failure reached the global ErrorHandler ("ERROR [object Object]")
+        // and the Zone / Ward filters silently stayed empty.
+        this.zoneOptions = [];
+        this.wardOptions = [];
+        this.notificationservice.show('Unable to load the zone and ward filters. Please refresh the page.', 'error');
+        this.cdr.detectChanges();
       }
     });
 
@@ -306,17 +349,11 @@ export class ApprovingOfficer implements OnDestroy {
   }
 
   private applyLocalFilters(): void {
-    const search = this.searchText.trim().toLowerCase();
+    // Zone / Ward / application-number search were already applied by the API.
+    const search = this.hasLocalSearch ? this.searchText.trim().toLowerCase() : '';
     const selectedStatus = this.selectedStatus.trim().toLowerCase();
-    const selectedZoneName = (this.zoneOptions.find((z) => z.id === this.selectedZoneId)?.name || '')
-      .trim()
-      .toLowerCase();
 
     this.filteredApplications = this.applications.filter((app) => {
-      const matchesZone =
-        !this.selectedZoneId ||
-        (!!selectedZoneName && (app.mohName || '').trim().toLowerCase() === selectedZoneName);
-      const matchesWard = !this.selectedWardId || Number(app.wardID) === this.selectedWardId;
       const matchesStatus =
         !selectedStatus ||
         (app.licenceApplicationStatusName || '').toLowerCase().includes(selectedStatus);
@@ -329,7 +366,7 @@ export class ApprovingOfficer implements OnDestroy {
         (app.wardName || '').toLowerCase().includes(search) ||
         (app.licenceApplicationStatusName || '').toLowerCase().includes(search);
 
-      return matchesZone && matchesWard && matchesStatus && matchesSearch;
+      return matchesStatus && matchesSearch;
     });
 
     this.pageApplications = this.filteredApplications;

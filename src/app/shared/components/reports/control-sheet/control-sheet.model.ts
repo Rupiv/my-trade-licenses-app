@@ -11,7 +11,8 @@ export interface StatusSummary {
   Percentage: number;
 }
 
+/** Raw API shape: both parts are Dapper rows (keys keep the SQL column casing); totals may be null. */
 export interface ControlSheetResponse {
-  totals: ControlSheetTotals;
-  statusSummary: StatusSummary[];
+  totals: Record<string, any> | null;
+  statusSummary: Record<string, any>[] | null;
 }

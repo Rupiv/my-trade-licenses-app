@@ -32,6 +32,8 @@ export class PaymentSuccess implements OnInit, OnDestroy {
   countdown = 10;
   /** True once the gateway-confirmed payment has been followed by a successful final submission. */
   submissionComplete = false;
+  /** Payment confirmed, but the automatic submission failed (recover via "Complete Submission"). */
+  submissionError = false;
 
   private countdownInterval: any;
   private readonly notifier = inject(NotificationService);
@@ -39,6 +41,8 @@ export class PaymentSuccess implements OnInit, OnDestroy {
   // Payment is confirmed but the automatic submission failed: the trader must know, and can finish it
   // with "Complete Submission" on the dashboard (the existing recovery path).
   private submissionFailed(): void {
+    this.submissionError = true;
+    this.cdr.markForCheck();
     this.loaderservice.hide();
     this.notifier.show(
       'Payment received, but the application could not be submitted automatically. ' +
@@ -152,7 +156,7 @@ export class PaymentSuccess implements OnInit, OnDestroy {
     const licenceApplicationID = Number(this.licensesApplicationId);
 
     if (!licenceApplicationID || Number.isNaN(licenceApplicationID)) {
-      this.loaderservice.hide();
+      this.submissionFailed();
       return;
     }
 

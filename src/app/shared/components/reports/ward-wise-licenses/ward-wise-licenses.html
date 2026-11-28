@@ -14,11 +14,11 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn secondary" (click)="exportToPDF()">
+      <button class="btn secondary" (click)="exportToPDF()" [disabled]="loading || !filteredTable.length">
         Export PDF
       </button>
 
-      <button class="btn primary" (click)="exportToExcel()">
+      <button class="btn primary" (click)="exportToExcel()" [disabled]="loading || !filteredTable.length">
         Export Excel
       </button>
 
@@ -29,36 +29,42 @@
   <div class="filters-card">
 
     <div class="filter-group">
-      <label>Financial Year</label>
-      <select>
-        <option>2025–2026</option>
+      <label for="ww-fy">Financial Year</label>
+      <select id="ww-fy" [(ngModel)]="selectedFinancialYearId" (ngModelChange)="onFinancialYearChange()"
+              [disabled]="loading || !financialYears.length">
+        <option *ngIf="!financialYears.length" [ngValue]="null">Not available</option>
+        <option *ngFor="let fy of financialYears" [ngValue]="fy.id">{{ fy.label }}</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label>Zone</label>
-      <select [(ngModel)]="selectedZone" (change)="applyFilter()">
+      <label for="ww-zone">Zone</label>
+      <select id="ww-zone" [(ngModel)]="selectedZone" (ngModelChange)="onZoneChange()">
         <option value="All">All Zones</option>
-          <option *ngFor="let z of zones" [value]="z">{{z}}</option>
+        <option *ngFor="let z of zones" [value]="z">{{z}}</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label>Ward</label>
-      <select [(ngModel)]="selectedWard" (change)="applyFilter()">
+      <label for="ww-ward">Ward</label>
+      <select id="ww-ward" [(ngModel)]="selectedWard" (ngModelChange)="applyFilter()">
         <option value="All">All Wards</option>
         <option *ngFor="let w of wards" [value]="w">{{w}}</option>
       </select>
     </div>
 
     <div class="filter-group">
-      <label>License Status</label>
-      <select [(ngModel)]="selectedStatus" (change)="applyFilter()">
+      <label for="ww-status">License Status</label>
+      <select id="ww-status" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilter()">
         <option value="All">All</option>
         <option value="Active">Active</option>
         <option value="Expired">Expired</option>
         <option value="Suspended">Suspended</option>
       </select>
+    </div>
+
+    <div class="filter-group filter-actions">
+      <button type="button" class="btn secondary" (click)="resetFilters()" [disabled]="!isFiltered">Reset</button>
     </div>
 
   </div>
@@ -68,51 +74,58 @@
 
     <div class="summary-card active">
       <h4>Active Licenses</h4>
-      <span class="count">{{summary?.ActiveLicenses}}</span>
+      <span class="count">{{ displayedSummary ? (displayedSummary.ActiveLicenses | number) : '-' }}</span>
     </div>
 
     <div class="summary-card expired">
       <h4>Expired Licenses</h4>
-      <span class="count">{{summary?.ExpiredLicenses}}</span>
+      <span class="count">{{ displayedSummary ? (displayedSummary.ExpiredLicenses | number) : '-' }}</span>
     </div>
 
     <div class="summary-card suspended">
       <h4>Suspended</h4>
-      <span class="count">{{summary?.SuspendedLicenses}}</span>
+      <span class="count">{{ displayedSummary ? (displayedSummary.SuspendedLicenses | number) : '-' }}</span>
     </div>
 
     <div class="summary-card total">
       <h4>Total Licenses</h4>
-      <span class="count">{{summary?.TotalLicenses}}</span>
+      <span class="count">{{ displayedSummary ? (displayedSummary.TotalLicenses | number) : '-' }}</span>
     </div>
 
   </div>
 
   <!-- TABLE -->
   <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>Zone</th>
-          <th>Ward</th>
-          <th>Active</th>
-          <th>Expired</th>
-          <th>Suspended</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of filteredTable">
-          <td>{{row.Zone}}</td>
-          <td>{{row.Ward}}</td>
-          <td>{{row.Active}}</td>
-          <td>{{row.Expired}}</td>
-          <td>{{row.Suspended}}</td>
-          <td>{{row.Total}}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Ward</th>
+            <th>Active</th>
+            <th>Expired</th>
+            <th>Suspended</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of filteredTable">
+            <td>{{row.Zone}}</td>
+            <td>{{row.Ward}}</td>
+            <td>{{row.Active | number}}</td>
+            <td>{{row.Expired | number}}</td>
+            <td>{{row.Suspended | number}}</td>
+            <td>{{row.Total | number}}</td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="6" class="no-data">Loading report...</td>
+          </tr>
+          <tr *ngIf="!loading && loaded && !filteredTable.length">
+            <td colspan="6" class="no-data">No records found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </div>
-

@@ -74,10 +74,10 @@ export class Support {
       ...this.session.trackLink(),
     },
     {
-      label: 'Renew License',
-      icon: 'bi-arrow-repeat',
-      description: 'Renew an existing licence',
-      ...this.session.renewLink(),
+      label: 'My Licenses',
+      icon: 'bi-patch-check',
+      description: 'Applications, payments and certificates',
+      ...this.session.myLicencesLink(),
     },
   ]);
 
@@ -123,8 +123,7 @@ export class Support {
     {
       question: 'How do I renew my licence?',
       answer:
-        'Sign in and open Renew License from your dashboard. Your licence details are filled in automatically; upload any updated documents and submit. Follow the progress under Renewal Status.',
-      action: { label: 'Renew license', ...this.session.renewLink() },
+        'Online renewal is not available on this portal yet. For renewal of an existing licence, contact the Public Health Department of your city corporation (see Contact below).',
     },
     {
       question: 'My ward is shown as "not yet open for applications".',

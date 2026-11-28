@@ -14,8 +14,9 @@
   </section>
 
   <section class="status-row">
-    <span>Last updated: {{ lastUpdated | date: 'dd MMM yyyy, hh:mm a' }}</span>
-    <span *ngIf="!loadError">Grand Total: {{ formatNumber(dashboard.GrandTotal) }}</span>
+    <span *ngIf="lastUpdated">Last updated: {{ lastUpdated | date: 'dd MMM yyyy, hh:mm a' }}</span>
+    <span *ngIf="!lastUpdated && isLoading">Loading dashboard...</span>
+    <span *ngIf="!loadError && hasLoaded">Grand Total: {{ formatNumber(dashboard.GrandTotal) }}</span>
   </section>
 
   <section class="error-state" *ngIf="loadError">
@@ -73,6 +74,9 @@
 
     <article class="panel">
       <header>Status Analytics</header>
+      <div class="panel-body" *ngIf="hasLoaded && !dashboard.GrandTotal">
+        <p class="text-muted mb-0">No applications recorded yet.</p>
+      </div>
       <div class="panel-body bars-body">
         <div class="mix-row" *ngFor="let item of decisionBars">
           <div class="mix-meta">

@@ -325,3 +325,9 @@
 .progress-bar {
   background-color: #1d4ed8;
 }
+
+@media (max-width: 767.98px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+}

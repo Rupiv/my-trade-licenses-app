@@ -1,35 +1,25 @@
-<div class="card timeline-card">
-  <div class="card-body">
+<div class="container page-content">
+  <div class="card form-card">
+    <div class="card-body">
+      <h6 class="section-title">Renewal Status</h6>
 
-    <h6 class="section-title">Renewal Status</h6>
+      <!-- No renewal API exists yet: do not show a sample timeline as if it were a real renewal. -->
+      <div class="alert alert-info mb-3" role="status">
+        <i class="bi bi-info-circle"></i>
+        Online renewal is not available on this portal yet, so there is no renewal to track.
+      </div>
 
-    <ul class="timeline">
-      <li class="completed">
-        <span class="dot"></span>
-        Renewal Initiated
-      </li>
+      <p class="mb-3">You can follow your licence applications from Track Application.</p>
 
-      <li class="completed">
-        <span class="dot"></span>
-        Payment Completed
-      </li>
-
-      <li class="active">
-        <span class="dot"></span>
-        Provisionally Renewed (90 Days)
-      </li>
-
-      <li>
-        <span class="dot"></span>
-        Under Verification
-      </li>
-
-      <li>
-        <span class="dot"></span>
-        Final Approval
-      </li>
-    </ul>
-
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" routerLink="/trader/track-application">
+          <i class="bi bi-geo-alt"></i>
+          Track Application
+        </a>
+        <a class="btn btn-outline-secondary" routerLink="/trader">
+          Back to Dashboard
+        </a>
+      </div>
+    </div>
   </div>
 </div>
-

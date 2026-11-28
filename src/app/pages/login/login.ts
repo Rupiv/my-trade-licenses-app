@@ -24,6 +24,8 @@ export class Login {
   @ViewChild(RecaptchaComponent) recaptcha?: RecaptchaComponent;
 
   isLogin = false;
+  /** True while a login request is in flight (blocks double submits). */
+  isSubmitting = false;
   isUserLogin = false;
   showPassword = false;
   email = '';
@@ -86,11 +88,27 @@ export class Login {
       return;
     }
 
+    if (this.isSubmitting) {
+      return;
+    }
+
     if (this.isUserLogin) {
       if (!this.mobileNumber) {
         this.notificationService.show('Please enter mobile number', 'warning');
         return;
-    }
+      }
+      if (!this.isValidPhone()) {
+        this.notificationService.show('Please enter a valid 10-digit mobile number', 'warning');
+        return;
+      }
+      // login-user only accepts the one-time token returned by otp/verify for this number
+      if (!this.otpToken) {
+        this.notificationService.show(
+          this.isotpSent ? 'Please enter the 6-digit OTP sent to your mobile number' : 'Please click Send OTP and verify your mobile number first',
+          'warning'
+        );
+        return;
+      }
 
       this.pendingLoginMode = 'user';
       this.captchaToken = this.getCaptchaToken();
@@ -160,6 +178,7 @@ export class Login {
   }
 
   private clearCaptchaState() {
+    this.isSubmitting = false;
     this.captchaToken = this.getCaptchaToken();
     this.captchaInProgress = false;
     this.pendingLoginMode = null;
@@ -170,6 +189,7 @@ export class Login {
   }
 
   private submitAdminLogin() {
+    this.isSubmitting = true;
     const payload = {
       usernameOrPhone: this.email.trim(),
       password: this.password,
@@ -221,7 +241,12 @@ export class Login {
         }
 
         if (error.status === 401 || error.status === 400) {
-          this.notificationService.show('Invalid credentials', 'warning');
+          this.notificationService.show(this.serverMessage(error) || 'Invalid credentials', 'warning');
+          return;
+        }
+
+        if (error.status === 429) {
+          this.notificationService.show(this.serverMessage(error) || 'Too many attempts. Please wait and try again.', 'warning');
           return;
         }
 
@@ -231,12 +256,19 @@ export class Login {
   }
 
   private submitUserLogin() {
+    this.isSubmitting = true;
     const payload = {
       mobileNumber: this.mobileNumber,
       captchaToken: this.captchaToken,
       otpToken: this.otpToken,
     };
     this.otpToken = ''; // single use
+
+    const resetOtpEntry = () => {
+      // the OTP token was consumed by this attempt: let the user verify a fresh OTP
+      this.otp = '';
+      this.isVerifyingOtp = false;
+    };
 
     this.auth.userlogin(payload).subscribe({
       next: () => {
@@ -256,6 +288,7 @@ export class Login {
       },
       error: (error: HttpErrorResponse) => {
         this.clearCaptchaState();
+        resetOtpEntry();
         if (error.status === 404) {
           this.notificationService.show(
             'User login API not found. Check the proxy or backend base URL.',
@@ -273,7 +306,12 @@ export class Login {
         }
 
         if (error.status === 401 || error.status === 400) {
-          this.notificationService.show('Invalid credentials', 'warning');
+          this.notificationService.show(this.serverMessage(error) || 'Invalid credentials', 'warning');
+          return;
+        }
+
+        if (error.status === 429) {
+          this.notificationService.show(this.serverMessage(error) || 'Too many attempts. Please wait and try again.', 'warning');
           return;
         }
 
@@ -304,28 +342,57 @@ export class Login {
           'success'
         );
       },
-      error: () => {
-        this.notificationService.show(
-          'Failed to send OTP',
-          'error'
-        );
+      error: (error: HttpErrorResponse) => {
+        this.stopOtpCooldown();
+        this.notificationService.show(this.serverMessage(error) || 'Failed to send OTP', 'error');
       }
     });
   }
 
   /**20 second cooldown logic */
   startOtpCooldown() {
+    this.stopOtpCooldown();
     this.isOtpLoading.set(true);
     this.otpCooldown.set(20);
 
-    const timer = setInterval(() => {
+    this.otpTimer = setInterval(() => {
       this.otpCooldown.update(v => v - 1);
 
-      if (this.otpCooldown() === 0) {
-        clearInterval(timer);
-        this.isOtpLoading.set(false);
+      if (this.otpCooldown() <= 0) {
+        this.stopOtpCooldown();
       }
     }, 1000);
+  }
+
+  private stopOtpCooldown() {
+    if (this.otpTimer) {
+      clearInterval(this.otpTimer);
+      this.otpTimer = null;
+    }
+    this.isOtpLoading.set(false);
+  }
+
+  /** A changed mobile number invalidates an OTP verified for the previous one. */
+  onMobileNumberChange() {
+    this.mobileNumber = (this.mobileNumber || '').replace(/\D/g, '').slice(0, 10);
+    this.otpToken = '';
+    this.otp = '';
+    this.isVerifyingOtp = false;
+  }
+
+  ngOnDestroy() {
+    this.stopOtpCooldown();
+    this.otpSub?.unsubscribe();
+  }
+
+  /** Message from the API body ({ error } / { Error } / { message }), if any. */
+  private serverMessage(error: HttpErrorResponse): string {
+    const body = error?.error;
+    if (!body || typeof body !== 'object') {
+      return '';
+    }
+    const msg = body.error ?? body.Error ?? body.message ?? body.Message;
+    return typeof msg === 'string' ? msg : '';
   }
 
   isValidPhone(): boolean {

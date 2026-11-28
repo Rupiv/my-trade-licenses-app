@@ -5,7 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 
 import { RevenueCollectionService } from './revenue-collection.service';
-import { RevenueSummary, CorporationSummary } from './revenue-collection.model';
+import { RevenueSummary, CorporationSummary, RevenueCollectionResponse } from './revenue-collection.model';
+import { LoaderService } from '../../loader/loader.service';
+import {
+  ReportCorporation, ReportMastersService, pickNumber, reportErrorMessage
+} from '../report-masters.service';
 
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
@@ -23,9 +27,8 @@ export class RevenueCollection implements OnInit {
   // Shows why a report could not load (e.g. 403: reports are limited to administrators)
   private readonly reportNotifier = inject(NotificationService);
   private showReportError(err: any): void {
-    const msg = err?.error?.message || err?.error?.Message ||
-      (err?.status === 403 ? 'This report is not available for your role.' : 'Unable to load the report. Please try again.');
-    this.reportNotifier.show(msg, err?.status === 403 ? 'warning' : 'error');
+    const { message, type } = reportErrorMessage(err);
+    this.reportNotifier.show(message, type);
   }
 
   // Reports are shared by admin / approver / senior-approver / zone-approver:
@@ -35,48 +38,136 @@ export class RevenueCollection implements OnInit {
     return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
   }
 
+  private readonly masters = inject(ReportMastersService);
+  private readonly loader = inject(LoaderService);
 
-  summary!: RevenueSummary;
+  /** Null until the report has loaded (or when the procedure returned no summary row). */
+  summary: RevenueSummary | null = null;
 
   table: CorporationSummary[] = [];
-  filteredTable: CorporationSummary[] = [];
 
-  selectedZone = 'All';
+  corporations: ReportCorporation[] = [];
+
+  /** Filters sent to the API (corporationId, fromDate, toDate). */
+  selectedCorporationId: number | null = null;
+  fromDate = '';
+  toDate = '';
+
+  filterError = '';
+  loading = false;
+  loaded = false;
 
   constructor(private service: RevenueCollectionService) {}
 
   ngOnInit() {
+    this.masters.getCorporations().subscribe({
+      next: (list) => this.corporations = list,
+      error: () => this.corporations = [] // rows then show the corporation id
+    });
+    this.loadData();
+  }
+
+  corporationName(id: number): string {
+    return this.corporations.find(c => c.id === id)?.name || (id ? `Corporation ${id}` : '-');
+  }
+
+  get isFiltered(): boolean {
+    return !!(this.selectedCorporationId || this.fromDate || this.toDate);
+  }
+
+  /** From-date must not be after to-date (yyyy-MM-dd strings compare in date order). */
+  private validateFilters(): boolean {
+    this.filterError = '';
+    if (this.fromDate && this.toDate && this.fromDate > this.toDate) {
+      this.filterError = 'From date must be on or before To date.';
+      return false;
+    }
+    return true;
+  }
+
+  applyFilter() {
+    if (!this.validateFilters()) return;
+    this.loadData();
+  }
+
+  resetFilters() {
+    this.selectedCorporationId = null;
+    this.fromDate = '';
+    this.toDate = '';
+    this.filterError = '';
     this.loadData();
   }
 
   loadData() {
-    this.service.getRevenueCollection().subscribe({
+    this.loading = true;
+    this.loader.show();
+    this.service.getRevenueCollection({
+      corporationId: this.selectedCorporationId,
+      fromDate: this.fromDate || null,
+      toDate: this.toDate || null
+    }).subscribe({
       next: (res) => {
-        this.summary = res.summary;
-        this.table = res.corporationSummary;
-        this.filteredTable = res.corporationSummary;
+        this.applyResponse(res);
+        this.loading = false;
+        this.loaded = true;
+        this.loader.hide();
       },
       error: (err) => {
+        this.summary = null;
+        this.table = [];
+        this.loading = false;
+        this.loaded = true;
+        this.loader.hide();
         this.showReportError(err);
       }
     });
   }
 
-  applyFilter() {
+  private applyResponse(res: RevenueCollectionResponse | null) {
+    const s = res?.summary;
+    this.summary = s ? {
+      TotalDemand: pickNumber(s, ['TotalDemand']),
+      TotalCollected: pickNumber(s, ['TotalCollected']),
+      PendingAmount: pickNumber(s, ['PendingAmount']),
+      TotalTransactions: pickNumber(s, ['TotalTransactions'])
+    } : null;
 
-    if (this.selectedZone === 'All') {
-      this.filteredTable = this.table;
-      return;
+    this.table = (res?.corporationSummary ?? []).map(r => ({
+      CorporationId: pickNumber(r, ['CorporationId', 'CorporationID']),
+      Demand: pickNumber(r, ['Demand']),
+      Collected: pickNumber(r, ['Collected']),
+      Pending: pickNumber(r, ['Pending']),
+      CollectionPercent: pickNumber(r, ['CollectionPercent'])
+    }));
+  }
+
+  private get exportRows() {
+    return this.table.map(x => ({
+      Corporation: this.corporationName(x.CorporationId),
+      Demand: x.Demand,
+      Collected: x.Collected,
+      Pending: x.Pending,
+      'Collection %': x.CollectionPercent
+    }));
+  }
+
+  private ensureRows(): boolean {
+    if (!this.table.length) {
+      this.reportNotifier.show('There are no records to export.', 'warning');
+      return false;
     }
+    return true;
+  }
 
-    this.filteredTable = this.table.filter(
-      x => x.CorporationId.toString() === this.selectedZone
-    );
+  private get periodLabel(): string {
+    if (!this.fromDate && !this.toDate) return '';
+    return ` (${this.fromDate || '...'} to ${this.toDate || '...'})`;
   }
 
   exportExcel() {
+    if (!this.ensureRows()) return;
 
-    const worksheet = XLSX.utils.json_to_sheet(this.filteredTable);
+    const worksheet = XLSX.utils.json_to_sheet(this.exportRows);
     const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
 
     const excelBuffer = XLSX.write(workbook, {
@@ -92,20 +183,23 @@ export class RevenueCollection implements OnInit {
   }
 
   exportPDF() {
+    if (!this.ensureRows()) return;
 
     const doc = new jsPDF();
+    doc.text('Revenue & Collections' + this.periodLabel, 14, 15);
 
-    const rows = this.filteredTable.map(x => [
-      x.CorporationId,
+    const rows = this.exportRows.map(x => [
+      x.Corporation,
       x.Demand,
       x.Collected,
       x.Pending,
-      x.CollectionPercent + '%'
+      x['Collection %'] + '%'
     ]);
 
     autoTable(doc, {
-      head: [['Zone','Demand','Collected','Pending','Collection %']],
-      body: rows
+      head: [['Corporation', 'Demand', 'Collected', 'Pending', 'Collection %']],
+      body: rows,
+      startY: 20
     });
 
     doc.save('revenue-collection.pdf');

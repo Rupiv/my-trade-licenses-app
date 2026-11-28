@@ -20,6 +20,7 @@
         <td colspan="11" class="text-center py-3">Loading applications...</td>
       </tr>
 
+      <ng-container *ngIf="!isLoading">
       <tr *ngFor="let app of applications" class="clickable-row" (click)="onRowClicked(app)">
         <td class="app-number-cell">{{ app.applicationNumber || '-' }}</td>
         <td>{{ app.applicantName || '-' }}</td>
@@ -58,6 +59,7 @@
           </button>
         </td>
       </tr>
+      </ng-container>
 
       <tr *ngIf="!isLoading && applications.length === 0">
         <td colspan="11" class="text-center text-muted py-3">No Data Found</td>
@@ -76,7 +78,7 @@
     </div>
   </div>
 
-  <div class="d-flex align-items-center gap-2">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
     <label class="small text-muted mb-0">Page Size</label>
     <select
       class="form-select form-select-sm page-size-select"

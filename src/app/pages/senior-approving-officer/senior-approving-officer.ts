@@ -1,10 +1,10 @@
-import { ChangeDetectorRef, Component, Inject, PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, OnDestroy, PLATFORM_ID } from '@angular/core';
 import { NotificationService } from '../../shared/components/notification/notification.service';
 import { LoaderService } from '../../shared/components/loader/loader.service';
 import { SeniorApprovingOfficerService } from './senior-approving-officer.service';
 import { TokenService } from '../../core/services/token.service';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { InspectionSubmittedApplication, SeniorApprovedApplications } from './senior-approving-officer.model';
 
@@ -16,7 +16,17 @@ interface ZoneOption {
 interface WardOption {
   id: number;
   name: string;
+  zoneId: number | null;
 }
+
+// Statuses the senior-approver queue returns (TradeLicenceSeniorApproverController: 5, 6, 3, 4).
+export const SENIOR_STATUS_BY_ID: Record<number, string> = {
+  5: 'OBJECTION',
+  6: 'FORWARDED',
+  3: 'APPROVED',
+  4: 'REJECTED'
+};
+const DEFAULT_SENIOR_STATUSES = ['OBJECTION', 'FORWARDED', 'APPROVED', 'REJECTED'];
 
 @Component({
   selector: 'app-senior-approving-officer',
@@ -25,7 +35,7 @@ interface WardOption {
   styleUrl: './senior-approving-officer.css',
   standalone: true
 })
-export class SeniorApprovingOfficer {
+export class SeniorApprovingOfficer implements OnDestroy {
     private parallaxX = 0;
     private parallaxY = 0;
 
@@ -43,6 +53,14 @@ export class SeniorApprovingOfficer {
     selectedZoneId: number | null = null;
     selectedWardId: number | null = null;
 
+    // Search is sent to the API (applicationNumber). Status is filtered on the loaded page, as on
+    // the approver / zone approver queues (the senior-approver API has no status parameter).
+    searchText = '';
+    selectedStatus = '';
+    statusOptions: string[] = [...DEFAULT_SENIOR_STATUSES];
+    private searchTimer: ReturnType<typeof setTimeout> | null = null;
+    private requestId = 0;
+
   constructor(
     private notificationservice: NotificationService,
     private loaderservice: LoaderService,
@@ -50,12 +68,25 @@ export class SeniorApprovingOfficer {
     private tokenservice: TokenService,
     private cdr:ChangeDetectorRef,
     private router: Router,
+    private route: ActivatedRoute,
      @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
+    // Dashboard links pass ?statusId= (e.g. 5 = OBJECTION)
+    const routeStatus = SENIOR_STATUS_BY_ID[Number(this.route.snapshot.queryParamMap.get('statusId'))];
+    if (routeStatus) {
+      this.selectedStatus = routeStatus;
+    }
     this.loadLookup();
     this.loadSubmittedInspectionApplications();
+  }
+
+  ngOnDestroy(): void {
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = null;
+    }
   }
 
   private loadLookup(): void {
@@ -79,7 +110,8 @@ export class SeniorApprovingOfficer {
         this.wardOptions = rawWards
           .map((w: any) => ({
             id: Number(w?.wardID ?? w?.WardID ?? w?.gbaWardID ?? w?.GbaWardID),
-            name: String(w?.wardName ?? w?.WardName ?? '').trim()
+            name: String(w?.wardName ?? w?.WardName ?? '').trim(),
+            zoneId: Number(w?.zoneID ?? w?.ZoneID) || null
           }))
           .filter((w: WardOption) => Number.isFinite(w.id) && w.id > 0 && !!w.name);
 
@@ -97,6 +129,14 @@ export class SeniorApprovingOfficer {
     });
   }
 
+  /** Wards of the selected zone (GBA lookups carry ZoneID; the non-GBA lookup is one zone only). */
+  get filteredWardOptions(): WardOption[] {
+    if (!this.selectedZoneId) {
+      return this.wardOptions;
+    }
+    return this.wardOptions.filter((w) => w.zoneId === null || w.zoneId === this.selectedZoneId);
+  }
+
   onZoneChanged(): void {
     this.selectedWardId = null;
     this.pageNumber = 1;
@@ -108,16 +148,46 @@ export class SeniorApprovingOfficer {
     this.loadSubmittedInspectionApplications();
   }
 
+  onSearchChanged(): void {
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+    this.searchTimer = setTimeout(() => {
+      this.searchTimer = null;
+      this.pageNumber = 1;
+      this.loadSubmittedInspectionApplications();
+    }, 300);
+  }
+
+  onStatusChanged(): void {
+    this.applyLocalFilters();
+  }
+
   selectRow(applicationNo: number) {
     this.selectedApplication = applicationNo;
   }
 
   onInspectionClick(applicationNo: number) {
+    if (!applicationNo) {
+      return;
+    }
     this.selectedApplication = applicationNo;
+    // Admin opens this queue from /admin/workflows; /senior-approver/** is guarded to senior
+    // approvers, so admin uses the admin application view instead.
+    if (this.isAdmin) {
+      this.router.navigate(['/admin/licence-applications', applicationNo]);
+      return;
+    }
     this.router.navigate(['/senior-approver/inspection', applicationNo]);
   }
 
-  //To load submitted inspection applications
+  private get isAdmin(): boolean {
+    return (this.tokenservice.getRole() ?? '').toLowerCase().replace(/[\s_-]+/g, '') === 'admin';
+  }
+
+  // One API page of the senior-approver queue
+  applications: InspectionSubmittedApplication[] = [];
+  // Rows shown in the grid (the loaded page after the Status filter)
   submittedInspectionApplications: InspectionSubmittedApplication[] = [];
 
   loadSubmittedInspectionApplications() {
@@ -126,25 +196,42 @@ export class SeniorApprovingOfficer {
     if(!loginId){
       this.notificationservice.show('Invalid Login ID', 'error');
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
+    // Also called from the debounced search timer: zoneless CD needs a nudge to show the spinner
+    this.cdr.markForCheck();
+    const currentRequest = ++this.requestId;
     this.seniorapprovingofficerService.getSubmittedInspectionApplications(loginId, this.pageNumber, this.pageSize, {
       mohId: this.selectedZoneId,
-      wardId: this.selectedWardId
+      wardId: this.selectedWardId,
+      applicationNumber: this.searchText.trim() || null
     }).subscribe({
       next: (response: SeniorApprovedApplications) => {
-        //console.log('Response:', response);
-        this.submittedInspectionApplications = response?.data ?? response?.Data ?? [];
-        //console.log(this.submittedInspectionApplications);
+        if (currentRequest !== this.requestId) {
+          return;
+        }
+        this.applications = response?.data ?? response?.Data ?? [];
+        const visible = response?.visibleStatuses ?? response?.VisibleStatuses ?? [];
+        this.statusOptions = visible.length ? [...visible] : [...DEFAULT_SENIOR_STATUSES];
         this.totalRecords = Number(response?.totalRecords ?? response?.TotalRecords ?? 0);
         this.pageNumber = Number(response?.pageNumber ?? response?.PageNumber ?? this.pageNumber);
         this.pageSize = Number(response?.pageSize ?? response?.PageSize ?? this.pageSize);
         this.totalPages = Math.ceil(this.totalRecords / this.pageSize);
+        this.applyLocalFilters();
         this.generatePages();
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: (error) => {
+      error: () => {
+        if (currentRequest !== this.requestId) {
+          return;
+        }
+        this.applications = [];
+        this.submittedInspectionApplications = [];
+        this.totalRecords = 0;
+        this.totalPages = 0;
+        this.pages = [];
         this.isLoading = false;
         this.notificationservice.show('Unable to load the applications. Please try again.', 'error');
         this.cdr.detectChanges();
@@ -152,7 +239,22 @@ export class SeniorApprovingOfficer {
     });
   }
 
-  //For pages 
+  private applyLocalFilters(): void {
+    const selected = this.normalizeStatus(this.selectedStatus);
+    this.submittedInspectionApplications = !selected
+      ? this.applications
+      : this.applications.filter((app) => {
+          const status = this.normalizeStatus(app.licenceApplicationStatusName);
+          // Master_LicenceProcess may name it FORWARD while VisibleStatuses says FORWARDED
+          return !!status && (status.startsWith(selected) || selected.startsWith(status));
+        });
+  }
+
+  private normalizeStatus(value: string | null | undefined): string {
+    return (value ?? '').trim().toUpperCase();
+  }
+
+  //For pages
   generatePages() {
     const maxPagesToShow = 5;
     const startPage = Math.max(1, this.pageNumber - 2);
@@ -174,13 +276,24 @@ export class SeniorApprovingOfficer {
     this.loadSubmittedInspectionApplications();
   }
 
+  // Status is a page-level filter, so with it the count is the filtered page (as on the sibling queues)
+  get displayTotalRecords(): number {
+    return this.selectedStatus.trim() ? this.submittedInspectionApplications.length : this.totalRecords;
+  }
+
   //Showing details for user
   get showingTo(): number {
-    return Math.min(this.pageNumber * this.pageSize, this.totalRecords);
+    if (!this.submittedInspectionApplications.length) {
+      return 0;
+    }
+    return (this.pageNumber - 1) * this.pageSize + this.submittedInspectionApplications.length;
   }
 
   //showing from details for user
   get showingFrom(): number {
+    if (!this.submittedInspectionApplications.length) {
+      return 0;
+    }
     return (this.pageNumber - 1) * this.pageSize + 1;
   }
 

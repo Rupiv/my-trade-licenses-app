@@ -24,4 +24,13 @@ describe('NotRenewedLicenses', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('shows no sample rows or totals (no API provides this report)', () => {
+    fixture.detectChanges();
+    const text: string = fixture.nativeElement.textContent;
+    expect(text).toContain('not available yet');
+    expect(text).not.toContain('TL-2021-00452');
+    expect(text).not.toContain('428');
+    expect(fixture.nativeElement.querySelector('table')).toBeNull();
+  });
 });

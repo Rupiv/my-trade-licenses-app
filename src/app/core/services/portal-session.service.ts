@@ -35,8 +35,8 @@ export class PortalSessionService {
         : { link: '/create-account' }
   );
   readonly trackLink = computed<PortalLink>(() => this.traderLink('track-application'));
-  readonly renewLink = computed<PortalLink>(() => this.traderLink('renew-license'));
-  readonly renewalStatusLink = computed<PortalLink>(() => this.traderLink('renewal-status'));
+  /** The trader dashboard ("My Licenses": applications, payments, certificates). */
+  readonly myLicencesLink = computed<PortalLink>(() => this.traderLink('trader-licenses'));
 
   constructor(
     private auth: AuthService,

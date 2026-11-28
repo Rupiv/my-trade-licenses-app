@@ -288,3 +288,37 @@
 }
 
 
+
+/* ================= MOBILE ================= */
+@media (max-width: 767.98px) {
+  .content {
+    padding: 16px;
+  }
+
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .license-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .license-left {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .inspection-modal {
+    padding: 20px 16px 16px;
+  }
+
+  .inspection-modal h5 {
+    font-size: 22px;
+  }
+
+  .inspection-modal p,
+  .disclaimer-points {
+    font-size: 15px;
+  }
+}

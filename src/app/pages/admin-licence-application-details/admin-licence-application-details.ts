@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { GoogleMapsModule } from '@angular/google-maps';
 import { FormsModule } from '@angular/forms';
@@ -33,6 +33,10 @@ interface AdminApplicationDetails {
   loginID: number;
 }
 
+/** Same rule the API applies to remarks (LicenceActionRequest: [Required], 500 chars, this pattern). */
+export const REMARKS_PATTERN = /^[a-zA-Z0-9\s\-.,()]+$/;
+export const REMARKS_MAX_LENGTH = 500;
+
 @Component({
   selector: 'app-admin-licence-application-details',
   standalone: true,
@@ -40,7 +44,7 @@ interface AdminApplicationDetails {
   templateUrl: './admin-licence-application-details.html',
   styleUrl: './admin-licence-application-details.css',
 })
-export class AdminLicenceApplicationDetails {
+export class AdminLicenceApplicationDetails implements OnInit, OnDestroy {
   loading = true;
   errorMessage = '';
   details: AdminApplicationDetails | null = null;
@@ -54,14 +58,8 @@ export class AdminLicenceApplicationDetails {
   savedInspectionPhotoUrls: { doc: LicensesApplicationDocument; blobUrl: string }[] = [];
   inspectionPhotosLoading = false;
 
-  inspectionChecklist = [
-    { label: 'Trade name board displayed', checked: false },
-    { label: 'Fire safety compliance', checked: false },
-    { label: 'Waste disposal arrangement', checked: false },
-    { label: 'Health & hygiene maintained', checked: false }
-  ];
-
   remarks = '';
+  readonly remarksMaxLength = REMARKS_MAX_LENGTH;
   isSubmitting = false;
   role = '';
 
@@ -98,32 +96,7 @@ export class AdminLicenceApplicationDetails {
     }
 
     this.loadSavedInspectionPhotos(id);
-
-    this.portalAdminService
-      .getAdminApplications({
-        licenceApplicationId: id,
-        pageNumber: 1,
-        pageSize: 10
-      })
-      .subscribe({
-        next: (response) => {
-          const data = response?.data ?? [];
-          this.details = data?.[0] ?? null;
-          this.applicationNo = this.details?.applicationNumber ?? idParam;
-          this.loading = false;
-          if (!this.details) {
-            this.errorMessage = 'Application not found.';
-          } else {
-            this.loadDocumentDetails(this.details.licenceApplicationID);
-          }
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.loading = false;
-          this.errorMessage = 'Unable to load application details.';
-          this.cdr.detectChanges();
-        }
-      });
+    this.loadApplication(id, idParam);
 
     this.inspectionService.getgeolocationByLicensesAppId(id).subscribe({
       next: (res) => {
@@ -140,6 +113,47 @@ export class AdminLicenceApplicationDetails {
       }
     });
 
+    this.loadTimeline(id);
+  }
+
+  ngOnDestroy(): void {
+    for (const item of this.savedInspectionPhotoUrls) {
+      URL.revokeObjectURL(item.blobUrl);
+    }
+  }
+
+  private loadApplication(id: number, idParam: string, reloadDocuments = true): void {
+    this.portalAdminService
+      .getAdminApplications({
+        licenceApplicationId: id,
+        pageNumber: 1,
+        pageSize: 10
+      })
+      .subscribe({
+        next: (response) => {
+          const data = response?.data ?? response?.Data ?? [];
+          this.details = data?.[0] ?? null;
+          this.applicationNo = this.details?.applicationNumber ?? idParam;
+          this.loading = false;
+          this.errorMessage = '';
+          if (!this.details) {
+            this.errorMessage = 'Application not found.';
+          } else if (reloadDocuments) {
+            this.loadDocumentDetails(this.details.licenceApplicationID);
+          }
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          this.loading = false;
+          this.errorMessage = error?.status === 403
+            ? (error?.error?.message || 'This application is outside your assigned jurisdiction.')
+            : 'Unable to load application details.';
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  private loadTimeline(id: number): void {
     this.timelineLoading = true;
     this.timelineError = '';
     this.inspectionService.getLicenceProcessTimeline(id).subscribe({
@@ -154,10 +168,6 @@ export class AdminLicenceApplicationDetails {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  downloadDocument(): void {
-    return;
   }
 
   private loadDocumentDetails(licenceApplicationID: number): void {
@@ -277,8 +287,18 @@ export class AdminLicenceApplicationDetails {
       this.notificationService.show('Current status not available', 'warning');
       return;
     }
-    if (this.canShowReviewActions && !this.remarks?.trim()) {
+    const remarks = (this.remarks ?? '').trim();
+    if (!remarks) {
+      // The API requires remarks for every action
       this.notificationService.show('Please enter remarks before submitting action', 'warning');
+      return;
+    }
+    if (remarks.length > REMARKS_MAX_LENGTH) {
+      this.notificationService.show(`Remarks must be ${REMARKS_MAX_LENGTH} characters or fewer`, 'warning');
+      return;
+    }
+    if (!REMARKS_PATTERN.test(remarks)) {
+      this.notificationService.show('Remarks may only contain letters, numbers, spaces and - . , ( )', 'warning');
       return;
     }
 
@@ -288,17 +308,23 @@ export class AdminLicenceApplicationDetails {
       loginID,
       licenceProcessID,
       currentStatus: currentStatusID,
-      remarks: this.remarks.trim(),
+      remarks,
       actionReasonIds: ''
     }).subscribe({
       next: () => {
         this.isSubmitting = false;
+        this.remarks = '';
         this.notificationService.show(successMessage, 'success');
+        // Status and timeline changed on the server: reload them so the actions/status shown are current
+        this.loadApplication(licenceApplicationID, this.applicationNo, false);
+        this.loadTimeline(licenceApplicationID);
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.isSubmitting = false;
         const message = this.extractApiErrorMessage(error);
         this.notificationService.show(message, 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -313,6 +339,9 @@ export class AdminLicenceApplicationDetails {
       }
     }
 
+    if (typeof error?.error === 'string' && error.error.trim()) {
+      return error.error;
+    }
     return (
       error?.error?.Message ||
       error?.error?.message ||

@@ -27,7 +27,9 @@ export class PortalAdmin {
   userId: number | null = null;
   isLoading = false;
   loadError = '';
-  lastUpdated = new Date();
+  /** Set once real counts arrived; until then the cards show a dash, not a fake 0. */
+  hasLoaded = false;
+  lastUpdated: Date | null = null;
   private parallaxX = 0;
   private parallaxY = 0;
 
@@ -49,15 +51,13 @@ export class PortalAdmin {
   ) {}
 
   ngOnInit(): void {
-    const id = this.tokenService.getUserId();
-    if (id !== null) {
-      this.userId = id;
-      this.dashboardDataLoad();
-    }
+    // The dashboard API is scoped by the JWT, not by this id: load even when the token carries none
+    this.userId = this.tokenService.getUserId();
+    this.dashboardDataLoad();
   }
 
   dashboardDataLoad(): void {
-    if (this.userId === null) return;
+    if (this.isLoading) return;
     this.isLoading = true;
     this.loadError = '';
 
@@ -77,12 +77,15 @@ export class PortalAdmin {
         };
 
         this.lastUpdated = new Date();
+        this.hasLoaded = true;
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         //console.error('Failed to load admin dashboard', err);
-        this.loadError = 'Dashboard service is unavailable. Please try again.';
+        this.loadError = err?.status === 403
+          ? (err?.error?.message || 'You are not allowed to view this dashboard.')
+          : 'Dashboard service is unavailable. Please try again.';
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -111,6 +114,9 @@ export class PortalAdmin {
   }
 
   formatNumber(value: number): string {
+    if (!this.hasLoaded) {
+      return '—';
+    }
     return new Intl.NumberFormat('en-IN').format(value || 0);
   }
 

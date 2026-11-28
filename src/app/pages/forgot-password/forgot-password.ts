@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, ViewChildren, QueryList, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ViewChildren, QueryList, ElementRef, ChangeDetectorRef, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -33,7 +33,8 @@ export class ForgotPasswordComponent implements OnDestroy {
   // ─── Step 2: OTP ───────────────────────────────────────────────
   otpDigits: string[] = ['', '', '', '', '', ''];
   otpError: string = '';
-  resendCooldown: number = 0;
+  /** Seconds until Resend is allowed; a signal so the zoneless view updates every tick. */
+  readonly resendCooldown = signal(0);
   private resendTimer: any = null;
 
   // ─── Step 3: Reset Password ────────────────────────────────────
@@ -52,6 +53,12 @@ export class ForgotPasswordComponent implements OnDestroy {
   // STEP 1 — Send OTP
   // ════════════════════════════════════════════════════════════════
   sendOtp(): void {
+    if (this.isLoading) return;
+    if (!this.username.trim()) {
+      this.sendOtpError = 'Please enter your username.';
+      return;
+    }
+    this.isLoading = true;
     this.loaderservice.show();
     this.sendOtpError = '';  // ← clear previous error
 
@@ -60,6 +67,7 @@ export class ForgotPasswordComponent implements OnDestroy {
       { login: this.username, mobileNo: this.mobileNo }  // ← also send mobileNo
     ).subscribe({
       next: (res) => {
+        this.isLoading = false;
         this.loaderservice.hide();
         this.maskedMobile = res?.mobileNo || this.mobileNo;
         this.currentStep = 2;
@@ -67,6 +75,7 @@ export class ForgotPasswordComponent implements OnDestroy {
         this.cdr.detectChanges();
       },
       error: (err) => {
+        this.isLoading = false;
         this.loaderservice.hide();
         this.sendOtpError = err?.error?.message || 'Failed to send OTP.';
         this.cdr.detectChanges();
@@ -147,7 +156,8 @@ onOtpInput(event: Event, index: number): void {
 
   /** Verify the entered OTP */
   verifyOtp(): void {
-    if (!this.isOtpComplete()) return;
+    if (!this.isOtpComplete() || this.isLoading) return;
+    this.isLoading = true;
     this.loaderservice.show();
     this.otpError = '';
 
@@ -157,6 +167,7 @@ onOtpInput(event: Event, index: number): void {
     }).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
+          this.isLoading = false;
           this.loaderservice.hide();
           if (!res?.isValid || !res.resetToken) {
             this.otpError = res?.message || 'Invalid OTP. Please try again.';
@@ -170,6 +181,7 @@ onOtpInput(event: Event, index: number): void {
       },
       error: (err) => {
         this.ngZone.run(() => {
+          this.isLoading = false;
           this.loaderservice.hide();
           this.otpError = err?.error?.message || 'Invalid OTP. Please try again.';
           this.otpDigits = ['', '', '', '', '', ''];
@@ -180,7 +192,17 @@ onOtpInput(event: Event, index: number): void {
   }
 
 resetPassword(): void {
-  if (!this.newPassword || this.newPassword.length < 8 || this.newPassword !== this.confirmPassword) return;
+  if (this.isLoading) return;
+  if (!this.newPassword || this.newPassword.length < 8) {
+    this.otpError = 'Password must be at least 8 characters.';
+    return;
+  }
+  if (this.newPassword !== this.confirmPassword) {
+    this.otpError = 'Passwords do not match.';
+    return;
+  }
+  this.otpError = '';
+  this.isLoading = true;
   this.loaderservice.show();
 
   this.http.post('/api/api/Auth/forgot-password/reset-password', {
@@ -190,12 +212,14 @@ resetPassword(): void {
   }).subscribe({
     next: () => {
       this.ngZone.run(() => {
+        this.isLoading = false;
         this.loaderservice.hide();
         this.currentStep = 4;
       });
     },
     error: (err) => {
       this.ngZone.run(() => {
+        this.isLoading = false;
         this.loaderservice.hide();
         this.otpError = err?.error?.message || 'Failed to reset password. Please try again.';
       });
@@ -205,7 +229,7 @@ resetPassword(): void {
 
   /** Resend OTP and restart cooldown */
   resendOtp(): void {
-    if (this.resendCooldown > 0) return;
+    if (this.resendCooldown() > 0 || this.isLoading) return;
 
     this.otpDigits = ['', '', '', '', '', ''];
     this.otpError = '';
@@ -224,11 +248,11 @@ resetPassword(): void {
   }
 
   private startResendCooldown(seconds: number = 30): void {
-    this.resendCooldown = seconds;
+    this.resendCooldown.set(seconds);
     this.clearResendTimer();
     this.resendTimer = setInterval(() => {
-      this.resendCooldown--;
-      if (this.resendCooldown <= 0) {
+      this.resendCooldown.update((v) => v - 1);
+      if (this.resendCooldown() <= 0) {
         this.clearResendTimer();
       }
     }, 1000);

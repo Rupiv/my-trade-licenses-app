@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
+/**
+ * Placeholder page for a report the API does not provide yet (no not-renewed endpoint in
+ * ReportsController). It shows no data rather than sample rows.
+ */
 @Component({
   selector: 'app-not-renewed-licenses',
-  imports: [RouterModule, CommonModule, FormsModule],
+  imports: [RouterModule, CommonModule],
   templateUrl: './not-renewed-licenses.html',
   styleUrl: './not-renewed-licenses.css',
 })
@@ -16,8 +19,4 @@ export class NotRenewedLicenses {
   get reportsLink(): string {
     return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
   }
-
-
-  constructor(private router: Router){ }
-
 }

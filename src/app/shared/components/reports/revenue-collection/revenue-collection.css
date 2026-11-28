@@ -175,3 +175,70 @@ tbody tr:not(:last-child) {
 .back-link i {
   font-size: 14px;
 }
+
+/* STATES */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.no-data {
+  text-align: center;
+  color: #6b7280;
+  padding: 20px 12px;
+}
+
+.filter-group input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.filter-group.filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.filter-error {
+  grid-column: 1 / -1;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+/* Wide tables scroll inside their card instead of the page */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll table {
+  min-width: 560px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 992px) {
+  .filters-card,
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .filters-card,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

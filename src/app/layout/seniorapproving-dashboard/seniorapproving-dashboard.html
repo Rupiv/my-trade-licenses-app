@@ -89,16 +89,18 @@
     <div class="row g-3">
       <div class="col-md-6">
         <div class="analytics-card">
-          <div class="analytics-header">Risk and Value Analysis</div>
+          <div class="analytics-header">Queue Share Analysis</div>
           <div class="analytics-body">
             <ul class="insight-list">
               <li>Grand total in scope: {{ formatNumber(stats.GrandTotal) }}</li>
               <li>Forwarded share: {{ totalForwardedPercent | number : '1.0-1' }}%</li>
               <li>Approved share: {{ totalApprovedPercent | number : '1.0-1' }}%</li>
             </ul>
-            <button class="btn btn-sm btn-outline-primary mt-2">
-              Review High-Risk Applications
-            </button>
+            <a class="btn btn-sm btn-outline-primary mt-2"
+               [routerLink]="['/senior-approver/senior-approving-officer']"
+               [queryParams]="{ statusId: 6 }">
+              Review Forwarded Applications
+            </a>
           </div>
         </div>
       </div>
@@ -116,9 +118,11 @@
             <div class="action-item info">
               Coverage accounted: {{ accountedPercent | number : '1.0-1' }}%
             </div>
-            <button class="btn btn-sm btn-outline-danger mt-2">
-              View Priority Queue
-            </button>
+            <a class="btn btn-sm btn-outline-danger mt-2"
+               [routerLink]="['/senior-approver/senior-approving-officer']"
+               [queryParams]="{ statusId: 5 }">
+              View Objection Cases
+            </a>
           </div>
         </div>
       </div>

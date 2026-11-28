@@ -18,11 +18,11 @@
 
     <div class="header-actions">
 
-      <button class="btn secondary" (click)="exportToPDF()">
+      <button class="btn secondary" (click)="exportToPDF()" [disabled]="loading || exporting || !totalRecords">
         Export PDF
       </button>
 
-      <button class="btn primary" (click)="exportToExcel()">
+      <button class="btn primary" (click)="exportToExcel()" [disabled]="loading || exporting || !totalRecords">
         Export Excel
       </button>
 
@@ -45,7 +45,7 @@
 
       <div>
         <div class="card-count">
-          {{ card.count | number }}
+          {{ card.count === null ? '-' : (card.count | number) }}
         </div>
 
         <div class="card-label">
@@ -68,17 +68,31 @@
 
     <div class="filter-grid">
 
-      <!-- Corporation -->
+      <!-- Corporation (GBA) -->
 
       <div class="filter-field">
-        <label>Corporation</label>
+        <label for="aw-corporation">Corporation</label>
 
-        <select [(ngModel)]="filters.zoneId" (change)="onZoneChange()">
-        <option [ngValue]="null">All Corporations</option>
-        <option *ngFor="let z of zones" [ngValue]="z.id">
-          {{ z.name }}
-        </option>
-      </select>
+        <select id="aw-corporation" [(ngModel)]="filters.corporationId" (ngModelChange)="onCorporationChange()">
+          <option [ngValue]="null">All Corporations</option>
+          <option *ngFor="let c of corporations" [ngValue]="c.id">
+            {{ c.name }}
+          </option>
+        </select>
+      </div>
+
+
+      <!-- Zone -->
+
+      <div class="filter-field">
+        <label for="aw-zone">Zone</label>
+
+        <select id="aw-zone" [(ngModel)]="filters.zoneId" (ngModelChange)="onZoneChange()">
+          <option [ngValue]="null">All Zones</option>
+          <option *ngFor="let z of zones" [ngValue]="z.id">
+            {{ z.name }}
+          </option>
+        </select>
       </div>
 
 
@@ -86,18 +100,19 @@
 
       <div class="filter-field">
 
-        <label>Ward</label>
+        <label for="aw-ward">Ward</label>
 
         <select
+          id="aw-ward"
           [(ngModel)]="filters.wardId"
-          (change)="onWardChange()"
+          (ngModelChange)="onWardChange()"
           [disabled]="!filters.zoneId"
         >
           <option [ngValue]="null">All Wards</option>
 
           <option
             *ngFor="let w of wards"
-            [ngValue]="w.name"
+            [ngValue]="w.id"
           >
             {{ w.name }}
           </option>
@@ -109,15 +124,21 @@
 
       <div class="filter-field">
 
-        <label>Application Number</label>
+        <label for="aw-appno">Application Number</label>
 
         <input
+          id="aw-appno"
           type="text"
           [(ngModel)]="filters.applicationNumber"
           (keyup.enter)="onApplicationNumberChange()"
           placeholder="Enter Application Number"
         />
       </div>
+    </div>
+
+    <div class="filter-actions">
+      <button type="button" class="btn-apply" (click)="applyFilters()" [disabled]="loading">Apply</button>
+      <button type="button" class="btn-reset" (click)="resetFilters()" [disabled]="loading || !hasActiveFilters">Reset</button>
     </div>
 
   </div>
@@ -144,10 +165,19 @@
 
     <div class="table-info-bar">
 
-      Showing
-      <strong>{{ startRecord }} - {{ endRecord }}</strong>
-      of
-      <strong>{{ totalRecords }}</strong>
+      <span class="record-info">
+        Showing
+        <strong>{{ startRecord }} - {{ endRecord }}</strong>
+        of
+        <strong>{{ totalRecords }}</strong>
+      </span>
+
+      <label class="record-info">
+        Rows per page
+        <select [(ngModel)]="filters.pageSize" (ngModelChange)="onPageSizeChange()">
+          <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }}</option>
+        </select>
+      </label>
 
     </div>
 
@@ -240,7 +270,7 @@
 
       <button
         class="pg-btn"
-        [disabled]="currentPage === totalPages"
+        [disabled]="currentPage >= totalPages"
         (click)="goToPage(currentPage + 1)"
       >
         Next

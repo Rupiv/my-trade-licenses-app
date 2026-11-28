@@ -60,7 +60,7 @@
             <label class="form-label">Ward</label>
             <select class="form-select modern-input" [(ngModel)]="selectedWardId" (change)="onWardChanged()">
               <option [ngValue]="null">All Wards</option>
-              <option *ngFor="let ward of wardOptions" [ngValue]="ward.id">
+              <option *ngFor="let ward of filteredWardOptions" [ngValue]="ward.id">
                 {{ ward.name }}
               </option>
             </select>

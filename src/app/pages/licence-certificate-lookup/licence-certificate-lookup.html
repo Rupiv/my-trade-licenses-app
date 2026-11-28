@@ -1,19 +1,23 @@
 <div class="lookup-page">
-  <div class="lookup-card">
+  <form class="lookup-card" (ngSubmit)="generate()" novalidate>
     <h2>Generate Licence Certificate</h2>
     <p class="subtitle">Enter the application number to generate the licence.</p>
 
     <label for="applicationNumber" class="form-label">Application Number</label>
     <input
       id="applicationNumber"
+      name="applicationNumber"
       type="text"
       class="form-control"
+      [class.is-invalid]="!!errorMessage"
       [(ngModel)]="applicationNumber"
+      (ngModelChange)="errorMessage = ''"
       placeholder="e.g. N14152406351023"
+      autocomplete="off"
     />
 
-    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+    <div *ngIf="errorMessage" class="error-message" role="alert">{{ errorMessage }}</div>
 
-    <button class="btn btn-primary" (click)="generate()">Generate Licence</button>
-  </div>
+    <button type="submit" class="btn btn-primary">Generate Licence</button>
+  </form>
 </div>

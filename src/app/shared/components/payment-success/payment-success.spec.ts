@@ -36,4 +36,27 @@ describe('PaymentSuccess', () => {
     expect(message).toContain('Complete Submission');
     expect(message).toContain('GBA-TL-1-261125');
   });
+
+  it('only claims "submitted" once the submission succeeded', async () => {
+    const render = async () => {
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      await fixture.whenStable();
+    };
+    component.isLoading = false;
+    component.decryptError = false;
+    await render();
+    const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text()).not.toContain('APPLICATION SUBMITTED SUCCESSFULLY');
+    expect(text()).toContain('Submitting your application');
+
+    (component as any).submissionFailed();
+    await render();
+    expect(text()).not.toContain('APPLICATION SUBMITTED SUCCESSFULLY');
+    expect(text()).toContain('could not be submitted automatically');
+
+    component.submissionError = false;
+    component.submissionComplete = true;
+    await render();
+    expect(text()).toContain('APPLICATION SUBMITTED SUCCESSFULLY');
+  });
 });

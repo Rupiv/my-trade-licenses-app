@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TokenService } from '../../core/services/token.service';
 
 @Component({
   selector: 'app-business-owner',
@@ -10,5 +11,9 @@ import { RouterModule } from '@angular/router';
   styleUrl: './business-owner.css',
 })
 export class BusinessOwner {
+  userName = '';
 
+  constructor(private tokenService: TokenService) {
+    this.userName = this.tokenService.getUserFullName();
+  }
 }

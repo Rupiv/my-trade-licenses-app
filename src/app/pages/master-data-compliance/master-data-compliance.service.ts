@@ -2,6 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MLCConstituency, TradeLicensesFee, TradeMajor, TradeMinor, TradeSub, TradeType, Ward, ZoneClassification, Zones } from '../../core/models/new-trade-licenses.model';
 
+export interface AssemblyConstituency {
+  constituencyID: number;
+  constituencyCode?: string | null;
+  constituencyName: string;
+  constituencyNativeName?: string | null;
+  zoneID: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -82,6 +90,11 @@ export class MasterDataComplianceService {
   }
   updateMLA(id: number, payload: any) {
     return this.http.put(`${this.baseUrl}/master-moh/${id}`, payload);
+  }
+
+  /** Assembly constituencies of a zone (api/assembly-constituencies/by-zone/{zoneId}). */
+  getAssemblyConstituenciesByZone(zoneId: number) {
+    return this.get<AssemblyConstituency[]>(`/assembly-constituencies/by-zone/${zoneId}`);
   }
 
   getWardsByMLAConstituency(mlaId: number) {

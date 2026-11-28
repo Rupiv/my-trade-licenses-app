@@ -8,13 +8,18 @@
     </span>
   </div>
 
+  <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2" *ngIf="applicationNotFound">
+    <span>This application could not be loaded from your queue, so no action can be taken on it here.</span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancel()">Back to Queue</button>
+  </div>
+
   <!-- Application Summary -->
   <div class="card section-card">
     <div class="card-header">Application Summary</div>
     <div class="card-body summary-grid">
       <div><label>Application Name</label><p>{{ licenceApplicationDetails?.applicantName }}</p></div>
       <div><label>Application Number</label><p>{{ licenceApplicationDetails?.applicationNumber }}</p></div>
-      <div><label>Application Date</label><p>{{licenceApplicationDetails?.applicationSubmitDate}}</p></div>
+      <div><label>Application Date</label><p>{{licenceApplicationDetails?.applicationSubmitDate | date:'dd-MMM-yyyy'}}</p></div>
       <div><label>Status</label><p>{{licenceApplicationDetails?.licenceApplicationStatusName}}</p></div>
       <div><label>Trade Licenses Id</label><p>{{licenceApplicationDetails?.tradeLicenceID}}</p></div>
       <div><label>Trade Name</label><p>{{licenceApplicationDetails?.tradeName}}</p></div>
@@ -157,6 +162,10 @@
     <div class="card-body">
       <div class="row g-3">
 
+        <div class="col-12 text-muted" *ngIf="documentsLoaded && LicensesApplicationDocuments.length === 0">
+          No documents uploaded for this application.
+        </div>
+
         <div class="col-md-6" *ngFor="let doc of LicensesApplicationDocuments">
           <div class="document-card">
             <div class="doc-info">
@@ -183,26 +192,6 @@
   </div>
 
 
-
-  <!-- Checklist -->
-  <div class="card section-card">
-    <div class="card-header">Inspection Checklist</div>
-    <div class="card-body">
-      <div
-        class="form-check checklist-item"
-        *ngFor="let item of inspectionChecklist"
-      >
-        <input
-          class="form-check-input"
-          type="checkbox"
-          [(ngModel)]="item.checked"
-        />
-        <label class="form-check-label">
-          {{ item.label }}
-        </label>
-      </div>
-    </div>
-  </div>
 
   <!-- On-Site Inspection Photos -->
   <div class="card section-card">
@@ -304,8 +293,12 @@
         class="form-control"
         rows="4"
         [(ngModel)]="remarks"
+        [attr.maxlength]="remarksMaxLength"
         placeholder="Enter inspection remarks..."
       ></textarea>
+      <div class="form-text">
+        Required. Letters, numbers, spaces and - . , ( ) only ({{ remarks.length }}/{{ remarksMaxLength }}).
+      </div>
     </div>
   </div>
 
@@ -346,9 +339,7 @@
   <!-- Actions -->
   <div class="inspection-actions">
     <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
-    <button class="btn btn-outline-primary" (click)="saveDraft()">
-      Save Draft
-    </button>
+    <ng-container *ngIf="!applicationNotFound">
     <button *ngIf="!isSeniorApprover" class="btn btn-success" [disabled]="isSubmitting" (click)="submitProcessAction(7)">
       Inspected
     </button>
@@ -367,6 +358,11 @@
     <button *ngIf="isSeniorApprover" class="btn btn-outline-secondary" [disabled]="isSubmitting" (click)="submitProcessAction(5)">
       Objection
     </button>
+    </ng-container>
+    <span class="text-muted small align-self-center" *ngIf="isSubmitting">
+      <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+      Submitting...
+    </span>
   </div>
 
 </div>

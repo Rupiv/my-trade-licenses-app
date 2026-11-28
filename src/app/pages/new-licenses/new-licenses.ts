@@ -6,7 +6,9 @@ import {
   ViewChild,
   ElementRef,
   ChangeDetectorRef,
+  inject,
 } from '@angular/core';
+import { GoogleMapsService } from '../../core/services/google-maps.service';
 import { GoogleMapsModule } from '@angular/google-maps';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -56,6 +58,10 @@ export class NewLicenses {
 
 @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
 @ViewChild(GoogleMap) googleMap!: GoogleMap;
+/** `<google-map>` is only rendered once the Maps script has loaded (it reads `google.maps` on init). */
+private readonly mapsService = inject(GoogleMapsService);
+readonly mapsScriptLoaded = this.mapsService.loaded;
+readonly mapsScriptFailed = this.mapsService.failed;
 
 map!: google.maps.Map;
 drawingManager!: google.maps.drawing.DrawingManager;
@@ -227,6 +233,7 @@ autoDetectCurrentLocation() {
   }
 
   this.roadWidthStatus = 'Detecting current location...';
+  this.cdr.markForCheck(); // called from a setTimeout (zoneless)
   this.notificationservice.show(
     'Detecting current location...',
     'info'
@@ -244,6 +251,7 @@ autoDetectCurrentLocation() {
     },
     () => {
       this.roadWidthStatus = 'Location permission denied';
+      this.cdr.markForCheck(); // geolocation callback: not an HTTP response, redraw explicitly
       this.notificationservice.show(
         'Location permission denied. Please search manually.',
         'warning'
@@ -667,22 +675,26 @@ autoDetectCurrentLocation() {
   ========================= */
   if (this.currentStep === 2) {
 
-    // 1. Major Trade
-    if (!this.selectedMajor) {
-      this.notificationservice.show('Please select Major Trade', 'warning');
-      return;
-    }
+    // The trades that count are the ones in the grid (a restored draft has trades but no current
+    // selection). The pickers only need to be filled while nothing has been added yet.
+    if (!this.tradeGrid || this.tradeGrid.length === 0) {
+      // 1. Major Trade
+      if (!this.selectedMajor) {
+        this.notificationservice.show('Please select Major Trade', 'warning');
+        return;
+      }
 
-    // 2. Minor Trade
-    if (!this.selectedMinor) {
-      this.notificationservice.show('Please select Minor Trade', 'warning');
-      return;
-    }
+      // 2. Minor Trade
+      if (!this.selectedMinor) {
+        this.notificationservice.show('Please select Minor Trade', 'warning');
+        return;
+      }
 
-    // 3. Sub Trade
-    if (!this.selectedSub) {
-      this.notificationservice.show('Please select Sub Trade', 'warning');
-      return;
+      // 3. Sub Trade
+      if (!this.selectedSub) {
+        this.notificationservice.show('Please select Sub Trade', 'warning');
+        return;
+      }
     }
 
     // 4. Trade Grid (at least one trade must be added)
@@ -809,6 +821,8 @@ autoDetectCurrentLocation() {
     ).subscribe();
   }
       this.currentStep++;
+      // Zoneless: this can run after an await (draft creation) - redraw the new step.
+      this.cdr.markForCheck();
 
       // Map init only when location step loads
       if (this.currentStep === 4) {
@@ -829,6 +843,7 @@ autoDetectCurrentLocation() {
     ).subscribe();
   }
       this.currentStep--;
+      this.cdr.markForCheck();
 
       if (this.currentStep === 4) {
         setTimeout(() => {
@@ -1249,10 +1264,19 @@ ngAfterViewInit(): void {
 
 
 
+/**
+ * True once the Google Maps script (injected asynchronously at app start) has loaded.
+ * `google?.maps` is not enough: before the script loads `google` is an undeclared global and
+ * reading it throws a ReferenceError.
+ */
+private get mapsLoaded(): boolean {
+  return typeof google !== 'undefined' && !!google.maps;
+}
+
 private initAutocomplete(): void {
   if (!this.searchInput?.nativeElement) return;
 
-  if (!google?.maps?.places) {
+  if (!this.mapsLoaded || !google.maps.places) {
     //console.error('Google Places library not loaded');
     return;
   }
@@ -1278,7 +1302,7 @@ private initAutocomplete(): void {
 
 private fillAddressFromLatLng(lat: number, lng: number): void {
 
-  if (!google?.maps?.Geocoder || !this.searchInput?.nativeElement) return;
+  if (!this.mapsLoaded || !google.maps.Geocoder || !this.searchInput?.nativeElement) return;
 
   const geocoder = new google.maps.Geocoder();
 
@@ -1314,6 +1338,8 @@ setLocation(lat: number, lng: number): void {
   this.longitude = lng;
 
   this.mapCenter = { lat, lng };
+  // Called from Google Maps / geolocation callbacks (zoneless): show the new coordinates now.
+  this.cdr.markForCheck();
 
   // Marker logic
   if (this.map) {
@@ -1770,23 +1796,41 @@ fetchRoadWidth(lng: number, lat: number) {
             this.gbaCorporations.find(c => c.corporationID === loc.corporationID) ?? null;
           if (!this.selectedCorporation) return;
 
-          this.newLicensesService.getGbaZones(loc.corporationID).subscribe(zones => {
-            this.gbaZones = zones;
-            this.selectedGbaZone = zones.find(z => z.gbaZoneID === loc.gbaZoneID) ?? null;
+          this.newLicensesService.getGbaZones(loc.corporationID).subscribe({
+            next: zones => {
+              this.gbaZones = zones;
+              this.selectedGbaZone = zones.find(z => z.gbaZoneID === loc.gbaZoneID) ?? null;
 
-            this.newLicensesService.getGbaWards(loc.gbaZoneID).subscribe(wards => {
-              this.gbaWards = wards;
-              this.selectedGbaWard = wards.find(w => w.gbaWardID === loc.gbaWardID) ?? null;
-              this.cdr.detectChanges();
-            });
+              this.newLicensesService.getGbaWards(loc.gbaZoneID).subscribe({
+                next: wards => {
+                  this.gbaWards = wards;
+                  this.selectedGbaWard = wards.find(w => w.gbaWardID === loc.gbaWardID) ?? null;
+                  this.cdr.detectChanges();
+                },
+                error: () => this.locationRestoreFailed()
+              });
+            },
+            error: () => this.locationRestoreFailed()
           });
         };
 
         if (this.gbaCorporations.length) pick();
-        else this.newLicensesService.getGbaCorporations().subscribe(c => { this.gbaCorporations = c; pick(); });
+        else this.newLicensesService.getGbaCorporations().subscribe({
+          next: c => { this.gbaCorporations = c; pick(); },
+          error: () => this.locationRestoreFailed()
+        });
       },
       error: () => { /* no GBA ward saved for this draft yet */ }
     });
+  }
+
+  /** The draft has a saved location but its zone / ward lists could not be loaded. */
+  private locationRestoreFailed(): void {
+    this.notificationservice.show(
+      'Could not restore the saved Corporation / Zone / Ward. Please select them again.',
+      'warning'
+    );
+    this.cdr.detectChanges();
   }
 
 

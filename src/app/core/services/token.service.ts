@@ -163,7 +163,10 @@ export class TokenService {
         this.logout();
       }, timeout);
     } else {
-      this.logout();
+      // Already expired when the app starts: drop the stale session quietly. Navigating to
+      // /login here bounced visitors off public pages (Home, Support); guarded pages still
+      // send them to login through AuthGuard.
+      this.clearToken();
     }
   }
 

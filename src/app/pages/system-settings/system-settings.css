@@ -128,3 +128,14 @@
     align-items: stretch;
   }
 }
+
+.settings-disabled {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.settings-disabled:disabled {
+  opacity: 0.65;
+}

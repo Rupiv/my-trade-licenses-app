@@ -23,7 +23,8 @@
         <div><label>Trade Licenses Id</label><p>{{ details.tradeLicenceID }}</p></div>
         <div><label>Trade Name</label><p>{{ details.tradeName }}</p></div>
         <div><label>Mobile Number</label><p>{{ details.mobileNumber }}</p></div>
-        <div><label>Zone</label><p>{{ details.mohName }}</p></div>
+        <div><label>Zone</label><p>{{ details.zoneName || '-' }}</p></div>
+        <div><label>MOH</label><p>{{ details.mohName || '-' }}</p></div>
         <div><label>Ward Name</label><p>{{ details.wardName }}</p></div>
       </div>
     </div>
@@ -112,19 +113,6 @@
       </div>
     </div>
 
-    <!-- Checklist -->
-    <div class="card section-card">
-      <div class="card-header">Inspection Checklist</div>
-      <div class="card-body">
-        <div class="form-check checklist-item" *ngFor="let item of inspectionChecklist">
-          <input class="form-check-input" type="checkbox" [checked]="item.checked" disabled />
-          <label class="form-check-label">
-            {{ item.label }}
-          </label>
-        </div>
-      </div>
-    </div>
-
     <div class="card section-card">
       <div class="card-header">On-Site Inspection Photos</div>
       <div class="card-body">
@@ -160,9 +148,13 @@
           class="form-control"
           rows="4"
           [(ngModel)]="remarks"
+          [maxlength]="remarksMaxLength"
           [readonly]="!canShowReviewActions"
           [placeholder]="canShowReviewActions ? 'Enter remarks...' : 'No remarks'"
         ></textarea>
+        <small class="text-muted d-block mt-1" *ngIf="canShowReviewActions">
+          Required. Letters, numbers, spaces and - . , ( ) only; {{ remarks.length }}/{{ remarksMaxLength }}.
+        </small>
       </div>
     </div>
 

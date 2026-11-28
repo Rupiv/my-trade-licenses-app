@@ -16,7 +16,12 @@ export class ReportsDashboard {
   // This dashboard is shared by admin/approver/senior-approver/zone-approver; navigate
   // under whichever section it's currently loaded in instead of hardcoding /admin.
   private get sectionPrefix(): string {
-    return '/' + (this.router.url.split('/').filter(Boolean)[0] || 'admin');
+    return '/' + (this.router.url.split(/[/?#]/).filter(Boolean)[0] || 'admin');
+  }
+
+  /** Control sheet, ward-wise and revenue reports are admin-only in the API (ReportsController [AdminOnly]). */
+  get isAdminSection(): boolean {
+    return this.sectionPrefix === '/admin';
   }
 
   onControlSheetClick() {

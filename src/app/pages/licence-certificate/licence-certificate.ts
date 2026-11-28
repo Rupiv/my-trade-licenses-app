@@ -219,7 +219,8 @@ export class LicenceCertificate {
       this.router.navigate(['/trader/view-licenses-application', this.licenceApplicationId]);
       return;
     }
-    this.router.navigate(['/admin/licence-applications']);
+    // No application to return to: go to this section's home (a trader cannot open the admin list).
+    this.router.navigate([this.router.url.startsWith('/admin') ? '/admin/licence-applications' : '/trader']);
   }
 
   get showSaveButton(): boolean {
@@ -239,6 +240,7 @@ export class LicenceCertificate {
     }
 
     this.isSaving = true;
+    this.cdr.markForCheck();
     try {
       const fileName = this.buildCertificateFileName();
       const pdfBlob = await this.buildCertificatePdfBlob('save');

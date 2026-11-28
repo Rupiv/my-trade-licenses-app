@@ -8,7 +8,12 @@
       <h3>Medical Officer of Health Dashboard</h3>
       <p>Cross-check inspected applications zone-wise and forward valid files for final approval.</p>
     </div>
-    <a class="btn btn-sm btn-light" routerLink="/zone-approver/zone-approving-officer">Open Workflow Panel</a>
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="button" class="btn btn-sm btn-light" (click)="refresh()" [disabled]="isLoading">
+        {{ isLoading ? 'Refreshing...' : 'Refresh' }}
+      </button>
+      <a class="btn btn-sm btn-light" routerLink="/zone-approver/zone-approving-officer">Open Workflow Panel</a>
+    </div>
   </section>
 
   <section class="kpi-grid">
@@ -26,24 +31,33 @@
           <thead>
             <tr>
               <th>Zone</th>
-              <th class="text-end">Pending</th>
-              <th class="text-end">Forwarded</th>
+              <th class="text-end">Inspected</th>
               <th class="text-end">Objections</th>
+              <th class="text-end">Rejected</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of zoneSummary">
               <td>{{ row.zone }}</td>
-              <td class="text-end">{{ row.pending }}</td>
-              <td class="text-end">{{ row.forwarded }}</td>
-              <td class="text-end">{{ row.objections }}</td>
+              <td class="text-end">{{ formatNumber(row.inspected) }}</td>
+              <td class="text-end">{{ formatNumber(row.objections) }}</td>
+              <td class="text-end">{{ formatNumber(row.rejected) }}</td>
             </tr>
-            <tr *ngIf="!isLoading && zoneSummary.length === 0">
+            <tr *ngIf="zoneSummaryLoading">
+              <td colspan="4" class="text-center text-muted py-3">Loading zone workload...</td>
+            </tr>
+            <tr *ngIf="!zoneSummaryLoading && zoneSummaryError">
+              <td colspan="4" class="text-center text-danger py-3">{{ zoneSummaryError }}</td>
+            </tr>
+            <tr *ngIf="!zoneSummaryLoading && !zoneSummaryError && zoneSummary.length === 0">
               <td colspan="4" class="text-center text-muted py-3">No zone workload data available.</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <p class="small text-muted px-3 pb-2 mb-0" *ngIf="!zoneSummaryLoading && zoneSummaryIsPartial">
+        Based on the latest {{ formatNumber(zoneSummaryCovered) }} of {{ formatNumber(zoneSummaryTotal) }} applications in the queue.
+      </p>
     </article>
 
     <article class="panel">
@@ -54,7 +68,7 @@
         <div class="queue-item info">{{ actionQueue[2] }}</div>
       </div>
       <a class="btn btn-outline-primary btn-sm w-100 mt-2" routerLink="/zone-approver/zone-approving-officer">
-        Review Priority Applications
+        Open Application Queue
       </a>
     </article>
   </section>

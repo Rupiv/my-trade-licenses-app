@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { WardWiseLicenseResponse } from './ward-wise-licenses.model';
 import { Observable } from 'rxjs';
@@ -24,10 +24,11 @@ export class WardWiseLicensesService {
     return this.http.put<T>(`${this.baseUrl}${url}`, body);
   }
 
-  getWardWiseLicenses(financialYearID: number): Observable<WardWiseLicenseResponse> {
-    return this.http.get<WardWiseLicenseResponse>(
-      `${this.baseUrl}/reports/ward-wise-licenses?financialYearID=${financialYearID}`
-    );
+  /** GET /reports/ward-wise-licenses?financialYearID= (usp_Report_WardWiseLicenses). */
+  getWardWiseLicenses(financialYearID: number | null): Observable<WardWiseLicenseResponse> {
+    let params = new HttpParams();
+    if (financialYearID) params = params.set('financialYearID', financialYearID);
+    return this.http.get<WardWiseLicenseResponse>(`${this.baseUrl}/reports/ward-wise-licenses`, { params });
   }
 }
 

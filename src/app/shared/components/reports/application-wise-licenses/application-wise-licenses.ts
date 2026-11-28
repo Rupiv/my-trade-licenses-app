@@ -1,13 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Observable, from, of } from 'rxjs';
+import { map, mergeMap, toArray } from 'rxjs/operators';
 
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as FileSaver from 'file-saver';
+
+import { NotificationService } from '../../notification/notification.service';
+import { LoaderService } from '../../loader/loader.service';
+import { ReportMastersService, pickNumber, pickString, reportErrorMessage } from '../report-masters.service';
+import { ApplicationReportQuery, ApplicationWiseLicensesService } from './application-wise-licenses.service';
 
 /* ===================== MODELS ===================== */
 
@@ -43,17 +48,11 @@ export interface ApiResponse {
 
 export interface StatusSummary {
   label: string;
-  count: number;
+  count: number | null;
   color: string;
   icon: string;
 }
 
-/* ===================== API ===================== */
-
-const API_URL =
-  '/api/api/trade-licence/admin/applications';
-const ZONE_API = '/api/api/bbmp-zones';
-const WARD_API = '/api/api/bbmp-wards/by-constituency';
 /* ===================== COMPONENT ===================== */
 
 @Component({
@@ -71,16 +70,19 @@ export class ApplicationWiseLicenses implements OnInit {
     return '/' + (this.sectionRouter.url.split(/[/?#]/).filter(Boolean)[0] || 'admin') + '/reports';
   }
 
-
-  constructor(private http: HttpClient) {}
+  private readonly api = inject(ApplicationWiseLicensesService);
+  private readonly masters = inject(ReportMastersService);
+  private readonly notifier = inject(NotificationService);
+  private readonly loader = inject(LoaderService);
 
   /* ===================== FILTERS ===================== */
 
   filters = {
+    /** GBA corporation (the API limits officers to their assigned corporation server-side). */
+    corporationId: null as number | null,
+    /** BBMP zone / ward ids (Master_BBMPZone / Master_BBMPWard), as the list procedure expects. */
     zoneId: null as number | null,
-    mohId: null as number | null,
     wardId: null as number | null,
-    licenceApplicationId: null as number | null,
     applicationNumber: '',
     pageNumber: 1,
     pageSize: 10
@@ -94,15 +96,20 @@ export class ApplicationWiseLicenses implements OnInit {
   currentPage = 1;
 
   loading = false;
+  exporting = false;
   errorMessage = '';
 
   /* ===================== SUMMARY ===================== */
 
   statusSummary: StatusSummary[] = [];
+  /** Status counts from /trade-licence/admin/dashboard; null while unavailable. */
+  private statusCounts: { Approved: number; Forwarded: number; Inspected: number } | null = null;
 
   /* ===================== MASTER DATA ===================== */
 
+  corporations: { id: number; name: string }[] = [];
   zones: { id: number; name: string }[] = [];
+  private allWards: { id: number; name: string; zoneId: number }[] = [];
   wards: { id: number; name: string }[] = [];
 
   pageSizeOptions = [10, 25, 50, 100];
@@ -110,14 +117,14 @@ export class ApplicationWiseLicenses implements OnInit {
   /* ===================== INIT ===================== */
 
   ngOnInit(): void {
+    this.loadMasters();
     this.loadData();
-    this.loadZones();
   }
 
   /* ===================== RECORD RANGE ===================== */
 
   get startRecord(): number {
-    return (this.currentPage - 1) * this.filters.pageSize + 1;
+    return this.totalRecords === 0 ? 0 : (this.currentPage - 1) * this.filters.pageSize + 1;
   }
 
   get endRecord(): number {
@@ -127,6 +134,20 @@ export class ApplicationWiseLicenses implements OnInit {
     );
   }
 
+  get hasActiveFilters(): boolean {
+    return !!(this.filters.corporationId || this.filters.zoneId || this.filters.wardId ||
+      this.filters.applicationNumber.trim());
+  }
+
+  private get query(): ApplicationReportQuery {
+    return {
+      corporationId: this.filters.corporationId,
+      zoneId: this.filters.zoneId,
+      wardId: this.filters.wardId,
+      applicationNumber: this.filters.applicationNumber
+    };
+  }
+
   /* ===================== API CALL ===================== */
 
   loadData(): void {
@@ -134,79 +155,93 @@ export class ApplicationWiseLicenses implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    let params = new HttpParams()
-      .set('pageNumber', this.filters.pageNumber)
-      .set('pageSize', this.filters.pageSize);
-
-    if (this.filters.zoneId)
-      params = params.set('zoneId', this.filters.zoneId);
-
-    if (this.filters.mohId)
-      params = params.set('mohId', this.filters.mohId);
-
-    if (this.filters.wardId)
-      params = params.set('wardId', this.filters.wardId);
-
-    if (this.filters.applicationNumber)
-      params = params.set(
-        'applicationNumber',
-        this.filters.applicationNumber.trim()
-      );
-
-    this.http.get<ApiResponse>(API_URL, { params }).subscribe({
+    this.api.getApplications<ApiResponse>(this.query, this.filters.pageNumber, this.filters.pageSize).subscribe({
       next: (res) => this.handleResponse(res),
-      error: () => {
-        this.errorMessage = 'Failed to load data';
+      error: (err) => {
+        const { message, type } = reportErrorMessage(err);
+        this.errorMessage = message;
+        this.applications = [];
+        this.totalRecords = 0;
+        this.totalPages = 0;
+        this.currentPage = 1;
+        this.statusCounts = null;
         this.loading = false;
+        this.buildStatusSummary();
+        this.notifier.show(message, type);
       }
     });
+
+    this.loadStatusCounts();
   }
 
   /* ===================== RESPONSE ===================== */
 
-  private handleResponse(res: ApiResponse) {
+  private handleResponse(res: ApiResponse | null) {
 
-    this.applications = res.data;
-    this.totalRecords = res.totalRecords;
-    this.totalPages = res.totalPages;
-    this.currentPage = res.pageNumber;
-
-    this.buildStatusSummary();
+    this.applications = res?.data ?? [];
+    this.totalRecords = res?.totalRecords ?? 0;
+    this.totalPages = res?.totalPages ?? 0;
+    this.currentPage = res?.pageNumber || 1;
 
     this.loading = false;
+
+    this.buildStatusSummary();
   }
 
   /* ===================== SUMMARY ===================== */
 
+  /** Real status counts for the selected corporation / zone / ward (not just the rows on this page). */
+  private loadStatusCounts(): void {
+    this.statusCounts = null;
+    if (this.filters.applicationNumber.trim()) {
+      // The dashboard action cannot filter by application number: don't show counts for a different scope
+      this.buildStatusSummary();
+      return;
+    }
+    this.api.getDashboard(this.query).subscribe({
+      next: (res) => {
+        const d = res?.dashboard ?? res?.Dashboard;
+        this.statusCounts = d ? {
+          Approved: pickNumber(d, ['Approved', 'TotalApproved']),
+          Forwarded: pickNumber(d, ['Forwarded', 'TotalForwarded']),
+          Inspected: pickNumber(d, ['Inspected', 'TotalInspected'])
+        } : null;
+        this.buildStatusSummary();
+      },
+      error: () => {
+        // The list call reports the error; the cards just show "-"
+        this.statusCounts = null;
+        this.buildStatusSummary();
+      }
+    });
+  }
+
   private buildStatusSummary() {
 
-    const count = (id: number) =>
-      this.applications.filter(
-        a => a.licenceApplicationStatusID === id
-      ).length;
+    const c = this.statusCounts;
 
     this.statusSummary = [
       {
         label: 'Total Applications',
-        count: this.totalRecords,
+        count: this.loading ? null : this.totalRecords,
         color: 'card-blue',
         icon: '📋'
       },
       {
         label: 'Approved',
-        count: count(3),
+        count: c ? c.Approved : null,
         color: 'card-green',
         icon: '✅'
       },
       {
         label: 'Forwarded',
-        count: count(6),
+        count: c ? c.Forwarded : null,
         color: 'card-orange',
         icon: '🔁'
       },
       {
         label: 'Inspected',
-        count: count(7),
+        count: c ? c.Inspected : null,
         color: 'card-purple',
         icon: '🔍'
       }
@@ -223,14 +258,14 @@ export class ApplicationWiseLicenses implements OnInit {
   resetFilters() {
 
     this.filters = {
+      corporationId: null,
       zoneId: null,
-      mohId: null,
       wardId: null,
-      licenceApplicationId: null,
       applicationNumber: '',
       pageNumber: 1,
-      pageSize: 10
+      pageSize: this.filters.pageSize
     };
+    this.wards = [];
 
     this.loadData();
   }
@@ -239,9 +274,14 @@ export class ApplicationWiseLicenses implements OnInit {
 
   goToPage(page: number) {
 
-    if (page < 1 || page > this.totalPages) return;
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
 
     this.filters.pageNumber = page;
+    this.loadData();
+  }
+
+  onPageSizeChange(): void {
+    this.filters.pageNumber = 1;
     this.loadData();
   }
 
@@ -263,7 +303,10 @@ export class ApplicationWiseLicenses implements OnInit {
 
     if (!dateStr) return '-';
 
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+
+    return d.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -283,119 +326,116 @@ export class ApplicationWiseLicenses implements OnInit {
   }
 
   /* ===================== FILTER CHANGE HANDLERS ===================== */
+
+  onCorporationChange(): void {
+    this.applyFilters();
+  }
+
   onZoneChange(): void {
-
-    this.filters.pageNumber = 1;
-
     this.filters.wardId = null;
-
-    if (this.filters.zoneId) {
-
-      this.loadWards(this.filters.zoneId);
-
-    } else {
-
-      this.wards = [];
-
-    }
-
-    this.loadData();
+    this.wards = this.filters.zoneId
+      ? this.allWards.filter(w => w.zoneId === this.filters.zoneId).map(({ id, name }) => ({ id, name }))
+      : [];
+    this.applyFilters();
   }
 
   onWardChange(): void {
-    this.filters.pageNumber = 1;
-    this.loadData();
+    this.applyFilters();
   }
 
   onApplicationNumberChange(): void {
-    this.filters.pageNumber = 1;
-    this.loadData();
+    this.applyFilters();
   }
 
-  /* ===================== LOAD ZONES ===================== */
-  loadZones(): void {
-    this.http.get<any[]>(ZONE_API)
-      .subscribe({
+  /* ===================== MASTER DATA ===================== */
 
-        next: (res) => {
-
-          this.zones = res.map(zone => ({
-            id: zone.zoneID,
-            name: zone.zoneName
-          }));
-
-        },
-        error: (err) => {
-          //console.error('Error loading zones', err);
-        }
-      });
-  }
-
-  /* ===================== LOAD WARDS BY ZONE ===================== */
-
-  loadWards(zoneId: number): void {
-
-    const url = `${WARD_API}/${zoneId}`;
-
-    this.http.get<any[]>(url).subscribe({
-
-      next: (res) => {
-
-        this.wards = res.map(ward => ({
-          id: ward.wardID,
-          name: ward.wardName
-        }));
-
-      },
-
-      error: (err) => {
-        //console.error('Failed to load wards', err);
-      }
-
+  private loadMasters(): void {
+    this.masters.getCorporations().subscribe({
+      next: (list) => this.corporations = list,
+      error: () => this.corporations = []
     });
 
-  }
+    this.api.getZones().subscribe({
+      next: (res) => {
+        this.zones = (res ?? []).map(zone => ({
+          id: pickNumber(zone, ['zoneID']),
+          name: pickString(zone, ['zoneName'])
+        })).filter(z => z.id > 0);
+      },
+      error: () => this.zones = []
+    });
 
+    this.api.getWards().subscribe({
+      next: (res) => {
+        this.allWards = (res ?? []).map(ward => ({
+          id: pickNumber(ward, ['wardID']),
+          name: pickString(ward, ['wardName']),
+          zoneId: pickNumber(ward, ['zoneID'])
+        })).filter(w => w.id > 0)
+          .sort((a, b) => a.name.localeCompare(b.name));
+        if (this.filters.zoneId) {
+          this.wards = this.allWards.filter(w => w.zoneId === this.filters.zoneId).map(({ id, name }) => ({ id, name }));
+        }
+      },
+      error: () => this.allWards = []
+    });
+  }
 
   /* ===================== FETCH ALL DATA FOR EXPORT ===================== */
 
-  fetchAllData(callback: (data: LicenceApplication[]) => void) {
+  /** Every row of the current filters, fetched in pages of 100 (the API's page-size limit). */
+  fetchAllData(): Observable<LicenceApplication[]> {
+    const size = ApplicationWiseLicensesService.MAX_PAGE_SIZE;
+    const query = this.query;
+    return this.api.getApplications<ApiResponse>(query, 1, size).pipe(
+      mergeMap(first => {
+        const pages = first?.totalPages ?? 0;
+        if (pages <= 1) return of(first?.data ?? []);
+        const rest = Array.from({ length: pages - 1 }, (_, i) => i + 2);
+        return from(rest).pipe(
+          mergeMap(p => this.api.getApplications<ApiResponse>(query, p, size)
+            .pipe(map(r => ({ p, rows: r?.data ?? [] }))), 4),
+          toArray(),
+          map(parts => [
+            ...(first?.data ?? []),
+            ...parts.sort((a, b) => a.p - b.p).flatMap(x => x.rows)
+          ])
+        );
+      })
+    );
+  }
 
-    let params = new HttpParams()
-      .set('pageNumber', 1)
-      .set('pageSize', this.totalRecords || 10000);
-
-    if (this.filters.zoneId)
-      params = params.set('zoneId', this.filters.zoneId);
-
-    if (this.filters.mohId)
-      params = params.set('mohId', this.filters.mohId);
-
-    if (this.filters.wardId)
-      params = params.set('wardId', this.filters.wardId);
-
-    if (this.filters.applicationNumber)
-      params = params.set('applicationNumber', this.filters.applicationNumber.trim());
-
-    this.http.get<ApiResponse>(API_URL, { params }).subscribe({
-
-      next: (res) => {
-        callback(res.data);
+  private runExport(write: (data: LicenceApplication[]) => void): void {
+    if (this.exporting) return;
+    if (!this.totalRecords) {
+      this.notifier.show('There are no records to export.', 'warning');
+      return;
+    }
+    this.exporting = true;
+    this.loader.show();
+    this.fetchAllData().subscribe({
+      next: (data) => {
+        this.exporting = false;
+        this.loader.hide();
+        if (!data.length) {
+          this.notifier.show('There are no records to export.', 'warning');
+          return;
+        }
+        write(data);
       },
-
       error: (err) => {
-        //console.error('Export fetch failed', err);
+        this.exporting = false;
+        this.loader.hide();
+        this.notifier.show(reportErrorMessage(err).message || 'Export failed. Please try again.', 'error');
       }
-
     });
-
   }
 
   /* ===================== EXPORT EXCEL ===================== */
 
   exportToExcel() {
 
-    this.fetchAllData((data) => {
+    this.runExport((data) => {
 
       const exportData = data.map((app, i) => ({
         'S.No': i + 1,
@@ -424,9 +464,9 @@ export class ApplicationWiseLicenses implements OnInit {
 
   exportToPDF() {
 
-    this.fetchAllData((data) => {
+    this.runExport((data) => {
 
-      const doc = new jsPDF();
+      const doc = new jsPDF({ orientation: 'landscape' });
 
       doc.text('Licence Applications Report', 14, 15);
 

@@ -593,3 +593,21 @@
     font-size: 18px;
   }
 }
+.table-info-bar {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-info-bar select {
+  margin-left: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.btn:disabled,
+.btn-apply:disabled,
+.btn-reset:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -21,13 +22,31 @@ interface InspectionPhoto {
   preview: string;
 }
 
+// Same rules as LicenceActionRequest.Remarks (LicenceProcessController / submit-action):
+// required, max 500 chars, letters / digits / spaces and - . , ( ) only.
+export const REMARKS_MAX_LENGTH = 500;
+const REMARKS_PATTERN = /^[a-zA-Z0-9\s\-.,()]+$/;
+
+export function validateRemarks(remarks: string): string | null {
+  if (!remarks) {
+    return 'Please enter remarks before submitting action';
+  }
+  if (remarks.length > REMARKS_MAX_LENGTH) {
+    return `Remarks must be ${REMARKS_MAX_LENGTH} characters or fewer`;
+  }
+  if (!REMARKS_PATTERN.test(remarks)) {
+    return 'Remarks may only contain letters, numbers, spaces and - . , ( )';
+  }
+  return null;
+}
+
 @Component({
   selector: 'app-inspection',
   imports: [CommonModule, RouterModule, FormsModule, GoogleMapsModule, ApplicationFullDetails],
   templateUrl: './inspection.html',
   styleUrl: './inspection.css',
 })
-export class Inspection {
+export class Inspection implements OnDestroy {
   applicationNo!: string;
   role = '';
   get isSeniorApprover(): boolean {
@@ -35,25 +54,20 @@ export class Inspection {
     return normalized === 'seniorapprover' || normalized === 'seniorapprovingofficer';
   }
 
-  // Mock inspection data (later replace with API)
-  inspectionChecklist = [
-    { label: 'Trade name board displayed', checked: false },
-    { label: 'Fire safety compliance', checked: false },
-    { label: 'Waste disposal arrangement', checked: false },
-    { label: 'Health & hygiene maintained', checked: false }
-  ];
-
+  readonly remarksMaxLength = REMARKS_MAX_LENGTH;
   remarks: string = '';
   isSubmitting = false;
+  // True when the application is not in this officer's queue (or failed to load)
+  applicationNotFound = false;
+  documentsLoaded = false;
   timeline: LicenceProcessTimelineItem[] = [];
   timelineLoading = false;
   timelineError = '';
   private setSubmitting(value: boolean) {
-    // Defer to avoid ExpressionChangedAfterItHasBeenChecked in dev mode.
-    setTimeout(() => {
-      this.isSubmitting = value;
-      this.cdr.detectChanges();
-    }, 0);
+    // Set synchronously so a second click cannot start a duplicate submission; markForCheck
+    // re-renders after the async (photo upload / HTTP) callbacks in zoneless mode.
+    this.isSubmitting = value;
+    this.cdr.markForCheck();
   }
 
   constructor(
@@ -101,8 +115,9 @@ export class Inspection {
   }
 
   const appNo = Number(this.applicationNo);
-  if (isNaN(appNo)) {
-    //console.error('Invalid application number');
+  if (!appNo || isNaN(appNo)) {
+    this.applicationNotFound = true;
+    this.notificationservice.show('Invalid application number', 'warning');
     this.loaderservice.hide();
     return;
   }
@@ -121,21 +136,28 @@ export class Inspection {
 
   source$.subscribe({
     next: (res: ApprovedApplications) => {
-      if (res.data && res.data.length > 0) {
-        this.licenceApplicationDetails = res.data[0];
+      const rows = res?.data ?? (res as any)?.Data ?? [];
+      if (rows.length > 0) {
+        this.licenceApplicationDetails = rows[0];
+        this.applicationNotFound = false;
         this.loadLocationDetailsDetails();
         this.loadDocumentDetails();
         this.loadTimeline();
-        //console.log(this.licenceApplicationDetails);
+      } else {
+        this.licenceApplicationDetails = null;
+        this.applicationNotFound = true;
+        this.notificationservice.show('This application is not in your queue.', 'warning');
       }
 
-      this.totalRecords = res.totalRecords;
+      this.totalRecords = Number(res?.totalRecords ?? (res as any)?.TotalRecords ?? 0);
       this.loaderservice.hide();
       this.cdr.detectChanges();
     },
     error: () => {
       this.licenceApplicationDetails = null;
+      this.applicationNotFound = true;
       this.loaderservice.hide();
+      this.notificationservice.show('Unable to load the application. Please try again.', 'error');
       this.cdr.detectChanges();
     }
   });
@@ -180,14 +202,15 @@ export class Inspection {
   loadDocumentDetails() {
     this.inspectionservice.getDocumentDetails(Number(this.applicationNo)).subscribe({
       next: (res) => {
-        this.LicensesApplicationDocuments = res;
-        //console.log('Document details loaded:', this.LicensesApplicationDocuments);
-        //console.log('Document details loaded:', res);
-        //console.log(this.applicationNo);
+        this.LicensesApplicationDocuments = Array.isArray(res) ? res : [];
+        this.documentsLoaded = true;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        //console.error('Error fetching document details:', err);
+      error: () => {
+        this.LicensesApplicationDocuments = [];
+        this.documentsLoaded = true;
+        this.notificationservice.show('Unable to load the application documents.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -281,48 +304,7 @@ export class Inspection {
     });
   }*/
 
-  loadTradeType(){
-    //this.inspectionservice.getTradeTypeById().subscribe({
-  }
   //#endregions
-
-  saveDraft() {
-    // console.log('Draft saved', {
-    //   applicationNo: this.applicationNo,
-    //   checklist: this.inspectionChecklist,
-    //   remarks: this.remarks
-    // });
-  }
-
-  submitInspection() {
-    // console.log('Inspection submitted', {
-    //   applicationNo: this.applicationNo,
-    //   checklist: this.inspectionChecklist,
-    //   remarks: this.remarks
-    // });
-
-    const playload = {
-      licenceApplicationID: Number(this.applicationNo),
-      licenceProcessID: 3, //APPROVED
-      remarks: this.remarks,
-      actionReasonIds: '1'
-    };
-    if(!this.remarks){
-      this.notificationservice.show('Please enter remarks before submitting inspection', 'warning');
-      return;
-    }
-    //inspectionPhotos: this.inspectionChecklist.filter(item => item.checked).map(item => item.label)
-    this.notificationservice.show('Inspection submitted successfully', 'success');
-    this.router.navigate(['/approver/approving-officer']);
-    // this.inspectionservice.submitInspection(playload).subscribe({
-    //   next: (res) => {
-
-    //   },
-    //   error: (err) => {
-    //     this.notificationservice.show('Error submitting inspection', 'error');
-    //   }
-    // });
-  }
 
   cancel() {
     this.notificationservice.show('Inspection cancelled', 'info');
@@ -374,8 +356,9 @@ export class Inspection {
     }
 
     const remarks = this.remarks?.trim() ?? '';
-    if (!remarks) {
-      this.notificationservice.show('Please enter remarks before submitting action', 'warning');
+    const remarksError = validateRemarks(remarks);
+    if (remarksError) {
+      this.notificationservice.show(remarksError, 'warning');
       return;
     }
 
@@ -383,7 +366,12 @@ export class Inspection {
 
     // 👇 Upload photos first, then submit the process action
     this.uploadPhotos()
-      .then(() => {
+      .then((uploaded) => {
+        if (uploaded) {
+          // Uploaded now: a retry after a failed action must not upload them again
+          this.inspectionPhotos = [];
+          this.loadSavedInspectionPhotos();
+        }
         const payload = {
           licenceApplicationID,
           loginID: loginId,
@@ -422,6 +410,10 @@ export class Inspection {
   }
 
   private extractApiErrorMessage(error: any): string {
+    // e.g. BadRequest("Invalid Remarks") answers with a plain-text body
+    if (typeof error?.error === 'string' && error.error.trim()) {
+      return error.error.trim();
+    }
     const errors = error?.error?.errors;
     if (errors && typeof errors === 'object') {
       const firstKey = Object.keys(errors)[0];
@@ -477,8 +469,9 @@ export class Inspection {
     input.value = '';
   }
 
-  private uploadPhotos(): Promise<void> {
-    if (this.inspectionPhotos.length === 0) return Promise.resolve();
+  /** Uploads the newly added photos; resolves true when something was uploaded. */
+  private uploadPhotos(): Promise<boolean> {
+    if (this.inspectionPhotos.length === 0) return Promise.resolve(false);
 
     const licenceApplicationID =
       this.licenceApplicationDetails?.licenceApplicationID ?? Number(this.applicationNo);
@@ -488,29 +481,43 @@ export class Inspection {
       formData.append('LicenceApplicationID', String(licenceApplicationID));
       formData.append('DocumentID', '10'); // Inspection photo document type
       formData.append('file', photo.file, photo.file.name);
-      return this.inspectionservice.saveDocument(formData).toPromise();
+      return firstValueFrom(this.inspectionservice.saveDocument(formData));
     });
 
-    return Promise.all(uploads).then(() => {});
+    return Promise.all(uploads).then(() => true);
   }
 
   removePhoto(index: number) {
-    this.inspectionPhotos.splice(index, 1);
+    this.inspectionPhotos = this.inspectionPhotos.filter((_, i) => i !== index);
+  }
+
+  ngOnDestroy(): void {
+    this.revokeSavedPhotoUrls();
+  }
+
+  private revokeSavedPhotoUrls(): void {
+    for (const item of this.savedInspectionPhotoUrls) {
+      URL.revokeObjectURL(item.blobUrl);
+    }
+    this.savedInspectionPhotoUrls = [];
   }
 
   //To Load Existing photos for inspection (if any) - This can be used when approver wants to edit the inspection details after saving as draft. Currently not implemented in backend, so commented out.
   savedInspectionPhotoUrls: { doc: LicensesApplicationDocument; blobUrl: string }[] = [];
   loadSavedInspectionPhotos() {
     const appId = this.licenceApplicationDetails?.licenceApplicationID ?? Number(this.applicationNo);
+    if (!appId || Number.isNaN(appId)) {
+      return;
+    }
     this.inspectionservice.getDocumentDetails(appId).subscribe({
       next: (docs) => {
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-        const photoDocs = docs.filter(
-          d => d.DocumentID === 10 && imageExtensions.includes(d.FileExtension.toLowerCase())
+        const photoDocs = (Array.isArray(docs) ? docs : []).filter(
+          d => d?.DocumentID === 10 && imageExtensions.includes(String(d?.FileExtension ?? '').toLowerCase())
         );
 
         // Load each image as a blob so it actually displays
-        this.savedInspectionPhotoUrls = [];
+        this.revokeSavedPhotoUrls();
         photoDocs.forEach(doc => {
           this.inspectionservice.getDocumentDetailsById(doc.ApplicationDocumentID).subscribe({
             next: (blob: Blob) => {

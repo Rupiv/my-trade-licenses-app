@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-renew-license',
-  imports: [],
+  imports: [RouterModule],
   templateUrl: './renew-license.html',
   styleUrl: './renew-license.css',
 })

@@ -19,6 +19,7 @@ interface ZoneOption {
 interface WardOption {
   id: number;
   name: string;
+  zoneId: number | null;
 }
 
 @Component({
@@ -98,7 +99,8 @@ export class ZoneApprovingOfficer implements OnDestroy {
         this.wardOptions = rawWards
           .map((w: any) => ({
             id: Number(w?.wardID ?? w?.WardID ?? w?.gbaWardID ?? w?.GbaWardID),
-            name: String(w?.wardName ?? w?.WardName ?? '').trim()
+            name: String(w?.wardName ?? w?.WardName ?? '').trim(),
+            zoneId: Number(w?.zoneID ?? w?.ZoneID) || null
           }))
           .filter((w: WardOption) => Number.isFinite(w.id) && w.id > 0 && !!w.name);
 
@@ -125,6 +127,8 @@ export class ZoneApprovingOfficer implements OnDestroy {
       return;
     }
 
+    // Also called from the debounced search timer: zoneless CD needs a nudge to show the spinner
+    this.cdr.markForCheck();
     this.isLoading = true;
     const currentRequest = ++this.requestId;
 
@@ -179,6 +183,14 @@ export class ZoneApprovingOfficer implements OnDestroy {
     this.subscriptions.add(sub);
   }
 
+  /** Wards of the selected zone (GBA lookups carry ZoneID; others list one zone's wards only). */
+  get filteredWardOptions(): WardOption[] {
+    if (!this.selectedZoneId) {
+      return this.wardOptions;
+    }
+    return this.wardOptions.filter((w) => w.zoneId === null || w.zoneId === this.selectedZoneId);
+  }
+
   onZoneChanged(): void {
     this.selectedWardId = null;
     this.pageNumber = 1;
@@ -209,9 +221,12 @@ export class ZoneApprovingOfficer implements OnDestroy {
     if (!application.licenceApplicationID) {
       return;
     }
+    // Admin opens this queue from /admin/workflows; /zone-approver/** is guarded to zone
+    // approvers, so admin uses its own licence-applications route.
+    const isAdmin = (this.tokenService.getRole() ?? '').toLowerCase().replace(/[\s_-]+/g, '') === 'admin';
     this.router.navigate(
-      ['/zone-approver/licence-applications', application.licenceApplicationID],
-      { queryParams: { from: 'zone-approver' } }
+      [isAdmin ? '/admin/licence-applications' : '/zone-approver/licence-applications', application.licenceApplicationID],
+      { queryParams: { from: isAdmin ? 'admin' : 'zone-approver' } }
     );
   }
 

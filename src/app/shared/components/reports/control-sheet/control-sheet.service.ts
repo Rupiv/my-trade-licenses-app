@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ControlSheetResponse } from './control-sheet.model';
@@ -24,11 +24,10 @@ export class ControlSheetService {
     return this.http.put<T>(`${this.baseUrl}${url}`, body);
   }
 
-  
-  getControlSheet(financialYearID: number): Observable<ControlSheetResponse> {
-    return this.http.get<ControlSheetResponse>(
-      `${this.baseUrl}/reports/control-sheet?financialYearID=${financialYearID}`
-    );
+  /** GET /reports/control-sheet?financialYearID= (usp_Report_ControlSheet). */
+  getControlSheet(financialYearID: number | null): Observable<ControlSheetResponse> {
+    let params = new HttpParams();
+    if (financialYearID) params = params.set('financialYearID', financialYearID);
+    return this.http.get<ControlSheetResponse>(`${this.baseUrl}/reports/control-sheet`, { params });
   }
 }
-

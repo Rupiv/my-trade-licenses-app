@@ -165,6 +165,9 @@
   background: #fff;
   padding: 20px;
   width: 400px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   border-radius: 8px;
 }
 

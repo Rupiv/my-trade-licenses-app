@@ -16,7 +16,10 @@ import { GbaCorporation, MLCConstituency, Ward, Zones } from '../../core/models/
 })
 export class AdminLicenceApplications implements OnDestroy {
   isLoadingApplications = false;
+  /** Rows shown in the table (the loaded page, narrowed by the status filter). */
   applications: AdminApplication[] = [];
+  /** The page exactly as the server returned it. */
+  private pageApplications: AdminApplication[] = [];
   zones: Zones[] = [];
   mohs: MLCConstituency[] = [];
   filteredMohs: MLCConstituency[] = [];
@@ -145,6 +148,8 @@ export class AdminLicenceApplications implements OnDestroy {
 
   private loadAdminApplications(): void {
     this.isLoadingApplications = true;
+    // May run from the search debounce timer (zoneless: nothing redraws a timer callback by itself)
+    this.refreshView();
     const currentRequest = ++this.requestId;
 
     const query = {
@@ -163,19 +168,12 @@ export class AdminLicenceApplications implements OnDestroy {
           return;
         }
 
-        this.applications = response?.data ?? response?.Data ?? [];
-        this.statusOptions = Array.from(
-          new Set(
-            this.applications
-              .map((app) => (app.licenceApplicationStatusName || '').trim())
-              .filter((value) => !!value)
-          )
-        ).sort();
-
-        this.applyStatusFilterOnly();
+        this.pageApplications = response?.data ?? response?.Data ?? [];
         this.totalRecords = Number(response?.totalRecords ?? response?.TotalRecords ?? 0);
         this.pageNumber = Number(response?.pageNumber ?? response?.PageNumber ?? this.pageNumber);
         this.pageSize = Number(response?.pageSize ?? response?.PageSize ?? this.pageSize);
+        this.buildStatusOptions();
+        this.applyStatusFilterOnly();
         this.isLoadingApplications = false;
         this.refreshView();
       },
@@ -189,8 +187,9 @@ export class AdminLicenceApplications implements OnDestroy {
               (error?.status === 403 ? 'You are not allowed to view these applications.' : 'Unable to load applications. Please try again.'),
             error?.status === 403 ? 'warning' : 'error');
         }
+        this.pageApplications = [];
         this.applications = [];
-        this.statusOptions = [];
+        this.buildStatusOptions();
         this.totalRecords = 0;
         this.isLoadingApplications = false;
         this.refreshView();
@@ -287,16 +286,41 @@ export class AdminLicenceApplications implements OnDestroy {
     this.subscriptions.add(sub);
   }
 
+  /**
+   * The list API has no status parameter, so the status filter narrows the loaded page only.
+   * Server paging/totals are left untouched (narrowing them made the pager jump to page 1 and
+   * lose the other pages), and the full page is kept so changing/clearing the status restores rows.
+   */
   private applyStatusFilterOnly(): void {
-    if (!this.selectedStatus?.trim()) {
-      return;
+    const target = this.selectedStatus?.trim().toUpperCase();
+    this.applications = target
+      ? this.pageApplications.filter(
+          (app) => (app.licenceApplicationStatusName || '').trim().toUpperCase() === target
+        )
+      : [...this.pageApplications];
+  }
+
+  /** True when the status filter is hiding rows of the loaded page (shown as a hint in the page). */
+  get isStatusFilterPageOnly(): boolean {
+    return !!this.selectedStatus?.trim();
+  }
+
+  private buildStatusOptions(): void {
+    const names = this.pageApplications
+      .map((app) => (app.licenceApplicationStatusName || '').trim())
+      .filter((value) => !!value);
+    const selected = this.selectedStatus?.trim();
+    if (selected) {
+      // Keep the chosen status selectable (e.g. ?status=APPROVED from the dashboard) using the
+      // server's spelling when the page has it, so the <select> shows it as selected.
+      const match = names.find((n) => n.toUpperCase() === selected.toUpperCase());
+      if (match) {
+        this.selectedStatus = match;
+      } else {
+        names.push(selected);
+      }
     }
-    const target = this.selectedStatus.trim().toUpperCase();
-    this.applications = this.applications.filter(
-      (app) => (app.licenceApplicationStatusName || '').trim().toUpperCase() === target
-    );
-    this.totalRecords = this.applications.length;
-    this.pageNumber = 1;
+    this.statusOptions = Array.from(new Set(names)).sort();
   }
 
   private readRouteFilters(): void {

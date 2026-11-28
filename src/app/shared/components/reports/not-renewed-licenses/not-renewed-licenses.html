@@ -12,102 +12,18 @@
       <h2>Not Renewed Licenses</h2>
       <p>Licenses not renewed for selected year</p>
     </div>
-
-    <div class="header-actions">
-      <button class="btn secondary">Export PDF</button>
-      <button class="btn primary">Export Excel</button>
-    </div>
   </div>
 
-  <!-- FILTERS -->
-  <div class="filters-card">
-    <div class="filter-group">
-      <label>Financial Year</label>
-      <select>
-        <option>2024–2025</option>
-        <option>2023–2024</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Zone</label>
-      <select>
-        <option>All Zones</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Ward</label>
-      <select>
-        <option>All Wards</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>License Type</label>
-      <select>
-        <option>All Types</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <button class="btn primary">Apply</button>
-    </div>
-  </div>
-
-  <!-- SUMMARY -->
-  <div class="summary-bar">
-    <span>Total Licenses Not Renewed:</span>
-    <strong>428</strong>
-  </div>
-
-  <!-- TABLE -->
+  <!--
+    No API provides this report yet (ReportsController has control-sheet, ward-wise-licenses and
+    revenue-collection only). The previous page showed sample rows and a fixed total; filters and
+    exports are added once GET /reports/not-renewed-licenses exists.
+  -->
   <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>License No</th>
-          <th>Trader Name</th>
-          <th>Trade Type</th>
-          <th>Zone</th>
-          <th>Ward</th>
-          <th>Expiry Date</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>TL-2021-00452</td>
-          <td>Ramesh Stores</td>
-          <td>Retail Shop</td>
-          <td>South Zone</td>
-          <td>Ward 12</td>
-          <td>31-03-2024</td>
-          <td class="expired">Expired</td>
-        </tr>
-
-        <tr>
-          <td>TL-2020-00891</td>
-          <td>Sri Ganesh Traders</td>
-          <td>Wholesale</td>
-          <td>East Zone</td>
-          <td>Ward 5</td>
-          <td>31-03-2024</td>
-          <td class="expired">Expired</td>
-        </tr>
-
-        <tr>
-          <td>TL-2019-00211</td>
-          <td>Meena Bakery</td>
-          <td>Food & Beverage</td>
-          <td>North Zone</td>
-          <td>Ward 19</td>
-          <td>31-03-2024</td>
-          <td class="expired">Expired</td>
-        </tr>
-      </tbody>
-    </table>
+    <p class="no-data" role="status">
+      <i class="bi bi-info-circle"></i>
+      This report is not available yet.
+    </p>
   </div>
 
 </div>
-

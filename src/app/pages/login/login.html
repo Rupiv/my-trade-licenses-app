@@ -54,7 +54,9 @@
           <input
             type="text"
             maxlength="10"
+            inputmode="numeric"
             [(ngModel)]="mobileNumber"
+            (ngModelChange)="onMobileNumberChange()"
             name="mobileNumber"
             placeholder="Enter mobile number"
             required
@@ -106,7 +108,7 @@
               placeholder="Enter password"
               required
             />
-            <button type="button" (click)="togglePassword()">👁️</button>
+            <button type="button" (click)="togglePassword()" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">👁️</button>
           </div>
 
           <a class="forgot" routerLink="/forgot-password">
@@ -124,8 +126,13 @@
           (expired)="onCaptchaExpired()"
         ></re-captcha>
 
-        <button class="btn-primary" type="submit">
-          {{ isUserLogin ? 'Verify & Login ->' : 'Sign In ->' }}
+        <button class="btn-primary" type="submit" [disabled]="isSubmitting || captchaInProgress">
+          @if (isSubmitting || captchaInProgress) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Signing in...
+          } @else {
+            {{ isUserLogin ? 'Verify & Login ->' : 'Sign In ->' }}
+          }
         </button>
 
         <p class="switch">

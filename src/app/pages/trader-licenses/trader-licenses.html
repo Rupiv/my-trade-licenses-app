@@ -51,17 +51,6 @@
         </button>
       </div>
 
-      <!-- Alerts -->
-      <div class="alert-box warning">
-        <i class="bi bi-exclamation-circle"></i>
-        License renewal due in 30 days for Sharma Food Corner
-      </div>
-
-      <div class="alert-box info">
-        <i class="bi bi-info-circle"></i>
-        Inspection scheduled for Sharma Textiles on 15 Dec 2024
-      </div>
-
       <!-- Quick Actions -->
       <div class="quick-actions">
         <div class="quick-card" routerLink="/trader/new-licenses" role="button" tabindex="0">
@@ -72,12 +61,13 @@
           <p>Start a new trade license application</p>
         </div>
 
-        <div class="quick-card" routerLink="/trader/renew-license" role="button" tabindex="0">
+        <!-- Renew License card hidden: the backend has no renewal API yet (see /trader/renew-license). -->
+        <div class="quick-card" routerLink="/support" fragment="guide" role="button" tabindex="0">
           <div class="quick-icon success">
-            <i class="bi bi-arrow-repeat"></i>
+            <i class="bi bi-question-circle"></i>
           </div>
-          <h6>Renew License</h6>
-          <p>Renew an existing trade license</p>
+          <h6>Help &amp; Support</h6>
+          <p>User guide, required documents and FAQs</p>
         </div>
 
         <div class="quick-card" routerLink="/trader/track-application" role="button" tabindex="0">
@@ -89,27 +79,30 @@
         </div>
       </div>
 
-      <!-- My Licenses -->
+      <!-- My Licenses (approved applications) -->
       <h5 class="section-title">My Licenses</h5>
 
-      <div class="license-card">
+      <p class="muted" *ngIf="loading">Loading your licences…</p>
+      <p class="muted" *ngIf="!loading && !loadFailed && !approvedLicences.length">
+        You have no approved licences yet.
+      </p>
+
+      <div class="license-card" *ngFor="let lic of approvedLicences">
         <div class="license-left">
           <h6>
-            Sharma Electronics
-            <span class="status active">Active</span>
+            {{ lic.tradeName || '—' }}
+            <span class="status active">{{ lic.applicationStatus }}</span>
           </h6>
-          <p class="muted">Retail - Electronics</p>
-          <p class="muted">
-            <i class="bi bi-geo-alt"></i>
-            123, MG Road, Bengaluru - 560001
-          </p>
+          <p class="muted" *ngIf="lic.applicationNumber">Application No: {{ lic.applicationNumber }}</p>
+          <p class="muted" *ngIf="lic.applicantName">{{ lic.applicantName }}</p>
         </div>
 
         <div class="license-right">
-          <small class="muted">Valid Until</small>
-          <strong>31 Mar 2025</strong>
-
-          <button class="btn btn-outline-secondary btn-sm rounded-pill mt-2">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm rounded-pill mt-2"
+            (click)="downloadCertificate(lic)"
+          >
             <i class="bi bi-download"></i>
             Certificate
           </button>
@@ -121,12 +114,23 @@
         <a
           class="view-all"
           *ngIf="allLicensesApplications.length > 1"
-          (click)="showAll = !showAll"
-          style="cursor: pointer"
+          href="#"
+          role="button"
+          (click)="$event.preventDefault(); showAll = !showAll"
         >
           {{ showAll ? 'View Less' : 'View All' }}
         </a>
       </div>
+
+      <p class="muted" *ngIf="loading">Loading your applications…</p>
+      <div class="alert alert-warning" *ngIf="!loading && loadFailed">
+        Your applications could not be loaded.
+        <a href="#" (click)="$event.preventDefault(); loadAppliedLicensesApplicationByLoginId()">Try again</a>
+      </div>
+      <p class="muted" *ngIf="!loading && !loadFailed && !allLicensesApplications.length">
+        You have not applied for any licence yet.
+        <a routerLink="/trader/new-licenses">Apply for a new licence</a>
+      </p>
 
       <!-- LICENSE CARD -->
       <div
@@ -154,10 +158,12 @@
           <p class="muted">
             <i class="bi bi-calendar"></i>
             Submitted:
-            {{ app.applicationSubmitDate | date: 'dd MMM yyyy' }}
-            &nbsp;&nbsp;
-            <i class="bi bi-clock"></i>
-            Working
+            {{ app.applicationSubmitDate ? (app.applicationSubmitDate | date: 'dd MMM yyyy') : '—' }}
+            <ng-container *ngIf="app.currentStatus">
+              &nbsp;&nbsp;
+              <i class="bi bi-clock"></i>
+              {{ app.currentStatus }}
+            </ng-container>
           </p>
 
           <!-- ACTION LINKS -->
