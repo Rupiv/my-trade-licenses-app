@@ -42,6 +42,9 @@ interface TrackApplicationData {
 })
 export class TrackApplication {
   isUser = false;
+  /** True when no signed-in user could be resolved (public route, no session). */
+  requiresSignIn = false;
+  readonly signInQueryParams = { mode: 'user', returnUrl: '/trader/track-application' };
 
   applicationId = '';
   searchResult: SearchResult = null;
@@ -204,9 +207,12 @@ export class TrackApplication {
   private loadUserApplications(searchText?: string): void {
     const loginId = this.resolveLoginId();
     if (!loginId) {
-      this.notificationService.show('Invalid login id', 'warning');
+      // Public /track-application opened without a session: applications are listed per signed-in
+      // trader, so ask the visitor to sign in (login returns them to the trader track page).
+      this.requiresSignIn = true;
       return;
     }
+    this.requiresSignIn = false;
 
     this.applicationsLoading = true;
     this.loadError = '';

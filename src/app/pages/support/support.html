@@ -1,1 +1,240 @@
-<p>support works!</p>
+<div class="page-wrapper">
+
+  <!-- HEADER -->
+  <div class="container mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <a routerLink="/" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Home
+      </a>
+
+      <div class="d-flex align-items-center gap-3">
+        @if (isSignedIn()) {
+          <a class="btn btn-sm btn-primary" [routerLink]="dashboardLink()">
+            <i class="bi bi-speedometer2 me-1"></i> My Dashboard
+          </a>
+        } @else {
+          <a class="btn btn-sm btn-outline-primary" routerLink="/login">Sign In</a>
+        }
+        <div class="d-flex align-items-center gap-2">
+          <div class="icon-box">
+            <i class="bi bi-building"></i>
+          </div>
+          <div>
+            <div class="header-title">Help &amp; Support</div>
+            <small class="text-muted">GBA Trade License Portal</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="main-card">
+
+      <!-- TITLE -->
+      <div class="text-center mb-4">
+        <h2 class="fw-bold">How can we help you?</h2>
+        <p class="text-muted mb-0">
+          Step-by-step guidance for applying, paying, tracking and renewing your trade licence
+        </p>
+      </div>
+
+      <!-- SECTION NAV -->
+      <nav class="section-nav mb-4" aria-label="Help sections">
+        @for (s of sections; track s.id) {
+          <a routerLink="/support" [fragment]="s.id" class="section-nav-link">
+            <i class="bi {{ s.icon }}"></i> {{ s.label }}
+          </a>
+        }
+      </nav>
+
+      <!-- QUICK ACTIONS -->
+      <div class="row g-3 mb-5">
+        @for (a of quickActions(); track a.label) {
+          <div class="col-md-4">
+            <a [routerLink]="a.link" [queryParams]="a.queryParams" class="quick-action text-decoration-none">
+              <i class="bi {{ a.icon }} fs-3 text-primary"></i>
+              <div>
+                <div class="fw-semibold text-dark">{{ a.label }}</div>
+                <small class="text-muted">{{ a.description }}</small>
+              </div>
+            </a>
+          </div>
+        }
+      </div>
+
+      <!-- USER GUIDE -->
+      <section id="guide" class="help-section">
+        <h4 class="fw-bold mb-1"><i class="bi bi-book text-primary me-2"></i>User Guide</h4>
+        <p class="text-muted">How to obtain a new trade licence online</p>
+
+        <div class="result-card mb-3">
+          <h6 class="fw-semibold mb-3">Before you apply</h6>
+          <ol class="mb-0 guide-list">
+            <li>
+              <a routerLink="/create-account">Create an account</a> with your mobile number. It is verified with an OTP.
+            </li>
+            <li>
+              <a routerLink="/login" [queryParams]="{ mode: 'user' }">Sign in</a> using the OTP sent to the same mobile number.
+            </li>
+            <li>
+              Keep the {{ mandatoryDocumentCount }} mandatory documents ready as {{ documentRules.acceptedFormat }} files
+              (see <a routerLink="/support" fragment="documents">Required Documents</a>).
+            </li>
+          </ol>
+        </div>
+
+        <div class="result-card mb-3">
+          <h6 class="fw-semibold mb-3">The application form ({{ applicationSteps.length }} steps)</h6>
+          <div class="timeline">
+            @for (step of applicationSteps; track step.label; let i = $index) {
+              <div class="timeline-item">
+                <div class="timeline-step">{{ i + 1 }}</div>
+                <div>
+                  <div class="fw-semibold">{{ step.label }}</div>
+                  <small class="text-muted">{{ step.detail }}</small>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h6 class="fw-semibold mb-3">After you submit</h6>
+          <ol class="mb-0 guide-list">
+            <li>Pay the licence fee online. The payment acknowledgement is available once the payment is confirmed.</li>
+            <li>The application is reviewed, and the premises may be inspected, by the approving officers of your jurisdiction. You receive SMS updates along the way.</li>
+            <li>Follow every action in <a [routerLink]="quickActions()[1].link" [queryParams]="quickActions()[1].queryParams">Track Application</a>.</li>
+            <li>When the application is approved, download the licence certificate (PDF) from Track Application.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- REQUIRED DOCUMENTS -->
+      <section id="documents" class="help-section">
+        <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-pdf text-primary me-2"></i>Required Documents</h4>
+        <p class="text-muted">
+          Upload each document as a {{ documentRules.acceptedFormat }} file of less than {{ documentRules.maxFileSizeMb }} MB.
+        </p>
+
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 60px;">#</th>
+                <th>Document</th>
+                <th style="width: 140px;">Requirement</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of documents; track d.key; let i = $index) {
+                <tr>
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ d.label }}</td>
+                  <td>
+                    @if (d.required) {
+                      <span class="badge bg-danger">Mandatory</span>
+                    } @else {
+                      <span class="badge bg-secondary">If applicable</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq" class="help-section">
+        <h4 class="fw-bold mb-3"><i class="bi bi-question-circle text-primary me-2"></i>Frequently Asked Questions</h4>
+
+        <div class="faq-list">
+          @for (f of faqs(); track f.question; let i = $index) {
+            <div class="faq-item" [class.open]="openFaq() === i">
+              <button
+                type="button"
+                class="faq-question"
+                [attr.aria-expanded]="openFaq() === i"
+                [attr.aria-controls]="'faq-answer-' + i"
+                (click)="toggleFaq(i)"
+              >
+                <span>{{ f.question }}</span>
+                <i class="bi" [class.bi-chevron-down]="openFaq() !== i" [class.bi-chevron-up]="openFaq() === i"></i>
+              </button>
+              @if (openFaq() === i) {
+                <div class="faq-answer" [id]="'faq-answer-' + i">
+                  <p class="mb-2">{{ f.answer }}</p>
+                  @if (f.action) {
+                    <a [routerLink]="f.action.link" [queryParams]="f.action.queryParams" class="fw-semibold">
+                      {{ f.action.label }} →
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section id="contact" class="help-section mb-0">
+        <h4 class="fw-bold mb-3"><i class="bi bi-telephone text-primary me-2"></i>Contact</h4>
+
+        @if (hasContact) {
+          <div class="row g-3 mb-4">
+            @if (contact.helpline) {
+              <div class="col-md-4">
+                <a class="contact-card text-decoration-none" [href]="helplineHref(contact.helpline)">
+                  <i class="bi bi-telephone fs-4 text-primary"></i>
+                  <div>
+                    <small class="text-muted d-block">Helpline</small>
+                    <span class="fw-semibold text-dark">{{ contact.helpline }}</span>
+                  </div>
+                </a>
+              </div>
+            }
+            @if (contact.email) {
+              <div class="col-md-4">
+                <a class="contact-card text-decoration-none" [href]="'mailto:' + contact.email">
+                  <i class="bi bi-envelope fs-4 text-primary"></i>
+                  <div>
+                    <small class="text-muted d-block">Email</small>
+                    <span class="fw-semibold text-dark">{{ contact.email }}</span>
+                  </div>
+                </a>
+              </div>
+            }
+            @if (contact.officeHours) {
+              <div class="col-md-4">
+                <div class="contact-card">
+                  <i class="bi bi-clock fs-4 text-primary"></i>
+                  <div>
+                    <small class="text-muted d-block">Working hours</small>
+                    <span class="fw-semibold text-dark">{{ contact.officeHours }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="result-card">
+          <p class="mb-3">
+            For queries about an application, an inspection or a licence, contact the
+            <strong class="text-capitalize">{{ departmentName.toLowerCase() }}</strong> of the city corporation in which your business is located:
+          </p>
+          <ul class="corporation-list mb-0">
+            @for (c of corporations; track c.code) {
+              <li>
+                <span class="badge bg-primary-subtle text-primary-emphasis me-2">{{ c.code }}</span>
+                {{ c.fullName }}
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>

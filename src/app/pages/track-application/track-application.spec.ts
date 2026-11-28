@@ -46,4 +46,14 @@ describe('TrackApplication', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('asks a visitor without a session to sign in instead of showing an empty search', () => {
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(component.requiresSignIn).toBe(true);
+    expect(el.textContent).toContain('Sign in to track your applications');
+    expect(el.querySelector('.search-box')).toBeNull();
+    const signIn = Array.from(el.querySelectorAll('a')).find((a) => a.textContent?.includes('Sign In with OTP'))!;
+    expect(signIn.getAttribute('href')).toBe('/login?mode=user&returnUrl=%2Ftrader%2Ftrack-application');
+  });
 });

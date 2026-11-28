@@ -56,6 +56,13 @@ export class Login {
     private loginService: LoginService
   ) {}
 
+  /** `?mode=user` (Home page "Trader / Business Owner" portal) opens the OTP login directly. */
+  ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('mode') === 'user') {
+      this.isUserLogin = true;
+    }
+  }
+
   /** Sends a trader back to the page they were on (e.g. payment result) if the session expired there. */
   private goToTrader(): void {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '';

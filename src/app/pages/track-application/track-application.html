@@ -4,7 +4,7 @@
   <div class="container mb-4" *ngIf="!isUser">
     <div class="d-flex justify-content-between align-items-center">
       <a routerLink="/" class="back-link">
-        â† Back to Home
+        <i class="bi bi-arrow-left"></i> Back to Home
       </a>
 
       <div class="d-flex align-items-center gap-2">
@@ -31,8 +31,21 @@
         </p>
       </div>
 
+      <!-- NOT SIGNED IN -->
+      <div *ngIf="requiresSignIn" class="result-card text-center">
+        <i class="bi bi-shield-lock fs-1 text-primary"></i>
+        <h5 class="fw-semibold mt-2">Sign in to track your applications</h5>
+        <p class="text-muted mb-3">
+          Your applications are linked to the mobile number you registered with. Sign in with the OTP sent to it to see their status and history.
+        </p>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <a class="btn btn-primary" routerLink="/login" [queryParams]="signInQueryParams">Sign In with OTP</a>
+          <a class="btn btn-outline-primary" routerLink="/create-account">Create Account</a>
+        </div>
+      </div>
+
       <!-- SEARCH -->
-      <div class="search-box">
+      <div class="search-box" *ngIf="!requiresSignIn">
         <div class="input-group">
           <span class="input-group-text bg-white">
             <i class="bi bi-search text-muted"></i>
@@ -210,9 +223,9 @@
           Your Application ID was sent to your registered mobile number via SMS
           after successful submission.
         </p>
-        <button class="btn btn-outline-secondary">
+        <a class="btn btn-outline-secondary" routerLink="/support" fragment="faq">
           Need Help?
-        </button>
+        </a>
       </div>
 
     </div>

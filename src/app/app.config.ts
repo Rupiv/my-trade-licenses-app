@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
@@ -11,7 +11,8 @@ import { methodOverrideInterceptor } from './core/interceptors/method-override.i
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // anchorScrolling: links such as /support#documents (Home page footer) scroll to that section
+    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
     provideClientHydration(withEventReplay()),
 
     // 👇 THIS IS THE FIX

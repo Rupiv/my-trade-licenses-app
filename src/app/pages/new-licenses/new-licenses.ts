@@ -25,6 +25,7 @@ import { concatMap, retry, toArray } from 'rxjs/operators';
 import { LoaderService } from '../../shared/components/loader/loader.service';
 import { TradeLicenceStateService } from '../../shared/services/trade-licenses-service';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { LICENCE_DOCUMENTS, LicenceDocumentDefinition } from '../../core/config/licence-documents.config';
 
 
 /* =========================
@@ -1014,17 +1015,7 @@ autoDetectCurrentLocation() {
   } = {};
 
   // Same order / labels as the Documents step
-  readonly documentLabels: { key: string; documentId: number; label: string; required: boolean }[] = [
-    { key: 'ownerConsent', documentId: 1, label: 'Owner Consent / Lease Agreement', required: true },
-    { key: 'electricityBill', documentId: 9, label: 'Electricity Bill', required: true },
-    { key: 'oc', documentId: 8, label: 'Occupancy Certificate', required: false },
-    { key: 'neighbour', documentId: 2, label: 'Neighbour Consent', required: true },
-    { key: 'noc', documentId: 7, label: 'Details of no objections and other sanctions', required: false },
-    { key: 'psd', documentId: 6, label: 'Plan sanction details', required: false },
-    { key: 'ccd', documentId: 5, label: 'Commencement certificate details', required: false },
-    { key: 'taxReceipt', documentId: 4, label: 'Tax paid receipt', required: false },
-    { key: 'khataReceipt', documentId: 3, label: 'Khata receipt', required: false },
-  ];
+  readonly documentLabels: readonly LicenceDocumentDefinition[] = LICENCE_DOCUMENTS;
 
   // Documents already uploaded with a saved draft: documentId -> file name
   savedDocuments: { [documentId: number]: string } = {};
